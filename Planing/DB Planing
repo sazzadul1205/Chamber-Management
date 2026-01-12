@@ -1,0 +1,344 @@
+# Database Plan
+
+# ✅ KEY DECISIONS (IMPORTANT)
+
+* **Phone number = primary login**
+* Email = optional
+* Proper normalization for:
+
+  * treatments
+  * billing
+  * prescriptions
+* Prevents double booking
+* Ready for Laravel / PHP
+* Works for real clinics, not demos
+
+---
+
+# 🔐 AUTH & USERS (PHONE LOGIN)
+
+```sql
+CREATE TABLE roles (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) UNIQUE NOT NULL,
+  created_at DATETIME,
+  updated_at DATETIME
+);
+```
+
+```sql
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  role_id INT NOT NULL,
+  full_name VARCHAR(150) NOT NULL,
+  phone VARCHAR(20) UNIQUE NOT NULL,
+  email VARCHAR(150) UNIQUE NULL,
+  password VARCHAR(255) NOT NULL,
+  status ENUM('active','inactive') DEFAULT 'active',
+  created_at DATETIME,
+  updated_at DATETIME,
+  deleted_at DATETIME,
+  FOREIGN KEY (role_id) REFERENCES roles(id)
+);
+```
+
+📌 **Login rule:**
+Authenticate using `phone + password`
+(Simple, fast, receptionist-friendly)
+
+---
+
+# 👥 PATIENTS
+
+```sql
+CREATE TABLE patients (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  patient_code VARCHAR(50) UNIQUE,
+  full_name VARCHAR(150) NOT NULL,
+  phone VARCHAR(20),
+  email VARCHAR(150),
+  gender ENUM('male','female','other'),
+  date_of_birth DATE,
+  address TEXT,
+  created_at DATETIME,
+  updated_at DATETIME,
+  deleted_at DATETIME,
+  created_by INT,
+  updated_by INT,
+  FOREIGN KEY (created_by) REFERENCES users(id),
+  FOREIGN KEY (updated_by) REFERENCES users(id)
+);
+```
+
+---
+
+# 🦷 DOCTORS
+
+```sql
+CREATE TABLE doctors (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  specialization VARCHAR(150),
+  consultation_fee DECIMAL(10,2),
+  commission_percent DECIMAL(5,2),
+  created_at DATETIME,
+  updated_at DATETIME,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+---
+
+# 📅 APPOINTMENTS (ANTI DOUBLE-BOOKING)
+
+```sql
+CREATE TABLE appointments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  patient_id INT NOT NULL,
+  doctor_id INT NOT NULL,
+  appointment_date DATE NOT NULL,
+  appointment_time TIME NOT NULL,
+  status ENUM('scheduled','checked_in','completed','cancelled') DEFAULT 'scheduled',
+  created_at DATETIME,
+  updated_at DATETIME,
+  deleted_at DATETIME,
+  created_by INT,
+  updated_by INT,
+  FOREIGN KEY (patient_id) REFERENCES patients(id),
+  FOREIGN KEY (doctor_id) REFERENCES doctors(id),
+  FOREIGN KEY (created_by) REFERENCES users(id),
+  FOREIGN KEY (updated_by) REFERENCES users(id),
+  UNIQUE (doctor_id, appointment_date, appointment_time)
+);
+```
+
+---
+
+# 🧾 TREATMENT CASE (HEADER)
+
+```sql
+CREATE TABLE treatments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  patient_id INT NOT NULL,
+  doctor_id INT NOT NULL,
+  appointment_id INT,
+  diagnosis TEXT,
+  status ENUM('ongoing','completed','cancelled') DEFAULT 'ongoing',
+  created_at DATETIME,
+  updated_at DATETIME,
+  deleted_at DATETIME,
+  created_by INT,
+  updated_by INT,
+  FOREIGN KEY (patient_id) REFERENCES patients(id),
+  FOREIGN KEY (doctor_id) REFERENCES doctors(id),
+  FOREIGN KEY (appointment_id) REFERENCES appointments(id),
+  FOREIGN KEY (created_by) REFERENCES users(id),
+  FOREIGN KEY (updated_by) REFERENCES users(id)
+);
+```
+
+---
+
+# 🦷 TREATMENT PROCEDURES (NORMALIZED)
+
+```sql
+CREATE TABLE treatment_procedures (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  treatment_id INT NOT NULL,
+  procedure_name VARCHAR(150),
+  tooth_no VARCHAR(20),
+  price DECIMAL(10,2),
+  status ENUM('planned','done') DEFAULT 'planned',
+  FOREIGN KEY (treatment_id) REFERENCES treatments(id)
+);
+```
+
+---
+
+# 💊 MEDICINES & PRESCRIPTIONS
+
+```sql
+CREATE TABLE medicines (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150),
+  unit VARCHAR(50)
+);
+```
+
+```sql
+CREATE TABLE prescriptions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  treatment_id INT NOT NULL,
+  created_at DATETIME,
+  created_by INT,
+  FOREIGN KEY (treatment_id) REFERENCES treatments(id),
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+```
+
+```sql
+CREATE TABLE prescription_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  prescription_id INT NOT NULL,
+  medicine_id INT NOT NULL,
+  dosage VARCHAR(100),
+  duration VARCHAR(100),
+  FOREIGN KEY (prescription_id) REFERENCES prescriptions(id),
+  FOREIGN KEY (medicine_id) REFERENCES medicines(id)
+);
+```
+
+---
+
+# 📎 MEDICAL FILES
+
+```sql
+CREATE TABLE medical_files (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  treatment_id INT,
+  file_type ENUM('xray','report','image'),
+  file_path VARCHAR(255),
+  uploaded_at DATETIME,
+  uploaded_by INT,
+  FOREIGN KEY (treatment_id) REFERENCES treatments(id),
+  FOREIGN KEY (uploaded_by) REFERENCES users(id)
+);
+```
+
+---
+
+# 💰 BILLING (PROPER MODEL)
+
+```sql
+CREATE TABLE invoices (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  patient_id INT NOT NULL,
+  invoice_no VARCHAR(50) UNIQUE,
+  total_amount DECIMAL(10,2),
+  discount DECIMAL(10,2),
+  net_amount DECIMAL(10,2),
+  status ENUM('unpaid','partial','paid') DEFAULT 'unpaid',
+  created_at DATETIME,
+  created_by INT,
+  FOREIGN KEY (patient_id) REFERENCES patients(id),
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+```
+
+```sql
+CREATE TABLE invoice_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_id INT NOT NULL,
+  description VARCHAR(255),
+  amount DECIMAL(10,2),
+  FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+);
+```
+
+```sql
+CREATE TABLE payments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_id INT NOT NULL,
+  amount DECIMAL(10,2),
+  payment_method ENUM('cash','card','mobile'),
+  payment_date DATETIME,
+  created_by INT,
+  FOREIGN KEY (invoice_id) REFERENCES invoices(id),
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+```
+
+---
+
+# 🧪 LAB MANAGEMENT
+
+```sql
+CREATE TABLE lab_requests (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  treatment_id INT NOT NULL,
+  lab_name VARCHAR(150),
+  status ENUM('pending','in_progress','completed'),
+  expected_delivery DATE,
+  created_at DATETIME,
+  created_by INT,
+  FOREIGN KEY (treatment_id) REFERENCES treatments(id),
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+```
+
+---
+
+# 📦 INVENTORY (REALISTIC)
+
+```sql
+CREATE TABLE inventory_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150),
+  category VARCHAR(100),
+  unit VARCHAR(50),
+  quantity INT,
+  minimum_stock INT,
+  created_at DATETIME,
+  updated_at DATETIME
+);
+```
+
+```sql
+CREATE TABLE inventory_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  item_id INT NOT NULL,
+  quantity_change INT,
+  action ENUM('add','use'),
+  created_at DATETIME,
+  created_by INT,
+  FOREIGN KEY (item_id) REFERENCES inventory_items(id),
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+```
+
+---
+
+# 💸 EXPENSES
+
+```sql
+CREATE TABLE expenses (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(150),
+  amount DECIMAL(10,2),
+  expense_date DATE,
+  created_at DATETIME,
+  created_by INT,
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+```
+
+---
+
+# 🔐 LOGIN LOGIC (SIMPLE & EFFECTIVE)
+
+**Login fields:**
+
+* Phone
+* Password
+
+**Query logic:**
+
+```sql
+SELECT * FROM users
+WHERE phone = :phone
+AND status = 'active'
+LIMIT 1;
+```
+
+**Password:**
+Use `bcrypt` / `password_hash()` — no shortcuts.
+
+---
+
+# 🧠 FINAL VERDICT
+
+✔ This DB is **clinic-realistic**
+✔ Works perfectly with **phone-based login**
+✔ Scales from **1 chair → multi-doctor clinic**
+✔ Easy to build UI on top
+✔ Laravel-ready
