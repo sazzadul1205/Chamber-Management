@@ -46,7 +46,7 @@ class AuthenticatedSessionController extends Controller
             session(['user_role' => $user->role->name ?? 'User']);
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(route('backend.dashboard', absolute: false));
     }
 
     /**

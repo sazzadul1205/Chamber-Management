@@ -119,14 +119,14 @@
 
 <body class="login-page">
 
-    {{-- Back Button --}}
-    <div class="back-btn-wrapper mb-3">
-        <a href="javascript:history.back()" class="back-btn">
-            <i class="bi bi-arrow-left"></i> Back
-        </a>
-    </div>
 
     <div class="login-box">
+        {{-- Back Button --}}
+        <div class="back-btn-wrapper mb-3">
+            <a href="javascript:history.back()" class="back-btn">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
         <div class="card card-outline card-primary">
 
             {{-- Logo --}}
