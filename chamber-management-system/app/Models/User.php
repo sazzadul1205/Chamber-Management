@@ -19,12 +19,14 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'role_id',
+        'name',
         'full_name',
         'phone',
         'email',
         'password',
         'status',
     ];
+
 
     /**
      * The attributes that should be hidden for serialization.
@@ -34,26 +36,50 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'old_password',
     ];
 
     /**
-     * The attributes that should be cast.
+     * Get the attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
 
-    protected $attributes = [
-        'role_id' => 8,
-        'status' => 'active',
-    ];
-
+    /**
+     * Get the role that owns the user.
+     */
     public function role()
     {
         return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Check if user has a specific role.
+     */
+    public function hasRole($roleName)
+    {
+        return $this->role && $this->role->name === $roleName;
+    }
+
+    /**
+     * Scope for active users.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Get display name (prefer full_name, fallback to name).
+     */
+    public function getDisplayNameAttribute()
+    {
+        return $this->full_name ?? $this->name;
     }
 }

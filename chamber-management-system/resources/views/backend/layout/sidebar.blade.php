@@ -22,6 +22,16 @@
                      </a>
                  </li>
 
+                 {{-- All Roles --}}
+                 <li class="nav-item">
+                     <a href="{{ route('backend.roles.index') }}"
+                         class="nav-link {{ request()->routeIs('backend.roles.*') ? 'active' : '' }}">
+                         <i class="nav-icon bi bi-person-badge"></i>
+                         <p>Roles</p>
+                     </a>
+                 </li>
+
+
                  {{-- Patients --}}
                  <li class="nav-item">
                      <a href="#" class="nav-link">
