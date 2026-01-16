@@ -3,6 +3,7 @@
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,11 +30,20 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/backend/dashboard', [DashboardController::class, 'index'])->name('backend.dashboard');
+    Route::middleware('auth')->group(function () {
 
-    // Role
-    Route::prefix('backend')->name('backend.')->group(function () {
-        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::get('/backend/dashboard', [DashboardController::class, 'index'])
+            ->name('backend.dashboard');
+
+        Route::prefix('backend')->name('backend.')->group(function () {
+
+            // Roles
+            Route::get('/roles', [RoleController::class, 'index'])
+                ->name('roles.index');
+
+            // Users (FULL RESOURCE)
+            Route::resource('users', UserController::class);
+        });
     });
 });
 

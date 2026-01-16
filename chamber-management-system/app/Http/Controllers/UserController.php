@@ -13,10 +13,26 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('role')->latest()->paginate(10);
-        return view('users.index', compact('users'));
+        $roles = Role::all();
+
+        $users = User::with('role')
+            ->when($request->search, function ($query, $search) {
+                $query->where('full_name', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            })
+            ->when($request->role_id, fn($q) => $q->where('role_id', $request->role_id))
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->latest()
+            ->paginate(10);
+
+        // Preserve query string manually for pagination
+        $users->appends($request->all());
+
+        return view('backend.users.index', compact('users', 'roles'));
     }
 
     /**
@@ -44,7 +60,7 @@ class UserController extends Controller
 
         // Create user with hashed password
         $validated['password'] = Hash::make($validated['password']);
-        $validated['name'] = $validated['full_name']; // For Breeze compatibility
+        $validated['name'] = $validated['full_name'];
 
         User::create($validated);
 

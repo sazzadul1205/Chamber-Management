@@ -31,6 +31,16 @@
                      </a>
                  </li>
 
+                 {{-- All Users --}}
+                 <li class="nav-item">
+                     <a href="{{ route('backend.users.index') }}"
+                         class="nav-link {{ request()->routeIs('backend.users.*') ? 'active' : '' }}">
+                         <i class="nav-icon bi bi-people"></i>
+                         <p>Users</p>
+                     </a>
+                 </li>
+
+
 
                  {{-- Patients --}}
                  <li class="nav-item">
