@@ -87,46 +87,69 @@
     <div class="px-4 py-4">
 
         {{-- Header --}}
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <div class="d-flex justify-content-between align-items-start align-items-md-center mb-3 flex-wrap gap-2">
+
+            {{-- Title --}}
             <div>
                 <h1 class="mb-1">All Users</h1>
                 <p class="text-muted mb-0">List of all registered users in the system</p>
             </div>
 
-            {{-- Search & Filters --}}
-            <form method="GET" action="{{ route('backend.users.index') }}" class="d-flex align-items-center gap-2 mb-3">
+            {{-- Right Actions --}}
+            <div class="d-flex align-items-center gap-2 flex-wrap">
 
-                <!-- Search input grows -->
-                <input type="text" name="search" class="form-control form-control-sm"
-                    placeholder="Search by Name, Email, Phone" value="{{ request('search') }}"
-                    style="flex: 1; min-width: 200px; height: 34px;"> <!-- set height explicitly -->
+                {{-- Search & Filters --}}
+                <form method="GET" action="{{ route('backend.users.index') }}" class="d-flex align-items-center gap-2">
 
-                <!-- Role dropdown -->
-                <select name="role_id" class="form-select form-select-sm" style="width: 150px; height: 34px;">
-                    <option value="">All Roles</option>
-                    @foreach ($roles as $role)
-                        <option value="{{ $role->id }}" {{ request('role_id') == $role->id ? 'selected' : '' }}>
-                            {{ $role->name }}
-                        </option>
-                    @endforeach
-                </select>
+                    <input type="text" name="search" class="form-control form-control-sm"
+                        placeholder="Search by Name, Email, Phone" value="{{ request('search') }}"
+                        style="flex:1; min-width:300px; height:42px; font-size:0.95rem;">
 
-                <!-- Status dropdown -->
-                <select name="status" class="form-select form-select-sm" style="width: 120px; height: 34px;">
-                    <option value="">All Status</option>
-                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                </select>
+                    <select name="role_id" class="form-select form-select-sm"
+                        style="width:150px; height:42px; font-size:0.95rem;">
+                        <option value="">All Roles</option>
+                        @foreach ($roles as $role)
+                            <option value="{{ $role->id }}" {{ request('role_id') == $role->id ? 'selected' : '' }}>
+                                {{ $role->name }}
+                            </option>
+                        @endforeach
+                    </select>
 
-                <!-- Filter button -->
-                <button type="submit" class="btn btn-sm btn-primary" style="height: 34px;">
-                    Filter
-                </button>
+                    <select name="status" class="form-select form-select-sm"
+                        style="width:120px; height:42px; font-size:0.95rem;">
+                        <option value="">All Status</option>
+                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                    </select>
 
-            </form>
+                    <button type="submit"
+                        class="btn btn-primary btn-sm d-flex align-items-center justify-content-center gap-1 shadow-sm"
+                        style="height: 42px; font-size:0.95rem; white-space: nowrap;">
+                        <i class="bi bi-funnel"></i>
+                        <span>Filter</span>
+                    </button>
 
+                </form>
 
+                {{-- Add User --}}
+                <a href="{{ route('backend.users.create') }}"
+                    class="btn btn-success btn-sm d-flex align-items-center justify-content-center gap-1 shadow-sm"
+                    style="height: 42px; font-size:0.95rem; white-space: nowrap;">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>Add User</span>
+                </a>
+
+                {{-- Refresh Button --}}
+                <a href="{{ route('backend.users.index') }}"
+                    class="btn btn-info btn-sm d-flex align-items-center justify-content-center gap-1 shadow-sm"
+                    style="height: 42px; font-size:0.95rem; white-space: nowrap;">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    <span>Refresh</span>
+                </a>
+
+            </div>
         </div>
+
 
         {{-- Users Table --}}
         <div class="card card-custom border-0 shadow-sm">
@@ -165,21 +188,42 @@
                                     <td>{{ $user->created_at->format('d M Y') }}</td>
                                     <td>{{ $user->updated_at->format('d M Y') }}</td>
                                     <td class="text-end">
+                                        {{-- Status Toggle --}}
+                                        <div class="form-check form-switch d-inline-block me-2 align-middle">
+                                            <input class="form-check-input user-status-toggle" type="checkbox"
+                                                role="switch" data-user-id="{{ $user->id }}"
+                                                {{ $user->status === 'active' ? 'checked' : '' }}
+                                                {{ $user->hasRole('Admin') ? 'disabled' : '' }} data-bs-toggle="tooltip"
+                                                data-bs-placement="top"
+                                                title="{{ $user->hasRole('Admin') ? 'Admin status cannot be changed' : 'Toggle user status (Active / Inactive)' }}">
+                                        </div>
+
+
+                                        {{-- Edit --}}
                                         <a href="{{ route('backend.users.edit', $user->id) }}"
                                             class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="tooltip"
                                             data-bs-placement="top" title="Edit this user">
                                             <i class="bi bi-pencil me-1"></i> Edit
                                         </a>
+
+                                        {{-- Delete --}}
                                         <form action="{{ route('backend.users.destroy', $user->id) }}" method="POST"
                                             class="d-inline"
-                                            onsubmit="return confirm('Are you sure you want to delete this user?')">
+                                            onsubmit="return {{ $user->hasRole('Admin') ? 'false' : 'confirm(\'Are you sure you want to delete this user?\')' }}">
+
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Delete this user">
+
+                                            <button type="submit"
+                                                class="btn btn-sm btn-outline-danger {{ $user->hasRole('Admin') ? 'disabled' : '' }}"
+                                                {{ $user->hasRole('Admin') ? 'disabled' : '' }} data-bs-toggle="tooltip"
+                                                data-bs-placement="top"
+                                                title="{{ $user->hasRole('Admin') ? 'Admin users cannot be deleted' : 'Delete this user' }}">
+
                                                 <i class="bi bi-trash me-1"></i> Delete
                                             </button>
                                         </form>
+
                                     </td>
                                 </tr>
                             @empty
@@ -233,4 +277,38 @@
             });
         });
     </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            document.querySelectorAll('.user-status-toggle').forEach(toggle => {
+                toggle.addEventListener('change', function() {
+
+                    const userId = this.dataset.userId;
+                    const status = this.checked ? 'active' : 'inactive';
+
+                    fetch(`/backend/users/${userId}/toggle-status`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                status
+                            })
+                        })
+                        .then(res => {
+                            if (!res.ok) throw new Error('Failed');
+                        })
+                        .catch(() => {
+                            alert('Could not update user status');
+                            this.checked = !this.checked; // rollback
+                        });
+
+                });
+            });
+
+        });
+    </script>
+
 @endsection

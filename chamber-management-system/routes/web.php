@@ -41,6 +41,10 @@ Route::middleware('auth')->group(function () {
             Route::get('/roles', [RoleController::class, 'index'])
                 ->name('roles.index');
 
+            // User Status Toggle
+            Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
+                ->name('users.toggle-status');
+
             // Users (FULL RESOURCE)
             Route::resource('users', UserController::class);
         });

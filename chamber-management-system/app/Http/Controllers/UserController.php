@@ -41,7 +41,7 @@ class UserController extends Controller
     public function create()
     {
         $roles = Role::all();
-        return view('users.create', compact('roles'));
+        return view('backend.users.create', compact('roles'));
     }
 
     /**
@@ -64,7 +64,7 @@ class UserController extends Controller
 
         User::create($validated);
 
-        return redirect()->route('users.index')
+        return redirect()->route('backend.users.index')
             ->with('success', 'User created successfully.');
     }
 
@@ -73,7 +73,7 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        return view('users.show', compact('user'));
+        return view('backend.users.show', compact('user'));
     }
 
     /**
@@ -82,7 +82,7 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $roles = Role::all();
-        return view('users.edit', compact('user', 'roles'));
+        return view('backend.users.edit', compact('user', 'roles'));
     }
 
     /**
@@ -111,7 +111,7 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        return redirect()->route('users.index')
+        return redirect()->route('backend.users.index')
             ->with('success', 'User updated successfully.');
     }
 
@@ -122,13 +122,35 @@ class UserController extends Controller
     {
         // Prevent deleting own account
         if ($user->id === auth()->id()) {
-            return redirect()->route('users.index')
+            return redirect()->route('backend.users.index')
                 ->with('error', 'You cannot delete your own account.');
         }
 
         $user->delete();
 
-        return redirect()->route('users.index')
+        return redirect()->route('backend.users.index')
             ->with('success', 'User deleted successfully.');
+    }
+
+    /**
+     * Toggle user active / inactive status (AJAX)
+     */
+    public function toggleStatus(User $user)
+    {
+        // Never allow admin to be disabled
+        if ($user->hasRole('Admin')) {
+            return response()->json([
+                'message' => 'Admin users cannot be disabled'
+            ], 403);
+        }
+
+        $user->update([
+            'status' => $user->status === 'active' ? 'inactive' : 'active'
+        ]);
+
+        return response()->json([
+            'status' => $user->status,
+            'label' => ucfirst($user->status)
+        ]);
     }
 }
