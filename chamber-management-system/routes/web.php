@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\PatientFamilyController;
+use App\Http\Controllers\PatientFamilyMemberController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -51,6 +53,17 @@ Route::middleware('auth')->group(function () {
 
             // Patients (FULL RESOURCE)
             Route::resource('patients', PatientController::class);
+
+            // Patient Families
+            Route::resource('patient-families', PatientFamilyController::class);
+
+            // Family Members
+            Route::get('patient-families/{family}/members/create', [PatientFamilyMemberController::class, 'create'])
+                ->name('patient-family-members.create');
+            Route::post('patient-families/{family}/members', [PatientFamilyMemberController::class, 'store'])
+                ->name('patient-family-members.store');
+            Route::delete('patient-family-members/{member}', [PatientFamilyMemberController::class, 'destroy'])
+                ->name('patient-family-members.destroy');
         });
     });
 });

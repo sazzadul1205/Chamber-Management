@@ -146,4 +146,43 @@ class Patient extends Model
             ->orWhere('email', 'like', "%{$search}%")
             ->orWhere('patient_code', 'like', "%{$search}%");
     }
+
+    /**
+     * Get the family membership of the patient.
+     */
+    public function familyMembership()
+    {
+        return $this->hasOne(PatientFamilyMember::class, 'patient_id');
+    }
+
+    /**
+     * Get the family this patient belongs to.
+     */
+    public function family()
+    {
+        return $this->hasOneThrough(
+            PatientFamily::class,
+            PatientFamilyMember::class,
+            'patient_id', // Foreign key on PatientFamilyMember table
+            'id', // Foreign key on PatientFamily table
+            'id', // Local key on Patient table
+            'family_id' // Local key on PatientFamilyMember table
+        );
+    }
+
+    /**
+     * Check if patient is a family head.
+     */
+    public function getIsFamilyHeadAttribute()
+    {
+        return PatientFamily::where('head_patient_id', $this->id)->exists();
+    }
+
+    /**
+     * Get the family where patient is head.
+     */
+    public function headFamily()
+    {
+        return $this->hasOne(PatientFamily::class, 'head_patient_id');
+    }
 }

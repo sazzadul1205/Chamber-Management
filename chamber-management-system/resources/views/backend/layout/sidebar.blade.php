@@ -49,6 +49,16 @@
                      </a>
                  </li>
 
+                 {{-- Sidebar: Patient Families --}}
+                 <li class="nav-item">
+                     <a href="{{ route('backend.patient-families.index') }}"
+                         class="nav-link {{ request()->routeIs('patient-families.*') ? 'active' : '' }}">
+                         <i class="nav-icon bi bi-people-fill"></i>
+                         <span>Patient Families</span>
+                     </a>
+                 </li>
+
+
                  {{-- Patients --}}
                  <li class="nav-item">
                      <a href="#" class="nav-link">
