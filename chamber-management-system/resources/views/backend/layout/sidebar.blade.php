@@ -40,7 +40,14 @@
                      </a>
                  </li>
 
-
+                 {{-- All Patients --}}
+                 <li class="nav-item">
+                     <a href="{{ route('backend.patients.index') }}"
+                         class="nav-link {{ request()->routeIs('backend.patients.*') ? 'active' : '' }}">
+                         <i class="nav-icon bi bi-person-vcard"></i>
+                         <p>Patients</p>
+                     </a>
+                 </li>
 
                  {{-- Patients --}}
                  <li class="nav-item">

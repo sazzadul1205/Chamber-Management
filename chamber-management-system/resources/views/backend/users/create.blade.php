@@ -100,18 +100,16 @@
 
                     {{-- Actions --}}
                     <div class="mt-4 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary btn-sm shadow-sm px-3">
+                        <button type="submit" class="btn btn-primary shadow-sm px-4">
                             <i class="bi bi-save me-1"></i>
                             Create User
                         </button>
 
-                        <a href="{{ route('backend.users.index') }}"
-                            class="btn btn-outline-secondary btn-sm shadow-sm px-3">
-                            <i class="bi bi-x-circle me-1"></i>
-                            Cancel
+                        <a href="{{ route('backend.users.index') }}" class="btn btn-outline-secondary shadow-sm px-4">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            Back
                         </a>
                     </div>
-
                 </div>
             </div>
         </form>

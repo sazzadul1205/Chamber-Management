@@ -3,160 +3,50 @@
 
 @section('title', 'Users')
 
-@section('styles')
-    <style>
-        /* Card styling */
-        .card-custom {
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-        }
-
-        /* Table styling */
-        .table-custom thead {
-            background: #f3f4f6;
-            /* soft gray */
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 0.5px;
-        }
-
-        .table-custom tbody tr {
-            transition: all 0.2s;
-            padding-top: 3px;
-            padding-bottom: 3px;
-        }
-
-        .table-custom tbody tr:hover {
-            background-color: #f9fafb;
-        }
-
-        /* Badge improvements */
-        .badge-role {
-            background-color: #4f46e5;
-            color: #fff;
-            font-weight: 500;
-        }
-
-        .badge-active {
-            background-color: #10b981;
-        }
-
-        .badge-inactive {
-            background-color: #6b7280;
-        }
-
-        /* Buttons */
-        .btn-sm {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-        }
-
-        .form-select-sm,
-        .form-control-sm {
-            min-width: 150px;
-        }
-
-        /* Search & filters container */
-        .filter-bar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .td-center {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-
-        /* Responsive: stack inputs on mobile */
-        @media(max-width: 768px) {
-            .filter-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-        }
-    </style>
-@endsection
-
 @section('content')
     <div class="px-4 py-4">
 
         {{-- Header --}}
-        <div class="d-flex justify-content-between align-items-start align-items-md-center mb-3 flex-wrap gap-2">
-
-            {{-- Title --}}
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <div>
                 <h1 class="mb-1">All Users</h1>
                 <p class="text-muted mb-0">List of all registered users in the system</p>
             </div>
 
-            {{-- Right Actions --}}
-            <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="d-flex gap-2 flex-wrap">
 
-                {{-- Search & Filters --}}
-                <form method="GET" action="{{ route('backend.users.index') }}" class="d-flex align-items-center gap-2">
-
+                {{-- Search Box --}}
+                <form action="{{ route('backend.users.index') }}" method="GET" class="d-flex gap-2">
                     <input type="text" name="search" class="form-control form-control-sm"
-                        placeholder="Search by Name, Email, Phone" value="{{ request('search') }}"
-                        style="flex:1; min-width:300px; height:42px; font-size:0.95rem;">
+                        placeholder="Search by Name, Email, or Phone" value="{{ request('search') }}"
+                        style="min-width:220px; height:38px;">
 
-                    <select name="role_id" class="form-select form-select-sm"
-                        style="width:150px; height:42px; font-size:0.95rem;">
-                        <option value="">All Roles</option>
-                        @foreach ($roles as $role)
-                            <option value="{{ $role->id }}" {{ request('role_id') == $role->id ? 'selected' : '' }}>
-                                {{ $role->name }}
-                            </option>
-                        @endforeach
-                    </select>
-
-                    <select name="status" class="form-select form-select-sm"
-                        style="width:120px; height:42px; font-size:0.95rem;">
-                        <option value="">All Status</option>
-                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                    </select>
-
-                    <button type="submit"
-                        class="btn btn-primary btn-sm d-flex align-items-center justify-content-center gap-1 shadow-sm"
-                        style="height: 42px; font-size:0.95rem; white-space: nowrap;">
-                        <i class="bi bi-funnel"></i>
-                        <span>Filter</span>
+                    <button type="submit" class="btn btn-primary btn-sm d-flex align-items-center gap-1"
+                        style="height:38px;">
+                        <i class="bi bi-search"></i> Search
                     </button>
-
                 </form>
 
+                {{-- Refresh --}}
+                <a href="{{ route('backend.users.index') }}" class="btn btn-info btn-sm d-flex align-items-center gap-1"
+                    style="height:38px;">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </a>
+
                 {{-- Add User --}}
-                <a href="{{ route('backend.users.create') }}"
-                    class="btn btn-success btn-sm d-flex align-items-center justify-content-center gap-1 shadow-sm"
-                    style="height: 42px; font-size:0.95rem; white-space: nowrap;">
-                    <i class="bi bi-plus-circle"></i>
-                    <span>Add User</span>
+                <a href="{{ route('backend.users.create') }}" class="btn btn-success btn-sm d-flex align-items-center gap-1"
+                    style="height:38px;">
+                    <i class="bi bi-plus-circle"></i> Add User
                 </a>
-
-                {{-- Refresh Button --}}
-                <a href="{{ route('backend.users.index') }}"
-                    class="btn btn-info btn-sm d-flex align-items-center justify-content-center gap-1 shadow-sm"
-                    style="height: 42px; font-size:0.95rem; white-space: nowrap;">
-                    <i class="bi bi-arrow-clockwise"></i>
-                    <span>Refresh</span>
-                </a>
-
             </div>
         </div>
 
-
         {{-- Users Table --}}
-        <div class="card card-custom border-0 shadow-sm">
+        <div class="card shadow-sm border-0">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover table-custom align-middle mb-0">
-                        <thead>
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-uppercase small">
                             <tr>
                                 <th>#</th>
                                 <th>User</th>
@@ -169,24 +59,36 @@
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
+
                         <tbody>
                             @forelse ($users as $user)
-                                <tr class="px-2">
-                                    <td>{{ $loop->iteration }}</td>
-                                    <td class="fw-semibold">{{ $user->display_name }}</td>
+                                <tr >
+                                    <td >{{ $loop->iteration }}</td>
+
+                                    <td>
+                                        <div class="fw-semibold">{{ $user->display_name }}</div>
+                                    </td>
+
                                     <td>{{ $user->phone }}</td>
                                     <td>{{ $user->email ?? '—' }}</td>
+
                                     <td class="text-center">
-                                        <span class="badge badge-role">{{ $user->role?->name ?? 'N/A' }}</span>
+                                        <span class="badge bg-primary text-white">
+                                            {{ $user->role?->name ?? 'N/A' }}
+                                        </span>
                                     </td>
+
                                     <td class="text-center">
                                         <span
-                                            class="badge {{ $user->status === 'active' ? 'badge-active' : 'badge-inactive' }}">
+                                            class="badge {{ $user->status === 'active' ? 'bg-success' : 'bg-secondary' }} text-white">
                                             {{ ucfirst($user->status) }}
                                         </span>
                                     </td>
+
+
                                     <td>{{ $user->created_at->format('d M Y') }}</td>
                                     <td>{{ $user->updated_at->format('d M Y') }}</td>
+
                                     <td class="text-end">
                                         {{-- Status Toggle --}}
                                         <div class="form-check form-switch d-inline-block me-2 align-middle">
@@ -198,32 +100,25 @@
                                                 title="{{ $user->hasRole('Admin') ? 'Admin status cannot be changed' : 'Toggle user status (Active / Inactive)' }}">
                                         </div>
 
-
                                         {{-- Edit --}}
                                         <a href="{{ route('backend.users.edit', $user->id) }}"
                                             class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="tooltip"
-                                            data-bs-placement="top" title="Edit this user">
-                                            <i class="bi bi-pencil me-1"></i> Edit
+                                            title="Edit this user">
+                                            <i class="bi bi-pencil"></i>
                                         </a>
 
                                         {{-- Delete --}}
                                         <form action="{{ route('backend.users.destroy', $user->id) }}" method="POST"
                                             class="d-inline"
                                             onsubmit="return {{ $user->hasRole('Admin') ? 'false' : 'confirm(\'Are you sure you want to delete this user?\')' }}">
-
                                             @csrf
                                             @method('DELETE')
-
-                                            <button type="submit"
-                                                class="btn btn-sm btn-outline-danger {{ $user->hasRole('Admin') ? 'disabled' : '' }}"
+                                            <button class="btn btn-sm btn-outline-danger"
                                                 {{ $user->hasRole('Admin') ? 'disabled' : '' }} data-bs-toggle="tooltip"
-                                                data-bs-placement="top"
                                                 title="{{ $user->hasRole('Admin') ? 'Admin users cannot be deleted' : 'Delete this user' }}">
-
-                                                <i class="bi bi-trash me-1"></i> Delete
+                                                <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
-
                                     </td>
                                 </tr>
                             @empty
@@ -237,13 +132,12 @@
 
                 {{-- Pagination --}}
                 @if ($users->lastPage() > 1)
-                    <div class="d-flex justify-content-between align-items-center px-5 py-3 flex-wrap gap-2">
+                    <div class="d-flex justify-content-between align-items-center px-4 py-3 flex-wrap gap-2">
 
                         {{-- Page Info --}}
                         <div class="text-muted small">
                             Showing page <strong>{{ $users->currentPage() }}</strong> of
-                            <strong>{{ $users->lastPage() }}</strong>
-                            (Total users: {{ $users->total() }})
+                            <strong>{{ $users->lastPage() }}</strong> (Total users: {{ $users->total() }})
                         </div>
 
                         {{-- Navigation Buttons --}}
@@ -262,8 +156,6 @@
                         </div>
                     </div>
                 @endif
-
-
             </div>
         </div>
     </div>
@@ -271,19 +163,13 @@
     {{-- Bootstrap tooltips --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function(el) {
-                return new bootstrap.Tooltip(el);
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+                new bootstrap.Tooltip(el);
             });
-        });
-    </script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-
+            // Status toggle AJAX
             document.querySelectorAll('.user-status-toggle').forEach(toggle => {
                 toggle.addEventListener('change', function() {
-
                     const userId = this.dataset.userId;
                     const status = this.checked ? 'active' : 'inactive';
 
@@ -304,11 +190,8 @@
                             alert('Could not update user status');
                             this.checked = !this.checked; // rollback
                         });
-
                 });
             });
-
         });
     </script>
-
 @endsection
