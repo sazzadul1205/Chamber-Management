@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Backend\DashboardController;
+use App\Http\Controllers\PatientController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -47,6 +48,9 @@ Route::middleware('auth')->group(function () {
 
             // Users (FULL RESOURCE)
             Route::resource('users', UserController::class);
+
+            // Patients (FULL RESOURCE)
+            Route::resource('patients', PatientController::class);
         });
     });
 });
