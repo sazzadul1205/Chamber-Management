@@ -1,3 +1,4 @@
+{{-- backend.patients.create --}}
 @extends('backend.layout.structure')
 
 @section('title', 'Add Patient')

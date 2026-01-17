@@ -78,9 +78,16 @@ class PatientController extends Controller
      */
     public function show(Patient $patient)
     {
-        $patient->load(['creator', 'updater', 'referredBy', 'referredPatients']);
+        $patient->load([
+            'creator',
+            'updater',
+            'referredByPatient',
+            'referredPatients',
+        ]);
+
         return view('backend.patients.show', compact('patient'));
     }
+
 
     /**
      * Show the form for editing the specified resource.

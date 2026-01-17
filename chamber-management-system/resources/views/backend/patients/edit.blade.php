@@ -1,3 +1,4 @@
+{{-- backend.patients.edit --}}
 @extends('backend.layout.structure')
 
 @section('title', 'Edit Patient')
@@ -55,11 +56,11 @@
                             <label class="form-label">Gender</label>
                             <select name="gender" class="form-select @error('gender') is-invalid @enderror">
                                 <option value="">Select Gender</option>
-                                <option value="male" {{ old('gender', $patient->gender) == 'male' ? 'selected' : '' }}>
+                                <option value="male" {{ old('gender', $patient->gender) === 'male' ? 'selected' : '' }}>
                                     Male</option>
-                                <option value="female" {{ old('gender', $patient->gender) == 'female' ? 'selected' : '' }}>
+                                <option value="female" {{ old('gender', $patient->gender) === 'female' ? 'selected' : '' }}>
                                     Female</option>
-                                <option value="other" {{ old('gender', $patient->gender) == 'other' ? 'selected' : '' }}>
+                                <option value="other" {{ old('gender', $patient->gender) === 'other' ? 'selected' : '' }}>
                                     Other</option>
                             </select>
                             @error('gender')
@@ -86,7 +87,7 @@
                                 <option value="">Select Type</option>
                                 @foreach ($referralTypes as $type)
                                     <option value="{{ $type }}"
-                                        {{ old('referral_type', $patient->referral_type) == $type ? 'selected' : '' }}>
+                                        {{ old('referral_type', $patient->referral_type) === $type ? 'selected' : '' }}>
                                         {{ ucfirst($type) }}
                                     </option>
                                 @endforeach
@@ -96,9 +97,16 @@
                             @enderror
                         </div>
 
-                        {{-- Referred By Patient (React Searchable Dropdown) --}}
+                        {{-- Referred By Patient --}}
                         <div class="col-md-6 d-none" id="referred_by_patient_wrapper">
-                            <div id="referred_by_patient_react"
+                            <label class="form-label">Referred By Patient</label>
+
+                            {{-- Hidden input Laravel reads --}}
+                            <input type="hidden" name="referred_by_patient_id" id="referred_by_patient_id"
+                                value="{{ old('referred_by_patient_id', $patient->referred_by_patient_id) }}">
+
+                            {{-- React mount --}}
+                            <div id="referred_by_patient_react" data-patients='@json($patients)'
                                 data-old="{{ old('referred_by_patient_id', $patient->referred_by_patient_id) }}">
                             </div>
                         </div>
@@ -117,7 +125,7 @@
                         {{-- Address --}}
                         <div class="col-md-12">
                             <label class="form-label">Address</label>
-                            <textarea name="address" class="form-control @error('address') is-invalid @enderror" rows="2">{{ old('address', $patient->address) }}</textarea>
+                            <textarea name="address" rows="2" class="form-control @error('address') is-invalid @enderror">{{ old('address', $patient->address) }}</textarea>
                             @error('address')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -142,24 +150,37 @@
 @endsection
 
 @section('scripts')
-    {{-- Toggle referral fields --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const referralType = document.getElementById('referral_type');
             const patientWrapper = document.getElementById('referred_by_patient_wrapper');
             const textDiv = document.getElementById('referred_by_text_div');
+            const patientInput = document.getElementById('referred_by_patient_id');
+            const textInput = document.querySelector('[name="referred_by_text"]');
 
             function toggleReferralFields() {
                 const type = referralType.value;
-                patientWrapper.classList.toggle('d-none', type !== 'patient');
-                textDiv.classList.toggle('d-none', !type || type === 'patient');
+
+                if (type === 'patient') {
+                    patientWrapper.classList.remove('d-none');
+                    textDiv.classList.add('d-none');
+                    if (textInput) textInput.value = '';
+                } else if (type) {
+                    patientWrapper.classList.add('d-none');
+                    textDiv.classList.remove('d-none');
+                    if (patientInput) patientInput.value = '';
+                } else {
+                    patientWrapper.classList.add('d-none');
+                    textDiv.classList.add('d-none');
+                    if (patientInput) patientInput.value = '';
+                    if (textInput) textInput.value = '';
+                }
             }
 
             referralType.addEventListener('change', toggleReferralFields);
-            toggleReferralFields(); // init on load
+            toggleReferralFields();
         });
     </script>
 
-    {{-- React Mount --}}
     @vite('resources/js/reactApp.jsx')
 @endsection

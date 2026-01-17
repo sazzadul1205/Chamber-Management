@@ -1,3 +1,4 @@
+{{-- backend.patients.index --}}
 @extends('backend.layout.structure')
 
 @section('title', 'Patients')
@@ -136,15 +137,16 @@
                         </div>
 
                         <div class="btn-group btn-group-sm" role="group" aria-label="Pagination">
-                            <a href="{{ $patients->previousPageUrl() }}{{ request()->getQueryString() ? '&' . request()->getQueryString() : '' }}"
+                            <a href="{{ $patients->previousPageUrl() }}{{ request()->except('page') ? '&' . http_build_query(request()->except('page')) : '' }}"
                                 class="btn btn-outline-primary {{ $patients->onFirstPage() ? 'disabled' : '' }}">
                                 &lsaquo; Prev
                             </a>
 
-                            <a href="{{ $patients->nextPageUrl() }}{{ request()->getQueryString() ? '&' . request()->getQueryString() : '' }}"
+                            <a href="{{ $patients->nextPageUrl() }}{{ request()->except('page') ? '&' . http_build_query(request()->except('page')) : '' }}"
                                 class="btn btn-outline-primary {{ $patients->currentPage() == $patients->lastPage() ? 'disabled' : '' }}">
                                 Next &rsaquo;
                             </a>
+
                         </div>
                     </div>
                 @endif
