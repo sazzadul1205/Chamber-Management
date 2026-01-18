@@ -1,4 +1,3 @@
-{{-- backend.patient-families.create --}}
 @extends('backend.layout.structure')
 
 @section('title', 'Create Patient Family')
@@ -6,63 +5,70 @@
 @section('content')
     <div class="px-4 py-4">
 
-        {{-- Page Header --}}
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <h1 class="h3 mb-0">Create Patient Family</h1>
-            <a href="{{ route('backend.patient-families.index') }}" class="btn btn-secondary btn-sm d-flex align-items-center gap-1">
-                <i class="bi bi-arrow-left-circle"></i> Back
-            </a>
+        {{-- Header --}}
+        <div class="mb-3">
+            <h1 class="mb-1">Create Patient Family</h1>
+            <p class="text-muted mb-0">Fill in the details to register a new family</p>
         </div>
 
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
+        <form method="POST" action="{{ route('backend.patient-families.store') }}">
+            @csrf
 
-                <form method="POST" action="{{ route('backend.patient-families.store') }}">
-                    @csrf
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="row g-3">
 
-                    {{-- Family Name --}}
-                    <div class="mb-3">
-                        <label class="form-label">Family Name <span class="text-danger">*</span></label>
-                        <input type="text" name="family_name"
-                            class="form-control @error('family_name') is-invalid @enderror" value="{{ old('family_name') }}"
-                            required>
-                        @error('family_name')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        {{-- Family Name --}}
+                        <div class="col-md-6">
+                            <label class="form-label">Family Name <span class="text-danger">*</span></label>
+                            <input type="text" name="family_name"
+                                class="form-control @error('family_name') is-invalid @enderror"
+                                value="{{ old('family_name') }}" required>
+                            @error('family_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        {{-- Family Head --}}
+                        <div class="col-md-6">
+                            <label class="form-label">Family Head <span class="text-danger">*</span></label>
+                            <div id="family_head_react" data-patients='@json($availablePatients)'
+                                data-old="{{ old('head_patient_id') }}">
+                            </div>
+                            @error('head_patient_id')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        {{-- Family Members --}}
+                        <div class="col-md-12">
+                            <label class="form-label">Family Members</label>
+                            <div id="family_members_react" data-patients='@json($availablePatients)'
+                                data-old='@json(old('member_patient_ids', []))'>
+                            </div>
+                            @error('member_patient_ids')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                     </div>
 
-                    {{-- Family Head --}}
-                    <div class="mb-3">
-                        <label class="form-label">Family Head <span class="text-danger">*</span></label>
-                        <select name="head_patient_id" class="form-select @error('head_patient_id') is-invalid @enderror"
-                            required>
-                            <option value="">Select Head Patient</option>
-                            @foreach ($availablePatients as $patient)
-                                <option value="{{ $patient->id }}"
-                                    {{ old('head_patient_id') == $patient->id ? 'selected' : '' }}>
-                                    {{ $patient->full_name }} ({{ $patient->patient_code }})
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('head_patient_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    {{-- Form Actions --}}
                     <div class="mt-4 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1">
-                            <i class="bi bi-save"></i> Save Family
+                        <button class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i> Save Family
                         </button>
-                        <a href="{{ route('backend.patient-families.index') }}"
-                            class="btn btn-outline-secondary d-flex align-items-center gap-1">
-                            <i class="bi bi-x-circle"></i> Cancel
+                        <a href="{{ route('backend.patient-families.index') }}" class="btn btn-outline-secondary">
+                            Cancel
                         </a>
                     </div>
 
-                </form>
-
+                </div>
             </div>
-        </div>
+        </form>
+
     </div>
+@endsection
+
+@section('scripts')
+    @vite('resources/js/reactApp.jsx')
 @endsection
