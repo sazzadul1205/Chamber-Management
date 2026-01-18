@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Backend\DashboardController;
+use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PatientFamilyController;
 use App\Http\Controllers\PatientFamilyMemberController;
@@ -57,13 +58,8 @@ Route::middleware('auth')->group(function () {
             // Patient Families
             Route::resource('patient-families', PatientFamilyController::class);
 
-            // Family Members
-            Route::get('patient-families/{family}/members/create', [PatientFamilyMemberController::class, 'create'])
-                ->name('patient-family-members.create');
-            Route::post('patient-families/{family}/members', [PatientFamilyMemberController::class, 'store'])
-                ->name('patient-family-members.store');
-            Route::delete('patient-family-members/{member}', [PatientFamilyMemberController::class, 'destroy'])
-                ->name('patient-family-members.destroy');
+            // Doctor (FULL RESOURCE)
+            Route::resource('doctors', DoctorController::class);
         });
     });
 });

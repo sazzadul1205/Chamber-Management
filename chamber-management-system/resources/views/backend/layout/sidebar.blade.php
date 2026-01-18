@@ -58,6 +58,16 @@
                      </a>
                  </li>
 
+                 {{-- Sidebar: Doctors --}}
+                 <li class="nav-item">
+                     <a href="{{ route('backend.doctors.index') }}"
+                         class="nav-link {{ request()->routeIs('backend.doctors.*') ? 'active' : '' }}">
+                         <i class="nav-icon bi bi-person-badge-fill"></i>
+                         <span>Doctors</span>
+                     </a>
+                 </li>
+
+
 
                  {{-- Patients --}}
                  <li class="nav-item">
