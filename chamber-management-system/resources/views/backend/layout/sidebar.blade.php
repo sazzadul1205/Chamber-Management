@@ -67,7 +67,14 @@
                      </a>
                  </li>
 
-
+                 {{-- Sidebar: Dental Chairs --}}
+                 <li class="nav-item">
+                     <a href="{{ route('backend.dental-chairs.index') }}"
+                         class="nav-link {{ request()->routeIs('backend.dental-chairs.*') ? 'active' : '' }}">
+                         <i class="nav-icon bi bi-chair-fill"></i>
+                         <span>Dental Chairs</span>
+                     </a>
+                 </li>
 
                  {{-- Patients --}}
                  <li class="nav-item">

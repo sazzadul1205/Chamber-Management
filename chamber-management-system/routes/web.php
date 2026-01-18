@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Backend\DashboardController;
+use App\Http\Controllers\DentalChairController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PatientFamilyController;
@@ -60,6 +61,17 @@ Route::middleware('auth')->group(function () {
 
             // Doctor (FULL RESOURCE)
             Route::resource('doctors', DoctorController::class);
+
+            // Dental Chair Dashboard - MUST BE FIRST
+            Route::get('/dental-chairs/dashboard', [DentalChairController::class, 'dashboard'])
+                ->name('dental-chairs.dashboard');
+
+            // Dental Chair Update Status
+            Route::patch('/dental-chairs/{dentalChair}/update-status', [DentalChairController::class, 'updateStatus'])
+                ->name('dental-chairs.update-status');
+
+            // Dental Chairs Resource
+            Route::resource('dental-chairs', DentalChairController::class);
         });
     });
 });
