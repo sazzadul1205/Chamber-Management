@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\DentalChairController;
+use App\Http\Controllers\DentalChartController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PatientFamilyController;
@@ -72,6 +73,17 @@ Route::middleware('auth')->group(function () {
 
             // Dental Chairs Resource
             Route::resource('dental-chairs', DentalChairController::class);
+
+            // Dental Chart Bulk Update - Define this BEFORE the resource route
+            Route::post('dental-charts/patient/{patient}/bulk-update', [DentalChartController::class, 'bulkUpdate'])
+                ->name('dental-charts.bulk-update');
+
+            Route::get('dental-charts/{patient}', [DentalChartController::class, 'show'])
+                ->name('backend.dental-charts.show');
+
+
+            // Dental Chart (FULL RESOURCE) - This should come AFTER specific routes
+            Route::resource('dental-charts', DentalChartController::class);
         });
     });
 });

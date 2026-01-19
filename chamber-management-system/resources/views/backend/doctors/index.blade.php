@@ -14,6 +14,7 @@
             </div>
 
             <div class="d-flex gap-2 flex-wrap">
+
                 {{-- Search --}}
                 <form action="{{ route('backend.doctors.index') }}" method="GET" class="d-flex gap-2">
                     <input type="text" name="search" class="form-control form-control-sm"
@@ -61,32 +62,31 @@
                         <tbody>
                             @forelse ($doctors as $doctor)
                                 <tr>
-                                    <td>{{ $loop->iteration + ($doctors->currentPage() - 1) * $doctors->perPage() }}</td>
+                                    <td>
+                                        {{ $loop->iteration + ($doctors->currentPage() - 1) * $doctors->perPage() }}
+                                    </td>
 
-                                    {{-- Doctor Name + Photo Placeholder --}}
-                                    <td class="d-flex align-items-center gap-2">
-                                        @if (isset($doctor->photo))
-                                            <img src="{{ asset('storage/' . $doctor->photo) }}" alt="Photo"
-                                                class="rounded-circle" width="40" height="40">
-                                        @else
-                                            <i class="bi bi-person-circle fs-3 text-secondary"></i>
-                                        @endif
-                                        <div>
-                                            <div class="fw-semibold">{{ $doctor->full_name }}</div>
-                                            <small class="text-muted">ID: {{ $doctor->user_id }}</small>
-                                        </div>
+                                    <td>
+                                        <div class="fw-semibold">{{ $doctor->full_name }}</div>
+                                        <small class="text-muted">ID: {{ $doctor->user_id }}</small>
                                     </td>
 
                                     <td>{{ $doctor->phone }}</td>
+
                                     <td>{{ $doctor->email ?? '—' }}</td>
-                                    <td>{{ $doctor->specialization ?? '—' }}</td>
 
-                                    {{-- Important Fields --}}
-                                    <td class="fw-semibold text-primary">৳
-                                        {{ number_format($doctor->consultation_fee, 2) }}</td>
-                                    <td class="fw-semibold text-success">{{ $doctor->commission_percent }}%</td>
+                                    <td>
+                                        {{ $doctor->specialization ?? '—' }}
+                                    </td>
 
-                                    {{-- Status --}}
+                                    <td class="fw-semibold">
+                                        ৳ {{ number_format($doctor->consultation_fee, 2) }}
+                                    </td>
+
+                                    <td>
+                                        {{ $doctor->commission_percent }}%
+                                    </td>
+
                                     <td>
                                         <span
                                             class="badge {{ $doctor->status === 'active' ? 'bg-success' : 'bg-secondary' }}">
@@ -94,9 +94,10 @@
                                         </span>
                                     </td>
 
-                                    <td>{{ $doctor->created_at->format('d M Y') }}</td>
+                                    <td>
+                                        {{ $doctor->created_at->format('d M Y') }}
+                                    </td>
 
-                                    {{-- Actions --}}
                                     <td class="text-end">
                                         <a href="{{ route('backend.doctors.show', $doctor->id) }}"
                                             class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip"
@@ -161,8 +162,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-                new bootstrap.Tooltip(el);
-            });
-        });
+                new bootstrap.Tooltip(el)
+            })
+        })
     </script>
 @endsection

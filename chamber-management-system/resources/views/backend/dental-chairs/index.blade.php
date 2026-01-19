@@ -33,7 +33,7 @@
 
                         {{-- SVG Dental Chair Icon --}}
                         <div class="mb-2">
-                            @php
+                           @php
                                 $color = $chair->isAvailable ? 'green' : ($chair->isOccupied ? 'orange' : 'red');
                             @endphp
                             {!! file_get_contents(public_path('svg/dental-chair.svg')) !!}
@@ -43,7 +43,7 @@
                                     height: 60px;
                                     fill: {{ $color }};
                                 }
-                            </style>
+                            </style> 
                         </div>
 
                         {{-- Chair Name --}}

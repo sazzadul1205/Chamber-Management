@@ -185,4 +185,33 @@ class Patient extends Model
     {
         return $this->hasOne(PatientFamily::class, 'head_patient_id');
     }
+
+    /**
+     * Get the dental charts for the patient.
+     */
+    public function dentalCharts()
+    {
+        return $this->hasMany(DentalChart::class);
+    }
+
+    /**
+     * Get the patient's dental chart summary.
+     */
+    public function getDentalChartSummaryAttribute()
+    {
+        $charts = $this->dentalCharts;
+
+        if ($charts->isEmpty()) {
+            return 'No dental chart recorded';
+        }
+
+        $conditions = $charts->groupBy('tooth_condition')->map->count();
+        $summary = [];
+
+        foreach ($conditions as $condition => $count) {
+            $summary[] = "{$condition}: {$count} teeth";
+        }
+
+        return implode(', ', $summary);
+    }
 }

@@ -71,10 +71,20 @@
                  <li class="nav-item">
                      <a href="{{ route('backend.dental-chairs.index') }}"
                          class="nav-link {{ request()->routeIs('backend.dental-chairs.*') ? 'active' : '' }}">
-                         <i class="nav-icon bi bi-chair-fill"></i>
+                         <i class="nav-icon bi bi-hospital"></i>
                          <span>Dental Chairs</span>
                      </a>
                  </li>
+
+                 {{-- Sidebar: Dental Chairs / Charts --}}
+                 <li class="nav-item">
+                     <a href="{{ route('backend.dental-charts.index') }}"
+                         class="nav-link {{ request()->routeIs('backend.dental-charts.*') ? 'active' : '' }}">
+                         <i class="nav-icon bi bi-clipboard2-data-fill"></i>
+                         <span>Dental Charts</span>
+                     </a>
+                 </li>
+
 
                  {{-- Patients --}}
                  <li class="nav-item">
