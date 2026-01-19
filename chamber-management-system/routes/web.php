@@ -9,6 +9,7 @@ use App\Http\Controllers\PatientFamilyController;
 use App\Http\Controllers\PatientFamilyMemberController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SingleToothChartController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -78,12 +79,31 @@ Route::middleware('auth')->group(function () {
             Route::post('dental-charts/patient/{patient}/bulk-update', [DentalChartController::class, 'bulkUpdate'])
                 ->name('dental-charts.bulk-update');
 
-            Route::get('dental-charts/{patient}', [DentalChartController::class, 'show'])
+            Route::get('dental-charts/patient/{patient}', [DentalChartController::class, 'show'])
                 ->name('backend.dental-charts.show');
+
+            // In your routes file
+            Route::get('dental-charts/patient/{patient}/visualization', [DentalChartController::class, 'visualization'])
+                ->name('dental-charts.visualization');
 
 
             // Dental Chart (FULL RESOURCE) - This should come AFTER specific routes
             Route::resource('dental-charts', DentalChartController::class);
+
+            Route::get(
+                'dental-charts/tooth/{id}/edit',
+                [SingleToothChartController::class, 'edit']
+            )->name('dental-charts.single.edit');
+
+            Route::put(
+                'dental-charts/tooth/{id}',
+                [SingleToothChartController::class, 'update']
+            )->name('dental-charts.single.update');
+
+            Route::delete(
+                'dental-charts/tooth/{id}',
+                [SingleToothChartController::class, 'destroy']
+            )->name('dental-charts.single.destroy');
         });
     });
 });

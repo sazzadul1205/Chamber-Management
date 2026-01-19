@@ -38,57 +38,7 @@ class DentalChartController extends Controller
 
         $patients = Patient::orderBy('full_name')->get();
 
-        $toothNumbers = [
-            '18',
-            '17',
-            '16',
-            '15',
-            '14',
-            '13',
-            '12',
-            '11',
-            '21',
-            '22',
-            '23',
-            '24',
-            '25',
-            '26',
-            '27',
-            '28',
-            '48',
-            '47',
-            '46',
-            '45',
-            '44',
-            '43',
-            '42',
-            '41',
-            '31',
-            '32',
-            '33',
-            '34',
-            '35',
-            '36',
-            '37',
-            '38'
-        ];
-
-        $toothConditions = [
-            'Healthy',
-            'Cavity',
-            'Filled',
-            'Crown',
-            'Missing',
-            'Implant',
-            'Root Canal',
-            'Decay',
-            'Fractured',
-            'Discolored',
-            'Sensitive',
-            'Other'
-        ];
-
-        return view('backend.dental-charts.create', compact('patients', 'patient', 'toothNumbers', 'toothConditions'));
+        return view('backend.dental-charts.create', compact('patients', 'patient'));
     }
 
     /**
@@ -125,64 +75,26 @@ class DentalChartController extends Controller
 
     /**
      * Show all dental charts for a specific patient.
-     * Accepts either Patient ID or Patient model.
      */
-    public function show(Patient $patient)
+    public function show($id)
     {
-        // Load all charts for this patient
-        $charts = $patient->dentalCharts()->get()->keyBy('tooth_number');
+        // Check if $id is a dental chart ID or patient ID
+        $dentalChart = DentalChart::find($id);
 
-        $allTeeth = [
-            '18',
-            '17',
-            '16',
-            '15',
-            '14',
-            '13',
-            '12',
-            '11',
-            '21',
-            '22',
-            '23',
-            '24',
-            '25',
-            '26',
-            '27',
-            '28',
-            '48',
-            '47',
-            '46',
-            '45',
-            '44',
-            '43',
-            '42',
-            '41',
-            '31',
-            '32',
-            '33',
-            '34',
-            '35',
-            '36',
-            '37',
-            '38'
-        ];
+        if ($dentalChart) {
+            // If it's a dental chart, get its patient
+            $patient = $dentalChart->patient;
+        } else {
+            // If it's not a dental chart, assume it's a patient ID
+            $patient = Patient::findOrFail($id);
+        }
 
-        $toothConditions = [
-            'Healthy',
-            'Cavity',
-            'Filled',
-            'Crown',
-            'Missing',
-            'Implant',
-            'Root Canal',
-            'Decay',
-            'Fractured',
-            'Discolored',
-            'Sensitive',
-            'Other'
-        ];
+        if (!$patient) {
+            abort(404, 'Patient not found');
+        }
 
-        return view('backend.dental-charts.show', compact('patient', 'charts', 'allTeeth', 'toothConditions'));
+        $charts = $patient->dentalCharts()->orderBy('tooth_number')->get();
+        return view('backend.dental-charts.show', compact('patient', 'charts'));
     }
 
     /**
@@ -229,16 +141,20 @@ class DentalChartController extends Controller
     }
 
     /**
-     * Delete a dental chart.
+     * Delete all dental charts for the patient of the given chart.
      */
     public function destroy(DentalChart $dentalChart)
     {
+        // Get patient ID
         $patientId = $dentalChart->patient_id;
-        $dentalChart->delete();
 
-        return redirect()->route('backend.dental-charts.index', ['patient' => $patientId])
-            ->with('success', 'Dental chart record deleted successfully.');
+        // Delete all charts for this patient
+        DentalChart::where('patient_id', $patientId)->delete();
+
+        return redirect()->route('backend.dental-charts.index')
+            ->with('success', 'All dental charts for this patient have been deleted successfully.');
     }
+
 
     /**
      * Visualization for a patient.
