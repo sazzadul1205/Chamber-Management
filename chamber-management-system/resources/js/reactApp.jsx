@@ -1,8 +1,11 @@
+// reactApp.jsx
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 
 import PatientSelect from "./components/PatientSelect";
 import FamilyMembersSelect from "./components/FamilyMembersSelect";
+import DentalTeethSelect from "./components/DentalTeethSelect";
 
 /**
  * Mount single patient selector
@@ -41,6 +44,24 @@ function mountMembers(id) {
   );
 }
 
+/**
+ * Mount dental teeth selector
+ */
+function mountDentalTeeth(id, inputName) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  const oldValues = JSON.parse(el.dataset.old || "[]");
+
+  ReactDOM.createRoot(el).render(
+    <DentalTeethSelect
+      name={inputName}
+      defaultValues={oldValues}
+    />
+  );
+}
+
+
 /* =========================
    Mount points
 ========================= */
@@ -51,5 +72,11 @@ mountSingle("family_head_react", "head_patient_id");
 // Referred By Patient
 mountSingle("referred_by_patient_react", "referred_by_patient_id");
 
+// Patient Select
+mountSingle("patient_select_react", "patient_id");
+
 // Family Members (MULTI)
 mountMembers("family_members_react");
+
+// Dental Teeth
+mountDentalTeeth("dental_teeth_react", "charts");
