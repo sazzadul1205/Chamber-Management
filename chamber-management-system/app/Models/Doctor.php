@@ -125,4 +125,37 @@ class Doctor extends Model
                 ->orWhere('qualification', 'like', "%{$search}%");
         });
     }
+
+    /**
+     * Get the appointments for this doctor.
+     */
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class);
+    }
+
+    /**
+     * Get today's appointments.
+     */
+    public function todaysAppointments()
+    {
+        return $this->appointments()
+            ->whereDate('appointment_date', today())
+            ->orderBy('appointment_time')
+            ->get();
+    }
+
+    /**
+     * Get upcoming appointments.
+     */
+    public function upcomingAppointments($days = 7)
+    {
+        return $this->appointments()
+            ->whereDate('appointment_date', '>=', today())
+            ->whereDate('appointment_date', '<=', today()->addDays($days))
+            ->where('status', 'scheduled')
+            ->orderBy('appointment_date')
+            ->orderBy('appointment_time')
+            ->get();
+    }
 }

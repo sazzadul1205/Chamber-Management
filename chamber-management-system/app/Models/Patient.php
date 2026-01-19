@@ -214,4 +214,38 @@ class Patient extends Model
 
         return implode(', ', $summary);
     }
+
+
+    /**
+     * Get the appointments for the patient.
+     */
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class);
+    }
+
+    /**
+     * Get upcoming appointments for the patient.
+     */
+    public function upcomingAppointments()
+    {
+        return $this->appointments()
+            ->whereDate('appointment_date', '>=', today())
+            ->where('status', 'scheduled')
+            ->orderBy('appointment_date')
+            ->orderBy('appointment_time')
+            ->get();
+    }
+
+    /**
+     * Get appointment history for the patient.
+     */
+    public function appointmentHistory($limit = 10)
+    {
+        return $this->appointments()
+            ->orderBy('appointment_date', 'desc')
+            ->orderBy('appointment_time', 'desc')
+            ->limit($limit)
+            ->get();
+    }
 }

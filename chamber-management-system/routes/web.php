@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\DentalChairController;
 use App\Http\Controllers\DentalChartController;
@@ -104,6 +105,19 @@ Route::middleware('auth')->group(function () {
                 'dental-charts/tooth/{id}',
                 [SingleToothChartController::class, 'destroy']
             )->name('dental-charts.single.destroy');
+
+            // Additional appointment routes first
+            Route::get('appointments/calendar', [AppointmentController::class, 'calendar'])
+                ->name('appointments.calendar');
+            Route::get('appointments/dashboard', [AppointmentController::class, 'dashboard'])
+                ->name('appointments.dashboard');
+            Route::get('appointments/available-slots', [AppointmentController::class, 'getAvailableSlots'])
+                ->name('appointments.available-slots');
+            Route::post('appointments/{appointment}/status', [AppointmentController::class, 'updateStatus'])
+                ->name('appointments.update-status');
+
+            // THEN the resource route
+            Route::resource('appointments', AppointmentController::class);
         });
     });
 });

@@ -32,22 +32,22 @@ class DentalChair extends Model
      * Get the appointments for this chair.
      * Note: We'll uncomment this after creating Appointments table
      */
-    // public function appointments()
-    // {
-    //     return $this->hasMany(Appointment::class, 'chair_id');
-    // }
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class, 'chair_id');
+    }
 
     /**
      * Get current appointment (if any).
      */
-    // public function currentAppointment()
-    // {
-    //     return $this->appointments()
-    //         ->whereIn('status', ['checked_in', 'in_progress'])
-    //         ->whereDate('appointment_date', today())
-    //         ->latest()
-    //         ->first();
-    // }
+    public function currentAppointment()
+    {
+        return $this->appointments()
+            ->whereIn('status', ['checked_in', 'in_progress'])
+            ->whereDate('appointment_date', today())
+            ->latest()
+            ->first();
+    }
 
     /**
      * Check if chair is available.
@@ -100,19 +100,19 @@ class DentalChair extends Model
     /**
      * Update chair status based on current appointments.
      */
-    // public function updateStatusBasedOnAppointments()
-    // {
-    //     if ($this->status === 'maintenance') {
-    //         return; // Don't update if under maintenance
-    //     }
+    public function updateStatusBasedOnAppointments()
+    {
+        if ($this->status === 'maintenance') {
+            return; // Don't update if under maintenance
+        }
 
-    //     $hasActiveAppointment = $this->appointments()
-    //         ->whereIn('status', ['checked_in', 'in_progress'])
-    //         ->whereDate('appointment_date', today())
-    //         ->exists();
+        $hasActiveAppointment = $this->appointments()
+            ->whereIn('status', ['checked_in', 'in_progress'])
+            ->whereDate('appointment_date', today())
+            ->exists();
 
-    //     $this->update([
-    //         'status' => $hasActiveAppointment ? 'occupied' : 'available'
-    //     ]);
-    // }
+        $this->update([
+            'status' => $hasActiveAppointment ? 'occupied' : 'available'
+        ]);
+    }
 }
