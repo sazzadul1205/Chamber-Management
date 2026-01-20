@@ -1,0 +1,603 @@
+-- =========================
+-- ROLES & USERS
+-- =========================
+Table roles {
+  id int [pk, increment]
+  name varchar(50) [unique, not null]
+  created_at datetime
+  updated_at datetime
+}
+
+Table users {
+  id int [pk, increment]
+  role_id int [not null]
+  full_name varchar(100) [not null]
+  phone varchar(20) [unique, not null]
+  email varchar(100) [unique, null]  
+  password varchar(255) [not null]
+  status enum('active','inactive') [default: 'active']
+  created_at datetime
+  updated_at datetime
+  deleted_at datetime [null]
+}
+
+Ref: users.role_id > roles.id
+
+-- =========================
+-- DOCTORS (Extended User Profile)
+-- =========================
+Table doctors {
+  id int [pk, increment]
+  user_id int [unique, not null]
+  doctor_code varchar(20) [unique]
+  specialization varchar(100)
+  qualification varchar(255)
+  consultation_fee decimal(10,2)
+  commission_percent decimal(5,2)
+  status enum('active','inactive','on_leave') [default: 'active']
+  created_at datetime
+  updated_at datetime
+}
+
+Ref: doctors.user_id > users.id
+
+-- =========================
+-- PATIENTS & FAMILY
+-- =========================
+Table patients {
+  id int [pk, increment]
+  patient_code varchar(20) [unique, not null]
+  full_name varchar(100) [not null]
+  gender enum('male','female','other')
+  date_of_birth date
+  phone varchar(20) [unique, not null]
+  email varchar(100) [unique, null]
+  address text
+  emergency_contact varchar(20)
+  referred_by int [null]
+  status enum('active','inactive') [default: 'active']
+  medical_history text [null]
+  allergies text [null]
+  created_at datetime
+  updated_at datetime
+  deleted_at datetime [null]
+  created_by int
+  updated_by int
+}
+
+Table patient_family {
+  id int [pk, increment]
+  family_code varchar(20) [unique]
+  family_name varchar(100)
+  head_patient_id int
+  created_at datetime
+  updated_at datetime
+}
+
+Table patient_family_member {
+  id int [pk, increment]
+  family_id int
+  patient_id int
+  relationship enum('spouse','child','parent','sibling','other')
+  is_head boolean [default: false]
+  created_at datetime
+}
+
+Ref: patient_family.head_patient_id > patients.id
+Ref: patient_family_member.family_id > patient_family.id
+Ref: patient_family_member.patient_id > patients.id
+Ref: patients.referred_by > patients.id
+Ref: patients.created_by > users.id
+Ref: patients.updated_by > users.id
+
+-- =========================
+-- DENTAL CHAIRS & CHARTS
+-- =========================
+Table dental_chairs {
+  id int [pk, increment]
+  chair_code varchar(20) [unique]
+  name varchar(50) [not null]
+  location varchar(100)
+  status enum('available','occupied','maintenance','cleaning') [default: 'available']
+  last_used datetime [null]
+  notes text [null]
+  created_at datetime
+  updated_at datetime
+}
+
+Table dental_charts {
+  id int [pk, increment]
+  patient_id int
+  chart_date date
+  tooth_number varchar(5) [not null]
+  surface varchar(20) [null]
+  condition varchar(100)
+  procedure_done varchar(100) [null]
+  next_checkup date [null]
+  remarks text [null]
+  last_updated datetime
+  updated_by int
+}
+
+Ref: dental_charts.patient_id > patients.id
+Ref: dental_charts.updated_by > users.id
+
+-- =========================
+-- APPOINTMENTS (Enhanced)
+-- =========================
+Table appointments {
+  id int [pk, increment]
+  appointment_code varchar(20) [unique]
+  patient_id int
+  doctor_id int
+  chair_id int
+  appointment_type enum('regular','emergency','followup','consultation')
+  schedule_type enum('slot','fifo','walkin')
+  appointment_date date [not null]
+  appointment_time time [not null]
+  expected_duration int [comment: 'in minutes']
+  queue_no int [null]
+  status enum('scheduled','confirmed','checked_in','in_progress','completed','cancelled','no_show','rescheduled') [default: 'scheduled']
+  priority enum('normal','urgent','high') [default: 'normal']
+  chief_complaint text [null]
+  notes text [null]
+  reason_cancellation text [null]
+  checked_in_time datetime [null]
+  started_time datetime [null]
+  completed_time datetime [null]
+  created_at datetime
+  updated_at datetime
+  deleted_at datetime [null]
+  created_by int
+  updated_by int
+}
+
+Ref: appointments.patient_id > patients.id
+Ref: appointments.doctor_id > doctors.id
+Ref: appointments.chair_id > dental_chairs.id
+Ref: appointments.created_by > users.id
+Ref: appointments.updated_by > users.id
+
+-- =========================
+-- TREATMENTS & PROCEDURES (Enhanced)
+-- =========================
+Table treatments {
+  id int [pk, increment]
+  treatment_code varchar(20) [unique]
+  patient_id int
+  doctor_id int
+  appointment_id int
+  treatment_date date [not null]
+  diagnosis text [not null]
+  treatment_plan text [null]
+  total_cost decimal(10,2)
+  discount decimal(10,2) [default: 0]
+  status enum('planned','in_progress','completed','cancelled','followup_needed') [default: 'planned']
+  followup_date date [null]
+  followup_notes text [null]
+  created_at datetime
+  updated_at datetime
+  deleted_at datetime [null]
+  created_by int
+  updated_by int
+}
+
+Table treatment_procedures {
+  id int [pk, increment]
+  treatment_id int
+  procedure_code varchar(20)
+  procedure_name varchar(100) [not null]
+  tooth_number varchar(5) [null]
+  surface varchar(20) [null]
+  cost decimal(10,2) [not null]
+  duration int [comment: 'in minutes']
+  status enum('planned','in_progress','completed','cancelled') [default: 'planned']
+  notes text [null]
+  completed_at datetime [null]
+  completed_by int [null]
+}
+
+Ref: treatment_procedures.treatment_id > treatments.id
+Ref: treatment_procedures.completed_by > users.id
+Ref: treatments.patient_id > patients.id
+Ref: treatments.doctor_id > doctors.id
+Ref: treatments.appointment_id > appointments.id
+Ref: treatments.created_by > users.id
+Ref: treatments.updated_by > users.id
+
+-- =========================
+-- MEDICINES & PRESCRIPTIONS (Enhanced)
+-- =========================
+Table medicines {
+  id int [pk, increment]
+  medicine_code varchar(20) [unique]
+  brand_name varchar(100) [not null]
+  generic_name varchar(100) [not null]
+  strength varchar(50) [null]
+  dosage_form enum('tablet','capsule','syrup','injection','gel','ointment','mouthwash','other')
+  unit varchar(20) [default: 'pcs']
+  manufacturer varchar(100) [null]
+  status enum('active','inactive','discontinued') [default: 'active']
+  created_at datetime
+  updated_at datetime
+}
+
+Table prescriptions {
+  id int [pk, increment]
+  prescription_code varchar(20) [unique]
+  treatment_id int
+  prescription_date date [not null]
+  validity_days int [default: 7]
+  notes text [null]
+  status enum('active','used','expired','cancelled') [default: 'active']
+  created_at datetime
+  created_by int
+}
+
+Table prescription_items {
+  id int [pk, increment]
+  prescription_id int
+  medicine_id int
+  dosage varchar(50) [not null]
+  frequency varchar(50) [not null]
+  duration varchar(50) [not null]
+  route enum('oral','topical','inhalation','injection')
+  instructions varchar(255) [null]
+  quantity int [default: 1]
+  status enum('pending','dispensed','completed') [default: 'pending']
+}
+
+Ref: prescription_items.prescription_id > prescriptions.id
+Ref: prescription_items.medicine_id > medicines.id
+Ref: prescriptions.treatment_id > treatments.id
+Ref: prescriptions.created_by > users.id
+
+-- =========================
+-- MEDICAL FILES (Enhanced)
+-- =========================
+Table medical_files {
+  id int [pk, increment]
+  file_code varchar(20) [unique]
+  treatment_id int
+  patient_id int
+  file_type enum('xray','report','image','scan','prescription','consent_form','medical_history','other')
+  file_name varchar(255) [not null]
+  file_path varchar(500) [not null]
+  file_size int [comment: 'in bytes']
+  description text [null]
+  uploaded_at datetime
+  uploaded_by int
+  is_confidential boolean [default: false]
+}
+
+Ref: medical_files.treatment_id > treatments.id
+Ref: medical_files.patient_id > patients.id
+Ref: medical_files.uploaded_by > users.id
+
+-- =========================
+-- INVENTORY (Enhanced)
+-- =========================
+Table inventory_items {
+  id int [pk, increment]
+  item_code varchar(30) [unique]
+  name varchar(100) [not null]
+  category enum('consumable','instrument','equipment','medicine_related','dental_material','protective_gear','other')
+  subcategory varchar(50) [null]
+  unit varchar(20) [default: 'pcs']
+  description text [null]
+  manufacturer varchar(100) [null]
+  supplier varchar(100) [null]
+  reorder_level int [default: 10]
+  optimum_level int [null]
+  status enum('active','inactive','discontinued') [default: 'active']
+  created_at datetime
+  updated_at datetime
+}
+
+Table inventory_stock {
+  id int [pk, increment]
+  item_id int
+  opening_stock int [default: 0]
+  current_stock int [default: 0]
+  unit_cost decimal(10,2) [null]
+  selling_price decimal(10,2) [null]
+  last_purchase_date date [null]
+  expiry_date date [null]
+  location varchar(50) [null]
+  last_updated datetime
+  updated_by int
+}
+
+Table inventory_transactions {
+  id int [pk, increment]
+  transaction_code varchar(20) [unique]
+  item_id int
+  transaction_type enum('purchase','issue','return','adjustment','wastage','transfer')
+  quantity int [not null]
+  unit_price decimal(10,2) [null]
+  reference_id int [null]
+  reference_type enum('treatment','prescription','maintenance','other') [null]
+  notes text [null]
+  transaction_date datetime
+  created_by int
+}
+
+Table inventory_usage {
+  id int [pk, increment]
+  treatment_id int [null]
+  prescription_id int [null]
+  item_id int
+  used_quantity int [not null]
+  usage_type enum('treatment','prescription','maintenance','wastage','sample')
+  used_by int
+  used_for_patient_id int [null]
+  usage_date date
+  notes text [null]
+}
+
+Ref: inventory_stock.item_id > inventory_items.id
+Ref: inventory_stock.updated_by > users.id
+Ref: inventory_transactions.item_id > inventory_items.id
+Ref: inventory_transactions.created_by > users.id
+Ref: inventory_usage.item_id > inventory_items.id
+Ref: inventory_usage.treatment_id > treatments.id
+Ref: inventory_usage.prescription_id > prescriptions.id
+Ref: inventory_usage.used_by > users.id
+Ref: inventory_usage.used_for_patient_id > patients.id
+
+-- =========================
+-- BILLING & PAYMENTS (Enhanced)
+-- =========================
+Table invoices {
+  id int [pk, increment]
+  invoice_no varchar(20) [unique]
+  patient_id int
+  treatment_id int [null]
+  appointment_id int [null]
+  invoice_date date [not null]
+  due_date date [null]
+  subtotal decimal(10,2)
+  tax_amount decimal(10,2) [default: 0]
+  discount_amount decimal(10,2) [default: 0]
+  discount_percent decimal(5,2) [default: 0]
+  total_amount decimal(10,2)
+  paid_amount decimal(10,2) [default: 0]
+  balance_amount decimal(10,2) [virtual]
+  payment_terms varchar(100) [null]
+  status enum('draft','issued','partial','paid','overdue','cancelled','refunded') [default: 'draft']
+  notes text [null]
+  created_at datetime
+  updated_at datetime
+  deleted_at datetime [null]
+  created_by int
+  updated_by int
+}
+
+Table invoice_items {
+  id int [pk, increment]
+  invoice_id int
+  item_type enum('treatment','procedure','medicine','inventory','consultation','other')
+  item_id int [null]
+  description varchar(255) [not null]
+  quantity int [default: 1]
+  unit_price decimal(10,2)
+  discount decimal(10,2) [default: 0]
+  tax_percent decimal(5,2) [default: 0]
+  total_amount decimal(10,2)
+}
+
+Table payments {
+  id int [pk, increment]
+  payment_no varchar(20) [unique]
+  invoice_id int
+  patient_id int
+  payment_date datetime [not null]
+  payment_method enum('cash','card','mobile','bank_transfer','cheque','insurance','credit') [default: 'cash']
+  payment_type enum('full','partial','advance','refund')
+  amount decimal(10,2) [not null]
+  reference_no varchar(50) [null]
+  card_last_four varchar(4) [null]
+  bank_name varchar(100) [null]
+  remarks text [null]
+  status enum('pending','completed','failed','refunded') [default: 'completed']
+  created_at datetime
+  created_by int
+  updated_at datetime
+}
+
+Table receipts {
+  id int [pk, increment]
+  receipt_no varchar(20) [unique]
+  payment_id int
+  patient_id int
+  receipt_date datetime
+  amount_words varchar(255)
+  printed_at datetime [null]
+  printed_by int [null]
+  created_at datetime
+  created_by int
+}
+
+Ref: invoices.patient_id > patients.id
+Ref: invoices.treatment_id > treatments.id
+Ref: invoices.appointment_id > appointments.id
+Ref: invoices.created_by > users.id
+Ref: invoices.updated_by > users.id
+Ref: invoice_items.invoice_id > invoices.id
+Ref: payments.invoice_id > invoices.id
+Ref: payments.patient_id > patients.id
+Ref: payments.created_by > users.id
+Ref: receipts.payment_id > payments.id
+Ref: receipts.patient_id > patients.id
+Ref: receipts.printed_by > users.id
+Ref: receipts.created_by > users.id
+
+-- =========================
+-- AUDIT LOGS & SYSTEM
+-- =========================
+Table audit_logs {
+  id int [pk, increment]
+  user_id int
+  user_role varchar(50) [null]
+  action varchar(100) [not null]
+  table_name varchar(50) [not null]
+  record_id int [not null]
+  old_values json [null]
+  new_values json [null]
+  ip_address varchar(45) [null]
+  user_agent text [null]
+  action_time datetime
+}
+
+Table system_settings {
+  id int [pk, increment]
+  setting_key varchar(100) [unique]
+  setting_value text
+  setting_type enum('string','number','boolean','json','date')
+  category varchar(50)
+  description text [null]
+  is_public boolean [default: false]
+  updated_at datetime
+  updated_by int
+}
+
+Table notifications {
+  id int [pk, increment]
+  user_id int
+  notification_type enum('appointment','payment','inventory','system','alert')
+  title varchar(255) [not null]
+  message text [not null]
+  related_id int [null]
+  related_type varchar(50) [null]
+  is_read boolean [default: false]
+  priority enum('low','normal','high','urgent') [default: 'normal']
+  created_at datetime
+  read_at datetime [null]
+}
+
+Ref: audit_logs.user_id > users.id
+Ref: system_settings.updated_by > users.id
+Ref: notifications.user_id > users.id
+
+-- =========================
+-- ENUMS & LOOKUP TABLES
+-- =========================
+Table procedure_catalog {
+  id int [pk, increment]
+  procedure_code varchar(20) [unique]
+  procedure_name varchar(100) [not null]
+  category varchar(50)
+  standard_duration int [comment: 'in minutes']
+  standard_cost decimal(10,2)
+  description text [null]
+  status enum('active','inactive') [default: 'active']
+  created_at datetime
+  updated_at datetime
+}
+
+Table diagnosis_codes {
+  id int [pk, increment]
+  code varchar(20) [unique]
+  description varchar(255) [not null]
+  category varchar(50)
+  status enum('active','inactive') [default: 'active']
+}
+
+Table insurance_providers {
+  id int [pk, increment]
+  name varchar(100) [not null]
+  contact_person varchar(100) [null]
+  phone varchar(20) [null]
+  email varchar(100) [null]
+  address text [null]
+  status enum('active','inactive') [default: 'active']
+  created_at datetime
+  updated_at datetime
+}
+
+Table patient_insurance {
+  id int [pk, increment]
+  patient_id int
+  provider_id int
+  policy_no varchar(50) [not null]
+  coverage_type enum('full','partial','fixed')
+  coverage_amount decimal(10,2) [null]
+  expiry_date date
+  status enum('active','expired','cancelled') [default: 'active']
+  created_at datetime
+  updated_at datetime
+}
+
+Ref: patient_insurance.patient_id > patients.id
+Ref: patient_insurance.provider_id > insurance_providers.id
+
+-- =========================
+-- VIEWS for Reporting
+-- =========================
+View v_patient_appointments AS
+SELECT 
+  p.id as patient_id,
+  p.patient_code,
+  p.full_name,
+  p.phone,
+  p.email,
+  a.id as appointment_id,
+  a.appointment_date,
+  a.appointment_time,
+  a.status as appointment_status,
+  d.full_name as doctor_name,
+  dc.name as chair_name
+FROM patients p
+JOIN appointments a ON p.id = a.patient_id
+JOIN doctors doc ON a.doctor_id = doc.id
+JOIN users d ON doc.user_id = d.id
+LEFT JOIN dental_chairs dc ON a.chair_id = dc.id
+WHERE p.deleted_at IS NULL AND a.deleted_at IS NULL;
+
+View v_doctor_schedule AS
+SELECT 
+  d.id as doctor_id,
+  u.full_name as doctor_name,
+  a.appointment_date,
+  COUNT(CASE WHEN a.status IN ('scheduled','confirmed') THEN 1 END) as total_appointments,
+  COUNT(CASE WHEN a.status = 'completed' THEN 1 END) as completed_appointments,
+  SUM(CASE WHEN a.status = 'completed' THEN t.total_cost ELSE 0 END) as total_revenue
+FROM doctors d
+JOIN users u ON d.user_id = u.id
+LEFT JOIN appointments a ON d.id = a.doctor_id
+LEFT JOIN treatments t ON a.id = t.appointment_id
+GROUP BY d.id, u.full_name, a.appointment_date;
+
+View v_inventory_alerts AS
+SELECT 
+  i.id as item_id,
+  i.item_code,
+  i.name,
+  i.category,
+  s.current_stock,
+  i.reorder_level,
+  CASE 
+    WHEN s.current_stock <= i.reorder_level THEN 'low_stock'
+    WHEN s.current_stock = 0 THEN 'out_of_stock'
+    WHEN s.expiry_date IS NOT NULL AND s.expiry_date < CURDATE() THEN 'expired'
+    ELSE 'normal'
+  END as alert_status
+FROM inventory_items i
+JOIN inventory_stock s ON i.id = s.item_id
+WHERE i.status = 'active';
+
+View v_financial_summary AS
+SELECT 
+  DATE(i.invoice_date) as date,
+  COUNT(DISTINCT i.id) as total_invoices,
+  SUM(i.total_amount) as total_amount,
+  SUM(i.paid_amount) as paid_amount,
+  SUM(i.total_amount - i.paid_amount) as outstanding_amount,
+  COUNT(DISTINCT p.id) as total_patients,
+  COUNT(DISTINCT doc.id) as total_doctors
+FROM invoices i
+LEFT JOIN patients p ON i.patient_id = p.id
+LEFT JOIN treatments t ON i.treatment_id = t.id
+LEFT JOIN doctors doc ON t.doctor_id = doc.id
+WHERE i.status != 'cancelled'
+GROUP BY DATE(i.invoice_date);
