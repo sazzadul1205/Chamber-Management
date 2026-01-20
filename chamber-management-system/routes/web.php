@@ -11,6 +11,7 @@ use App\Http\Controllers\PatientFamilyMemberController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SingleToothChartController;
+use App\Http\Controllers\TreatmentController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -88,7 +89,7 @@ Route::middleware('auth')->group(function () {
                 ->name('dental-charts.visualization');
 
 
-            // Dental Chart (FULL RESOURCE) - This should come AFTER specific routes
+            // Dental Chart (FULL RESOURCE)
             Route::resource('dental-charts', DentalChartController::class);
 
             Route::get(
@@ -116,8 +117,21 @@ Route::middleware('auth')->group(function () {
             Route::post('appointments/{appointment}/status', [AppointmentController::class, 'updateStatus'])
                 ->name('appointments.update-status');
 
-            // THEN the resource route
+            // Appointment (FULL RESOURCE)
             Route::resource('appointments', AppointmentController::class);
+
+            // Additional treatment routes
+            Route::post('treatments/{treatment}/status', [TreatmentController::class, 'updateStatus'])
+                ->name('treatments.update-status');
+            Route::get('treatments/appointment/{appointment}/create', [TreatmentController::class, 'createFromAppointment'])
+                ->name('treatments.create-from-appointment');
+            Route::post('treatments/appointment/{appointment}/store', [TreatmentController::class, 'storeFromAppointment'])
+                ->name('treatments.store-from-appointment');
+            Route::get('treatments/patient/{patient}/history', [TreatmentController::class, 'patientHistory'])
+                ->name('treatments.patient-history');
+
+            // Treatment (FULL RESOURCE)
+            Route::resource('treatments', TreatmentController::class);
         });
     });
 });

@@ -276,4 +276,12 @@ class Appointment extends Model
             })
             ->orWhere('queue_no', 'like', "%{$search}%");
     }
+
+    /**
+     * Get the treatment associated with the appointment.
+     */
+    public function treatment()
+    {
+        return $this->hasOne(Treatment::class);
+    }
 }

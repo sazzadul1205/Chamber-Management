@@ -153,29 +153,20 @@
 
                 {{-- Treatments --}}
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon bi bi-file-medical"></i>
-                        <p>
-                            Treatments
-                            <i class="nav-arrow bi bi-chevron-right"></i>
-                        </p>
+                    <a href="{{ route('backend.treatments.index') }}" class="nav-link">
+                        <i class="nav-icon bi bi-circle"></i>
+                        <p>All Treatments</p>
                     </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon bi bi-circle"></i>
-                                <p>All Treatments</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon bi bi-circle"></i>
-                                <p>Treatment Procedures</p>
-                            </a>
-                        </li>
-                    </ul>
                 </li>
 
+                {{-- Treatment Procedures --}}
+                <li class="nav-item">
+                    {{-- <a href="{{ route('backend.treatment-procedures.index') }}" class="nav-link"> --}}
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon bi bi-circle"></i>
+                        <p>Treatment Procedures</p>
+                    </a>
+                </li>
                 {{-- Prescriptions --}}
                 <li class="nav-item">
                     <a href="#" class="nav-link">
