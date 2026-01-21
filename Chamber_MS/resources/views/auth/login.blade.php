@@ -4,7 +4,7 @@
 
             <!-- Logo / Brand -->
             <div class="text-center">
-                <img class="mx-auto h-16 w-auto" src="{{ asset('assets/logo.png') }}" alt="My App Logo">
+                <img class="mx-auto h-16 w-auto" src="{{ asset('assets/Website_Logo.png') }}" alt="My App Logo">
                 <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
                     Sign in to your account
                 </h2>
