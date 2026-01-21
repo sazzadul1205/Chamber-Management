@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProcedureCatalogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SystemSettingController;
@@ -52,6 +53,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings', [SystemSettingController::class, 'bulkUpdate'])
         ->name('backend.system-settings.bulk-update')
         ->middleware('auth');
+
+    Route::prefix('procedure-catalog')->name('backend.procedure-catalog.')->group(function () {
+
+        Route::get('/', [ProcedureCatalogController::class, 'index'])->name('index');
+        Route::get('/create', [ProcedureCatalogController::class, 'create'])->name('create');
+        Route::post('/', [ProcedureCatalogController::class, 'store'])->name('store');
+        Route::get('/{id}', [ProcedureCatalogController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [ProcedureCatalogController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [ProcedureCatalogController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ProcedureCatalogController::class, 'destroy'])->name('destroy');
+        Route::get('/import', [ProcedureCatalogController::class, 'import'])->name('import');
+        Route::get('/autocomplete', [ProcedureCatalogController::class, 'autocomplete'])->name('autocomplete');
+    });
 });
 
 require __DIR__ . '/auth.php';

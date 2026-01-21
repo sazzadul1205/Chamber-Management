@@ -42,6 +42,13 @@
         </svg>
     @break
 
+    @case('list')
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 12V20H20V4H4V7M7 8H17M7 12H17M7 16H13" stroke="#000000" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg>
+    @break
+
     @case('folder')
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h5l2 3h11v9H3z" />

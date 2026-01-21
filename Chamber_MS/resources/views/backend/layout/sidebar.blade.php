@@ -82,7 +82,11 @@
                 ['label' => 'Multi-Visit Tracking'],
                 ['label' => 'Treatment Progress'],
                 ['label' => 'Treatment Completion'],
-                ['label' => 'Procedure Catalog'],
+                [
+                    'label' => 'Procedure Catalog',
+                    'icon' => 'list',
+                    'route' => 'backend.procedure-catalog.index',
+                ],
                 ['label' => 'Treatment History'],
             ],
         ],
