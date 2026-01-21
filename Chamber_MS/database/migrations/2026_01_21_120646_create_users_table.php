@@ -15,12 +15,23 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('phone')->unique()->nullable()->default(NULL);
+
+            // Add role_id with default 1
+            $table->foreignId('role_id')
+                ->nullable(false)
+                ->default(1)
+                ->constrained('roles')
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
+
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
         });
     }
+
 
     /**
      * Reverse the migrations.
