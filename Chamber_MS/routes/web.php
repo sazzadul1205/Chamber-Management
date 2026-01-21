@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SystemSettingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,6 +42,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/{role}/restore', [RoleController::class, 'restore'])->name('restore');
         Route::delete('/{role}/force', [RoleController::class, 'forceDelete'])->name('force');
     });
+
+    // Display the settings page (GET)
+    Route::get('/settings', [SystemSettingController::class, 'index'])
+        ->name('backend.system-settings.index') // <-- matches your view
+        ->middleware('auth');
+
+    // Handle form submission (POST)
+    Route::post('/settings', [SystemSettingController::class, 'bulkUpdate'])
+        ->name('backend.system-settings.bulk-update')
+        ->middleware('auth');
 });
 
 require __DIR__ . '/auth.php';

@@ -186,7 +186,11 @@
                     'icon' => 'key',
                     'route' => 'backend.roles.index',
                 ],
-                ['label' => 'System Settings'],
+                [
+                    'label' => 'System Settings',
+                    'icon' => 'cog',
+                    'route' => 'backend.system-settings.index',
+                ],
                 ['label' => 'Backup & Restore'],
                 ['label' => 'Audit Logs'],
                 ['label' => 'Notifications'],
