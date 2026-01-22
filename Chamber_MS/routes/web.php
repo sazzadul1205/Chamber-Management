@@ -54,17 +54,21 @@ Route::middleware('auth')->group(function () {
         ->name('backend.system-settings.bulk-update')
         ->middleware('auth');
 
+    // Procedure Categories 
     Route::prefix('procedure-catalog')->name('backend.procedure-catalog.')->group(function () {
-
         Route::get('/', [ProcedureCatalogController::class, 'index'])->name('index');
+
+        // Static routes first
         Route::get('/create', [ProcedureCatalogController::class, 'create'])->name('create');
         Route::post('/', [ProcedureCatalogController::class, 'store'])->name('store');
+        Route::get('/import', [ProcedureCatalogController::class, 'import'])->name('import');
+        Route::get('/autocomplete', [ProcedureCatalogController::class, 'autocomplete'])->name('autocomplete');
+
+        // Dynamic routes last
         Route::get('/{procedureCatalog}', [ProcedureCatalogController::class, 'show'])->name('show');
         Route::get('/{procedureCatalog}/edit', [ProcedureCatalogController::class, 'edit'])->name('edit');
         Route::put('/{procedureCatalog}', [ProcedureCatalogController::class, 'update'])->name('update');
         Route::delete('/{procedureCatalog}', [ProcedureCatalogController::class, 'destroy'])->name('destroy');
-        Route::get('/import', [ProcedureCatalogController::class, 'import'])->name('import');
-        Route::get('/autocomplete', [ProcedureCatalogController::class, 'autocomplete'])->name('autocomplete');
     });
 });
 

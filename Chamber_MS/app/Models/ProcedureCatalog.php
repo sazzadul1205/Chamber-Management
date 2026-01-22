@@ -40,7 +40,12 @@ class ProcedureCatalog extends Model
     // Relationships
     public function treatmentProcedures()
     {
-        return $this->hasMany(TreatmentProcedure::class, 'procedure_code', 'procedure_code');
+        if (class_exists(\App\Models\TreatmentProcedure::class)) {
+            return $this->hasMany(\App\Models\TreatmentProcedure::class, 'procedure_code', 'procedure_code');
+        }
+
+        // Return an empty relation to avoid breaking queries
+        return $this->hasManyDummy();
     }
 
     // Helper methods
@@ -80,5 +85,11 @@ class ProcedureCatalog extends Model
     {
         $categories = self::categories();
         return $categories[$this->category] ?? ucfirst($this->category);
+    }
+
+    // Helper method to return an empty relation
+    protected function hasManyDummy()
+    {
+        return $this->hasMany(static::class)->whereRaw('1 = 0');
     }
 }

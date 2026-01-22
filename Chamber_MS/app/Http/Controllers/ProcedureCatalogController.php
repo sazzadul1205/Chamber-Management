@@ -35,7 +35,7 @@ class ProcedureCatalogController extends Controller
             ->orderBy('category')
             ->orderBy('procedure_name')
             ->paginate(9)
-            ->withQueryString(); 
+            ->withQueryString();
 
         $categories = ProcedureCatalog::categories();
 
@@ -98,8 +98,11 @@ class ProcedureCatalogController extends Controller
 
     public function destroy(ProcedureCatalog $procedureCatalog)
     {
-        // Check if procedure is being used
-        if ($procedureCatalog->treatmentProcedures()->exists()) {
+        // Only check if the class exists
+        if (
+            class_exists(\App\Models\TreatmentProcedure::class) &&
+            $procedureCatalog->treatmentProcedures()->exists()
+        ) {
             return redirect()->route('backend.procedure-catalog.index')
                 ->with('error', 'Cannot delete procedure. It is being used in treatments.');
         }
@@ -108,6 +111,7 @@ class ProcedureCatalogController extends Controller
         return redirect()->route('backend.procedure-catalog.index')
             ->with('success', 'Procedure deleted successfully.');
     }
+
 
     // API endpoint for autocomplete
     public function autocomplete(Request $request)
@@ -139,7 +143,7 @@ class ProcedureCatalogController extends Controller
     // Bulk import from CSV
     public function import()
     {
-        return view('backend.backend.procedure_catalog.import');
+        return view('backend.procedure_catalog.import');
     }
 
     public function processImport(Request $request)
