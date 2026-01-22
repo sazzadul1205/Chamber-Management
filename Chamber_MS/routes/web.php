@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DiagnosisCodeController;
 use App\Http\Controllers\InventoryItemController;
+use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\ProcedureCatalogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -109,6 +110,28 @@ Route::middleware('auth')->group(function () {
         Route::get('/{inventoryItem}', [InventoryItemController::class, 'show'])->name('show');
         Route::put('/{inventoryItem}', [InventoryItemController::class, 'update'])->name('update');
         Route::delete('/{inventoryItem}', [InventoryItemController::class, 'destroy'])->name('destroy');
+    });
+
+    // Medicines
+    Route::prefix('medicines')->name('backend.medicines.')->group(function () {
+
+        // CRUD base routes
+        Route::get('/', [MedicineController::class, 'index'])->name('index');
+        Route::get('/create', [MedicineController::class, 'create'])->name('create');
+        Route::post('/', [MedicineController::class, 'store'])->name('store');
+
+        // Static / utility routes first
+        Route::get('/export', [MedicineController::class, 'export'])->name('export');
+        Route::get('/import', [MedicineController::class, 'import'])->name('import');
+        Route::post('/process-import', [MedicineController::class, 'processImport'])->name('process-import');
+        Route::get('/autocomplete', [MedicineController::class, 'autocomplete'])->name('autocomplete');
+        Route::get('/generate-code', [MedicineController::class, 'generateCode'])->name('generate-code');
+
+        // Parameterized routes last
+        Route::get('/{medicine}/edit', [MedicineController::class, 'edit'])->name('edit');
+        Route::get('/{medicine}', [MedicineController::class, 'show'])->name('show');
+        Route::put('/{medicine}', [MedicineController::class, 'update'])->name('update');
+        Route::delete('/{medicine}', [MedicineController::class, 'destroy'])->name('destroy');
     });
 });
 
