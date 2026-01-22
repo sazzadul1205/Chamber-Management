@@ -133,7 +133,11 @@
             'title' => 'Inventory',
             'icon' => 'boxes',
             'items' => [
-                ['label' => 'Inventory Dashboard'],
+                [
+                    'label' => 'Inventory Dashboard',
+                    'route' => 'backend.inventory-items.index', // ← here!
+                    'icon' => 'grid',
+                ],
                 ['label' => 'Stock List'],
                 ['label' => 'Add / Update Stock'],
                 ['label' => 'Low Stock Alerts'],
@@ -262,7 +266,7 @@
                             @endphp
                             <a href="{{ $href }}"
                                 class="flex items-center gap-3 px-3 py-2 rounded transition
-                                                            {{ $active ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
+                                                                        {{ $active ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
                                 @include('partials.sidebar-icon', ['name' => $sub['icon'] ?? 'default'])
                                 <span>{{ $sub['label'] }}</span>
                             </a>
@@ -277,8 +281,9 @@
                     $active = $subRoute && $subRoute === $currentRoute;
                     $href = $subRoute ? route($subRoute) : '#';
                 @endphp
-                <a href="{{ $href }}" class="flex items-center gap-3 px-3 py-2 rounded transition font-semibold
-                                        {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}">
+                <a href="{{ $href }}"
+                    class="flex items-center gap-3 px-3 py-2 rounded transition font-semibold
+                                                {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}">
                     @include('partials.sidebar-icon', ['name' => $item['icon'] ?? 'default'])
                     <span>{{ $item['label'] }}</span>
                 </a>

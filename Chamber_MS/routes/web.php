@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DiagnosisCodeController;
+use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\ProcedureCatalogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -88,6 +89,26 @@ Route::middleware('auth')->group(function () {
         Route::get('/{diagnosisCode}', [DiagnosisCodeController::class, 'show'])->name('show');
         Route::put('/{diagnosisCode}', [DiagnosisCodeController::class, 'update'])->name('update');
         Route::delete('/{diagnosisCode}', [DiagnosisCodeController::class, 'destroy'])->name('destroy');
+    });
+
+    // Inventory Items
+    Route::prefix('inventory-items')->name('backend.inventory-items.')->group(function () {
+
+        // CRUD base routes
+        Route::get('/', [InventoryItemController::class, 'index'])->name('index');
+        Route::get('/create', [InventoryItemController::class, 'create'])->name('create');
+        Route::post('/', [InventoryItemController::class, 'store'])->name('store');
+
+        // Static / utility routes first
+        Route::get('/export', [InventoryItemController::class, 'export'])->name('export');
+        Route::get('/autocomplete', [InventoryItemController::class, 'autocomplete'])->name('autocomplete');
+        Route::get('/generate-code', [InventoryItemController::class, 'generateCode'])->name('generate-code');
+
+        // Parameterized routes last
+        Route::get('/{inventoryItem}/edit', [InventoryItemController::class, 'edit'])->name('edit');
+        Route::get('/{inventoryItem}', [InventoryItemController::class, 'show'])->name('show');
+        Route::put('/{inventoryItem}', [InventoryItemController::class, 'update'])->name('update');
+        Route::delete('/{inventoryItem}', [InventoryItemController::class, 'destroy'])->name('destroy');
     });
 });
 
