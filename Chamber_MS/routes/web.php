@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DiagnosisCodeController;
 use App\Http\Controllers\ProcedureCatalogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -69,6 +70,24 @@ Route::middleware('auth')->group(function () {
         Route::get('/{procedureCatalog}/edit', [ProcedureCatalogController::class, 'edit'])->name('edit');
         Route::put('/{procedureCatalog}', [ProcedureCatalogController::class, 'update'])->name('update');
         Route::delete('/{procedureCatalog}', [ProcedureCatalogController::class, 'destroy'])->name('destroy');
+    });
+
+    // Diagnosis Codes
+    Route::prefix('diagnosis-codes')->name('backend.diagnosis-codes.')->group(function () {
+        Route::get('/', [DiagnosisCodeController::class, 'index'])->name('index');
+        Route::get('/create', [DiagnosisCodeController::class, 'create'])->name('create');
+        Route::post('/', [DiagnosisCodeController::class, 'store'])->name('store');
+
+        // Static routes first
+        Route::get('/export', [DiagnosisCodeController::class, 'export'])->name('export');
+        Route::get('/autocomplete', [DiagnosisCodeController::class, 'autocomplete'])->name('autocomplete');
+        Route::post('/quick-add', [DiagnosisCodeController::class, 'quickAdd'])->name('quick-add');
+
+        // Parameterized routes last
+        Route::get('/{diagnosisCode}/edit', [DiagnosisCodeController::class, 'edit'])->name('edit');
+        Route::get('/{diagnosisCode}', [DiagnosisCodeController::class, 'show'])->name('show');
+        Route::put('/{diagnosisCode}', [DiagnosisCodeController::class, 'update'])->name('update');
+        Route::delete('/{diagnosisCode}', [DiagnosisCodeController::class, 'destroy'])->name('destroy');
     });
 });
 

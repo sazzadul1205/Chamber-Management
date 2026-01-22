@@ -87,6 +87,11 @@
                     'icon' => 'list',
                     'route' => 'backend.procedure-catalog.index',
                 ],
+                [
+                    'label' => 'Diagnosis Codes',
+                    'icon' => 'file-text',
+                    'route' => 'backend.diagnosis-codes.index',
+                ],
                 ['label' => 'Treatment History'],
             ],
         ],
@@ -242,8 +247,8 @@
                             @include('partials.sidebar-icon', ['name' => $item['icon'] ?? 'default'])
                             <span>{{ $item['title'] }}</span>
                         </div>
-                        <svg :class="{ 'rotate-180': open }" class="w-4 h-4 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg :class="{ 'rotate-180': open }" class="w-4 h-4 transition-transform duration-200" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
@@ -257,7 +262,7 @@
                             @endphp
                             <a href="{{ $href }}"
                                 class="flex items-center gap-3 px-3 py-2 rounded transition
-                                    {{ $active ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
+                                                            {{ $active ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
                                 @include('partials.sidebar-icon', ['name' => $sub['icon'] ?? 'default'])
                                 <span>{{ $sub['label'] }}</span>
                             </a>
@@ -272,9 +277,8 @@
                     $active = $subRoute && $subRoute === $currentRoute;
                     $href = $subRoute ? route($subRoute) : '#';
                 @endphp
-                <a href="{{ $href }}"
-                    class="flex items-center gap-3 px-3 py-2 rounded transition font-semibold
-                        {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}">
+                <a href="{{ $href }}" class="flex items-center gap-3 px-3 py-2 rounded transition font-semibold
+                                        {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}">
                     @include('partials.sidebar-icon', ['name' => $item['icon'] ?? 'default'])
                     <span>{{ $item['label'] }}</span>
                 </a>
@@ -294,8 +298,7 @@
 
         <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit"
-                class="w-full text-left flex items-center gap-2 px-3 py-2 rounded
+            <button type="submit" class="w-full text-left flex items-center gap-2 px-3 py-2 rounded
                            hover:bg-red-100 text-red-600 font-medium">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
