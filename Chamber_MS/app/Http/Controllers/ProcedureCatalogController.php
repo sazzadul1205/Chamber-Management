@@ -11,8 +11,8 @@ class ProcedureCatalogController extends Controller
     {
         $query = ProcedureCatalog::query();
 
-        // Search filter
-        if ($request->has('search') && $request->search != '') {
+        // Search
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('procedure_code', 'like', "%{$search}%")
@@ -22,20 +22,26 @@ class ProcedureCatalogController extends Controller
         }
 
         // Category filter
-        if ($request->has('category') && $request->category != 'all') {
+        if ($request->category && $request->category !== 'all') {
             $query->where('category', $request->category);
         }
 
         // Status filter
-        if ($request->has('status') && $request->status != 'all') {
+        if ($request->status && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
-        $procedures = $query->orderBy('category')->orderBy('procedure_name')->paginate(20);
+        $procedures = $query
+            ->orderBy('category')
+            ->orderBy('procedure_name')
+            ->paginate(9)
+            ->withQueryString(); 
+
         $categories = ProcedureCatalog::categories();
 
         return view('backend.procedure_catalog.index', compact('procedures', 'categories'));
     }
+
 
     public function create()
     {
