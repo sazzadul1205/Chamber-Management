@@ -1,117 +1,177 @@
 @extends('backend.layout.structure')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+    <div class="p-6 space-y-6">
 
-            <div class="card">
-                <div class="card-header">
-                    <h4>Edit Inventory Item</h4>
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-semibold">Edit Inventory Item</h2>
+
+            <a href="{{ route('backend.inventory-items.index') }}"
+                class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-medium transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+            </a>
+        </div>
+
+        <!-- Validation Errors -->
+        @if ($errors->any())
+            <div class="p-3 bg-red-100 text-red-700 rounded mb-4">
+                <ul class="list-disc list-inside text-sm">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <!-- Form -->
+        <form action="{{ route('backend.inventory-items.update', $inventoryItem->id) }}" method="POST" class="space-y-6">
+            @csrf
+            @method('PUT')
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- Item Code -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Item Code</label>
+                    <input type="text" name="item_code" id="item_code"
+                        value="{{ old('item_code', $inventoryItem->item_code) }}"
+                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400" required>
                 </div>
-                <div class="card-body">
 
-                    @if ($errors->any())
-                        <div class="alert alert-danger">
-                            <ul class="mb-0">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
+                <!-- Item Name -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+                    <input type="text" name="name" value="{{ old('name', $inventoryItem->name) }}"
+                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400" required>
+                </div>
 
-                    <form method="POST" action="{{ route('backend.inventory-items.update', $inventoryItem->id) }}">
-                        @csrf
-                        @method('PUT')
+                <!-- Category -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select name="category" id="category"
+                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400" required>
+                        <option value="">Select Category</option>
+                        @foreach ($categories as $key => $label)
+                            <option value="{{ $key }}"
+                                {{ old('category', $inventoryItem->category) == $key ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-                        <div class="mb-3">
-                            <label for="item_code" class="form-label">Item Code</label>
-                            <input type="text" name="item_code" id="item_code" class="form-control" value="{{ old('item_code', $inventoryItem->item_code) }}" required>
-                        </div>
+                <!-- Subcategory -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
+                    <select name="subcategory" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">
+                        <option value="">Select Subcategory</option>
+                        @foreach ($subcategories as $cat => $subs)
+                            @foreach ($subs as $sub)
+                                <option value="{{ $sub }}"
+                                    {{ old('subcategory', $inventoryItem->subcategory) == $sub ? 'selected' : '' }}>
+                                    {{ ucfirst(str_replace('_', ' ', $sub)) }}
+                                </option>
+                            @endforeach
+                        @endforeach
+                    </select>
+                </div>
 
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Item Name</label>
-                            <input type="text" name="name" id="name" class="form-control" value="{{ old('name', $inventoryItem->name) }}" required>
-                        </div>
+                <!-- Unit -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                    <select name="unit" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400"
+                        required>
+                        <option value="">Select Unit</option>
+                        @foreach ($units as $key => $label)
+                            <option value="{{ $key }}"
+                                {{ old('unit', $inventoryItem->unit) == $key ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-                        <div class="mb-3">
-                            <label for="category" class="form-label">Category</label>
-                            <select name="category" id="category" class="form-control" required>
-                                <option value="">Select Category</option>
-                                @foreach($categories as $key => $label)
-                                    <option value="{{ $key }}" {{ old('category', $inventoryItem->category) == $key ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                <!-- Reorder Level -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reorder Level</label>
+                    <input type="number" name="reorder_level"
+                        value="{{ old('reorder_level', $inventoryItem->reorder_level ?? 0) }}"
+                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400" required>
+                </div>
 
-                        <div class="mb-3">
-                            <label for="subcategory" class="form-label">Subcategory</label>
-                            <select name="subcategory" id="subcategory" class="form-control">
-                                <option value="">Select Subcategory</option>
-                                @foreach($subcategories as $cat => $subs)
-                                    @foreach($subs as $sub)
-                                        <option value="{{ $sub }}" {{ old('subcategory', $inventoryItem->subcategory) == $sub ? 'selected' : '' }}>{{ ucfirst(str_replace('_',' ',$sub)) }}</option>
-                                    @endforeach
-                                @endforeach
-                            </select>
-                        </div>
+                <!-- Optimum Level -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Optimum Level</label>
+                    <input type="number" name="optimum_level"
+                        value="{{ old('optimum_level', $inventoryItem->optimum_level ?? 0) }}"
+                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">
+                </div>
 
-                        <div class="mb-3">
-                            <label for="unit" class="form-label">Unit</label>
-                            <select name="unit" id="unit" class="form-control" required>
-                                <option value="">Select Unit</option>
-                                @foreach($units as $key => $label)
-                                    <option value="{{ $key }}" {{ old('unit', $inventoryItem->unit) == $key ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                <!-- Manufacturer -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
+                    <input type="text" name="manufacturer"
+                        value="{{ old('manufacturer', $inventoryItem->manufacturer) }}"
+                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">
+                </div>
 
-                        <div class="mb-3">
-                            <label for="reorder_level" class="form-label">Reorder Level</label>
-                            <input type="number" name="reorder_level" id="reorder_level" class="form-control" value="{{ old('reorder_level', $inventoryItem->reorder_level ?? 0) }}" required>
-                        </div>
+                <!-- Supplier -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                    <input type="text" name="supplier" value="{{ old('supplier', $inventoryItem->supplier) }}"
+                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">
+                </div>
 
-                        <div class="mb-3">
-                            <label for="optimum_level" class="form-label">Optimum Level</label>
-                            <input type="number" name="optimum_level" id="optimum_level" class="form-control" value="{{ old('optimum_level', $inventoryItem->optimum_level ?? 0) }}">
-                        </div>
+                <!-- Status -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select name="status" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">
+                        <option value="active" {{ old('status', $inventoryItem->status) == 'active' ? 'selected' : '' }}>
+                            Active</option>
+                        <option value="inactive"
+                            {{ old('status', $inventoryItem->status) == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        <option value="discontinued"
+                            {{ old('status', $inventoryItem->status) == 'discontinued' ? 'selected' : '' }}>Discontinued
+                        </option>
+                    </select>
+                </div>
 
-                        <div class="mb-3">
-                            <label for="manufacturer" class="form-label">Manufacturer</label>
-                            <input type="text" name="manufacturer" id="manufacturer" class="form-control" value="{{ old('manufacturer', $inventoryItem->manufacturer) }}">
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="supplier" class="form-label">Supplier</label>
-                            <input type="text" name="supplier" id="supplier" class="form-control" value="{{ old('supplier', $inventoryItem->supplier) }}">
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="description" class="form-label">Description</label>
-                            <textarea name="description" id="description" class="form-control">{{ old('description', $inventoryItem->description) }}</textarea>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Status</label>
-                            <select name="status" id="status" class="form-control" required>
-                                <option value="active" {{ old('status', $inventoryItem->status) == 'active' ? 'selected' : '' }}>Active</option>
-                                <option value="inactive" {{ old('status', $inventoryItem->status) == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                                <option value="discontinued" {{ old('status', $inventoryItem->status) == 'discontinued' ? 'selected' : '' }}>Discontinued</option>
-                            </select>
-                        </div>
-
-                        <div class="text-end">
-                            <a href="{{ route('backend.inventory-items.index') }}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Update Item</button>
-                        </div>
-
-                    </form>
-
+                <!-- Description -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea name="description" rows="4" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">{{ old('description', $inventoryItem->description) }}</textarea>
                 </div>
             </div>
 
-        </div>
+            <!-- Submit -->
+            <div class="flex justify-start">
+                <button type="submit"
+                    class="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Update Item
+                </button>
+            </div>
+        </form>
     </div>
-</div>
+@endsection
+
+@section('scripts')
+    <script>
+        document.getElementById('category')?.addEventListener('change', function() {
+            if (!this.value) return;
+            fetch(`{{ route('backend.inventory-items.generate-code') }}?category=${this.value}`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('item_code').value = data.code;
+                });
+        });
+    </script>
 @endsection

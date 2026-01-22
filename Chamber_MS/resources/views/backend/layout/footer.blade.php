@@ -1,5 +1,5 @@
 <!-- FOOTER -->
-<footer class="h-14 bg-white border-t flex items-center justify-between px-6 text-sm text-gray-500">
+<footer class="py-5 bg-white border-t flex items-center justify-between px-6 text-sm text-gray-500">
     <span>
         © {{ date('Y') }} My App. All rights reserved.
     </span>

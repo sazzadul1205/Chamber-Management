@@ -74,7 +74,8 @@ class InventoryItem extends Model
             return $this->hasOne(\App\Models\InventoryStock::class, 'item_id', 'id');
         }
 
-        return $this->hasOneDummy();
+        // Dummy relation to satisfy Eloquent
+        return $this->hasOne(static::class, 'id', 'id')->whereRaw('1 = 0');
     }
 
     public function transactions()
@@ -83,7 +84,7 @@ class InventoryItem extends Model
             return $this->hasMany(\App\Models\InventoryTransaction::class, 'item_id', 'id');
         }
 
-        return $this->hasManyDummy();
+        return $this->hasMany(static::class, 'id', 'id')->whereRaw('1 = 0');
     }
 
     public function usages()
@@ -92,8 +93,9 @@ class InventoryItem extends Model
             return $this->hasMany(\App\Models\InventoryUsage::class, 'item_id', 'id');
         }
 
-        return $this->hasManyDummy();
+        return $this->hasMany(static::class, 'id', 'id')->whereRaw('1 = 0');
     }
+
 
     protected function hasManyDummy()
     {

@@ -1,5 +1,5 @@
 <!-- NAVBAR -->
-<header class="h-16 bg-white border-b flex items-center justify-between px-6">
+<header class="py-2 bg-white border-b flex items-center justify-between px-6">
 
     <!-- Left: Sidebar Toggle + App Name -->
     <div class="flex items-center gap-4">
