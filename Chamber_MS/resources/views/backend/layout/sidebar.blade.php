@@ -112,6 +112,36 @@
         ],
 
         // ===============================
+        // DENTAL CHAIRS
+        // ===============================
+        [
+            'title' => 'Dental Chairs',
+            'icon' => 'Bed',
+            'items' => [
+                [
+                    'label' => 'Dashboard',
+                    'icon' => 'grid',
+                    'route' => 'backend.dental-chairs.dashboard',
+                ],
+                [
+                    'label' => 'Chair List',
+                    'icon' => 'Bed',
+                    'route' => 'backend.dental-chairs.index',
+                ],
+                [
+                    'label' => 'Add New Chair',
+                    'icon' => 'Add-Circle',
+                    'route' => 'backend.dental-chairs.create',
+                ],
+                [
+                    'label' => 'Chair Schedule',
+                    'icon' => 'Schedule',
+                    'route' => 'backend.dental-chairs.schedule',
+                ],
+            ],
+        ],
+
+        // ===============================
         // PRESCRIPTIONS
         // ===============================
         [
@@ -139,7 +169,7 @@
             'items' => [
                 [
                     'label' => 'Inventory Dashboard',
-                    'route' => 'backend.inventory-items.index', // ← here!
+                    'route' => 'backend.inventory-items.index',
                     'icon' => 'grid',
                 ],
                 ['label' => 'Stock List'],

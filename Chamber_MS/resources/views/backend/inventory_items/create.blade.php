@@ -137,17 +137,7 @@
             </div>
 
             <!-- Submit -->
-            <div class="flex justify-start">
-                <button type="submit"
-                    class="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Save Item
-                </button>
-            </div>
-
+            <x-back-submit-buttons back-url="{{ route('backend.inventory-items.index') }}" submit-text="Save Item" />
         </form>
     </div>
 @endsection

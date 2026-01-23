@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DentalChairController;
 use App\Http\Controllers\DiagnosisCodeController;
 use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\MedicineController;
@@ -132,6 +133,31 @@ Route::middleware('auth')->group(function () {
         Route::get('/{medicine}', [MedicineController::class, 'show'])->name('show');
         Route::put('/{medicine}', [MedicineController::class, 'update'])->name('update');
         Route::delete('/{medicine}', [MedicineController::class, 'destroy'])->name('destroy');
+    });
+
+    // Dental Chairs
+    Route::prefix('dental-chairs')->name('backend.dental-chairs.')->group(function () {
+
+        // CRUD base routes
+        Route::get('/', [DentalChairController::class, 'index'])->name('index');
+        Route::get('/create', [DentalChairController::class, 'create'])->name('create');
+        Route::post('/', [DentalChairController::class, 'store'])->name('store');
+
+        // Static / utility routes first
+        Route::get('/dashboard', [DentalChairController::class, 'dashboard'])->name('dashboard');
+        Route::get('/schedule', [DentalChairController::class, 'schedule'])->name('schedule');
+        Route::get('/generate-code', [DentalChairController::class, 'generateCode'])->name('generate-code');
+
+        // API / status routes
+        Route::get('/api/available-chairs', [DentalChairController::class, 'getAvailableChairs'])->name('available-chairs');
+        Route::post('/{dentalChair}/update-status', [DentalChairController::class, 'updateStatus'])->name('update-status');
+        Route::post('/{dentalChair}/quick-status-change', [DentalChairController::class, 'quickStatusChange'])->name('quick-status-change');
+
+        // Parameterized CRUD routes last
+        Route::get('/{dentalChair}', [DentalChairController::class, 'show'])->name('show');
+        Route::get('/{dentalChair}/edit', [DentalChairController::class, 'edit'])->name('edit');
+        Route::put('/{dentalChair}', [DentalChairController::class, 'update'])->name('update');
+        Route::delete('/{dentalChair}', [DentalChairController::class, 'destroy'])->name('destroy');
     });
 });
 

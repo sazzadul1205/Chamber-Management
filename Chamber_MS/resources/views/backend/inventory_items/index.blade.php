@@ -197,9 +197,11 @@
                                         ])
                                     </a>
 
-                                    <button type="button"
-                                        class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs delete-item"
-                                        data-id="{{ $item->id }}" data-name="{{ $item->name }}">
+                                    <!-- Delete Button using component -->
+                                    <button type="button" data-modal-target="deleteModal"
+                                        data-route="{{ route('backend.inventory-items.destroy', $item->id) }}"
+                                        data-name="{{ $item->name }}"
+                                        class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs">
                                         @include('partials.sidebar-icon', [
                                             'name' => 'B_Delete',
                                             'class' => 'w-4 h-4',
@@ -219,78 +221,11 @@
             </table>
 
             <!-- Pagination -->
-            @if ($inventoryItems->lastPage() > 1)
-                <div class="mt-3 flex justify-center items-center space-x-4 px-4 py-3 bg-white border rounded shadow-sm">
-
-                    @if ($inventoryItems->onFirstPage())
-                        <span class="px-3 py-1 text-gray-400 bg-gray-100 rounded cursor-not-allowed">
-                            Previous
-                        </span>
-                    @else
-                        <a href="{{ $inventoryItems->previousPageUrl() }}"
-                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded">
-                            Previous
-                        </a>
-                    @endif
-
-                    <span class="text-sm font-medium text-gray-700">
-                        Page {{ $inventoryItems->currentPage() }} of {{ $inventoryItems->lastPage() }}
-                    </span>
-
-                    @if ($inventoryItems->hasMorePages())
-                        <a href="{{ $inventoryItems->nextPageUrl() }}"
-                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded">
-                            Next
-                        </a>
-                    @else
-                        <span class="px-3 py-1 text-gray-400 bg-gray-100 rounded cursor-not-allowed">
-                            Next
-                        </span>
-                    @endif
-
-                </div>
-            @endif
+            <x-pagination :paginator="$inventoryItems" class="mt-3" />
 
         </div>
     </div>
 
-    <!-- Delete Modal -->
-    <div id="deleteItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded shadow-lg w-full max-w-md p-6">
-            <h3 class="text-lg font-semibold mb-4">Delete Inventory Item</h3>
-            <p class="mb-2">
-                Are you sure you want to delete "<span id="deleteItemName" class="font-medium"></span>"?
-            </p>
-            <p class="text-red-600 text-sm mb-4">This action cannot be undone!</p>
-            <div class="flex justify-end gap-2">
-                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">
-                    Cancel
-                </button>
-                <form id="deleteItemForm" method="POST">
-                    @csrf
-                    @method('DELETE')
-                    <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded">
-                        Delete
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.delete-item').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.getElementById('deleteItemName').textContent = btn.dataset.name;
-                    document.getElementById('deleteItemForm').action =
-                        `/inventory-items/${btn.dataset.id}`;
-                    document.getElementById('deleteItemModal').classList.remove('hidden');
-                });
-            });
-        });
-
-        function closeDeleteModal() {
-            document.getElementById('deleteItemModal').classList.add('hidden');
-        }
-    </script>
+    <!-- Delete Modal Component -->
+    <x-delete-modal id="deleteModal" title="Delete Dental Chair" message="Are you sure?" :route="null" />
 @endsection
