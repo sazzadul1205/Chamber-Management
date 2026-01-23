@@ -59,11 +59,18 @@
         // ===============================
         [
             'title' => 'Doctors',
-            'icon' => 'stethoscope',
+            'icon' => 'Doctor',
             'items' => [
-                ['label' => 'Doctor Registration'],
-                ['label' => 'Doctor List'],
-                ['label' => 'Doctor Profile'],
+                [
+                    'label' => 'Doctor Registration',
+                    'icon' => 'User-Plus',
+                    'route' => 'backend.doctors.create',
+                ],
+                [
+                    'label' => 'Doctor List',
+                    'icon' => 'list',
+                    'route' => 'backend.doctors.index',
+                ],
                 ['label' => 'Doctor Schedule'],
                 ['label' => 'Leave Management'],
                 ['label' => 'Commission Reports'],
