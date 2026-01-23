@@ -23,14 +23,18 @@
         // ===============================
         [
             'title' => 'Patients',
-            'icon' => 'users',
+            'icon' => 'Patient',
             'items' => [
-                ['label' => 'Patient Registration'],
-                ['label' => 'Patient List'],
-                ['label' => 'Patient Profile'],
-                ['label' => 'Edit Patient'],
-                ['label' => 'Patient Search'],
-                ['label' => 'Patient History'],
+                [
+                    'label' => 'Patient Registration',
+                    'icon' => 'User-Plus',
+                    'route' => 'backend.patients.create',
+                ],
+                [
+                    'label' => 'Patient List',
+                    'icon' => 'list',
+                    'route' => 'backend.patients.index',
+                ],
                 ['label' => 'Family Management'],
                 ['label' => 'Referral Tracking'],
             ],

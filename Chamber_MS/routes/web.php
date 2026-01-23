@@ -5,6 +5,7 @@ use App\Http\Controllers\DiagnosisCodeController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\MedicineController;
+use App\Http\Controllers\PatientController;
 use App\Http\Controllers\ProcedureCatalogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -204,6 +205,24 @@ Route::middleware('auth')->group(function () {
         Route::get('/{doctor}/edit', [DoctorController::class, 'edit'])->name('edit');
         Route::put('/{doctor}', [DoctorController::class, 'update'])->name('update');
         Route::delete('/{doctor}', [DoctorController::class, 'destroy'])->name('destroy');
+    });
+
+    // Patients Management
+    Route::prefix('patients')->name('backend.patients.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [PatientController::class, 'index'])->name('index');
+        Route::get('/create', [PatientController::class, 'create'])->name('create');
+        Route::post('/', [PatientController::class, 'store'])->name('store');
+
+        // Utility (if needed, e.g., code generation)
+        Route::get('/generate-code', [PatientController::class, 'generateCode'])->name('generate-code');
+
+        // Parameterized routes LAST
+        Route::get('/{patient}', [PatientController::class, 'show'])->name('show');
+        Route::get('/{patient}/edit', [PatientController::class, 'edit'])->name('edit');
+        Route::put('/{patient}', [PatientController::class, 'update'])->name('update');
+        Route::delete('/{patient}', [PatientController::class, 'destroy'])->name('destroy');
     });
 });
 

@@ -28,95 +28,111 @@ class Doctor extends Model
         'updated_at' => 'datetime',
     ];
 
-    // Relationships
+    /* ==========================================================
+     | RELATIONSHIPS (PURE — NEVER RETURN COLLECTIONS HERE)
+     ========================================================== */
+
     public function user()
     {
         return $this->belongsTo(User::class)->withDefault([
             'full_name' => 'Demo Doctor',
-            'phone' => '0000000000',
-            'email' => 'demo@example.com',
+            'phone'     => '0000000000',
+            'email'     => 'demo@example.com',
         ]);
     }
 
     public function appointments()
     {
-        if (!Schema::hasTable('appointments')) {
-            return new Collection([
-                (object)[
-                    'id' => 0,
-                    'patient_name' => 'Demo Patient',
-                    'appointment_date' => now(),
-                    'status' => 'scheduled',
-                ]
-            ]);
-        }
-
-        $appointments = $this->hasMany(Appointment::class, 'doctor_id')->get();
-        return $appointments->isEmpty() ? new Collection([
-            (object)[
-                'id' => 0,
-                'patient_name' => 'Demo Patient',
-                'appointment_date' => now(),
-                'status' => 'scheduled',
-            ]
-        ]) : $appointments;
+        return $this->hasMany(Appointment::class);
     }
 
     public function treatments()
     {
-        if (!Schema::hasTable('treatments')) {
-            return new Collection([
-                (object)[
-                    'id' => 0,
-                    'patient_id' => 0,
-                    'description' => 'Demo Treatment',
-                    'status' => 'pending',
-                ]
-            ]);
-        }
-
-        $treatments = $this->hasMany(Treatment::class, 'doctor_id')->get();
-        return $treatments->isEmpty() ? new Collection([
-            (object)[
-                'id' => 0,
-                'patient_id' => 0,
-                'description' => 'Demo Treatment',
-                'status' => 'pending',
-            ]
-        ]) : $treatments;
+        return $this->hasMany(Treatment::class);
     }
 
     public function treatmentSessions()
     {
-        if (!Schema::hasTable('treatment_sessions') || !Schema::hasTable('treatments')) {
-            return new Collection([
-                (object)[
-                    'id' => 0,
-                    'treatment_id' => 0,
-                    'session_date' => now(),
-                    'notes' => 'Demo Session',
-                ]
-            ]);
-        }
-
-        $sessions = $this->hasManyThrough(
+        return $this->hasManyThrough(
             TreatmentSession::class,
             Treatment::class,
             'doctor_id',
             'treatment_id'
-        )->get();
-
-        return $sessions->isEmpty() ? new Collection([
-            (object)[
-                'id' => 0,
-                'treatment_id' => 0,
-                'session_date' => now(),
-                'notes' => 'Demo Session',
-            ]
-        ]) : $sessions;
+        );
     }
 
-    // Scopes
+    /* ==========================================================
+     | SAFE ACCESSORS (YOUR 2 RULES IMPLEMENTED HERE)
+     ========================================================== */
+
+    public function getSafeAppointmentsAttribute(): ?Collection
+    {
+        // Rule 2: table missing → demo data
+        if (!Schema::hasTable('appointments')) {
+            return collect([
+                (object) [
+                    'id' => 0,
+                    'appointment_date' => now(),
+                    'status' => 'scheduled',
+                    'patient' => (object) ['full_name' => 'Demo Patient'],
+                ],
+            ]);
+        }
+
+        // Rule 1: table exists, no data → null
+        if (!$this->appointments()->exists()) {
+            return null;
+        }
+
+        return $this->appointments;
+    }
+
+    public function getSafeTreatmentsAttribute(): ?Collection
+    {
+        if (!Schema::hasTable('treatments')) {
+            return collect([
+                (object) [
+                    'id' => 0,
+                    'description' => 'Demo Treatment',
+                    'status' => 'pending',
+                    'patient' => (object) ['full_name' => 'Demo Patient'],
+                ],
+            ]);
+        }
+
+        if (!$this->treatments()->exists()) {
+            return null;
+        }
+
+        return $this->treatments;
+    }
+
+    public function getSafeTreatmentSessionsAttribute(): ?Collection
+    {
+        if (
+            !Schema::hasTable('treatment_sessions') ||
+            !Schema::hasTable('treatments')
+        ) {
+            return collect([
+                (object) [
+                    'id' => 0,
+                    'session_date' => now(),
+                    'notes' => 'Demo Session',
+                ],
+            ]);
+        }
+
+        if (!$this->treatmentSessions()->exists()) {
+            return null;
+        }
+
+        return $this->treatmentSessions;
+    }
+
+    /* ==========================================================
+     | SCOPES
+     ========================================================== */
+
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
@@ -132,7 +148,10 @@ class Doctor extends Model
         return $query->where('specialization', 'like', "%{$specialization}%");
     }
 
-    // Helper Methods
+    /* ==========================================================
+     | HELPERS (SAFE — NO DB SIDE EFFECTS)
+     ========================================================== */
+
     public function getFullNameAttribute()
     {
         return $this->user->full_name ?? 'Demo Doctor';
@@ -148,17 +167,6 @@ class Doctor extends Model
         return $this->user->email ?? 'demo@example.com';
     }
 
-    public function getStatusBadge()
-    {
-        $badges = [
-            'active' => 'success',
-            'inactive' => 'secondary',
-            'on_leave' => 'warning',
-        ];
-
-        return '<span class="badge bg-' . ($badges[$this->status] ?? 'secondary') . '">' . ucfirst(str_replace('_', ' ', $this->status)) . '</span>';
-    }
-
     public function getFormattedConsultationFee()
     {
         return '৳ ' . number_format($this->consultation_fee ?? 0, 2);
@@ -169,26 +177,27 @@ class Doctor extends Model
         return ($this->commission_percent ?? 0) . '%';
     }
 
-    public function getTotalEarnings()
+    public function getTotalAppointments()
     {
-        return 0;
+        return Schema::hasTable('appointments')
+            ? $this->appointments()->count()
+            : 0;
     }
 
     public function getTotalPatients()
     {
-        return $this->treatments()->pluck('patient_id')->unique()->count() ?? 0;
-    }
-
-    public function getTotalAppointments()
-    {
-        return $this->appointments()->count() ?? 0;
+        return Schema::hasTable('treatments')
+            ? $this->treatments()->distinct('patient_id')->count('patient_id')
+            : 0;
     }
 
     public function getUpcomingAppointments()
     {
-        return $this->appointments()
-            ->where('appointment_date', '>=', now()->format('Y-m-d'))
+        return Schema::hasTable('appointments')
+            ? $this->appointments()
+            ->whereDate('appointment_date', '>=', now())
             ->where('status', 'scheduled')
-            ->count() ?? 0;
+            ->count()
+            : 0;
     }
 }
