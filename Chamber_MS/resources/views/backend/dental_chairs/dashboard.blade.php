@@ -53,9 +53,25 @@
         </div>
 
         {{-- Chairs --}}
+        {{-- Chairs --}}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @php
+                $statusColors = [
+                    'available' => 'bg-green-100 text-green-700',
+                    'occupied' => 'bg-yellow-100 text-yellow-700',
+                    'maintenance' => 'bg-red-100 text-red-700',
+                ];
+
+                $appointmentStatusColors = [
+                    'in_progress' => 'bg-yellow-100 text-yellow-700',
+                    'completed' => 'bg-blue-100 text-blue-700',
+                    'cancelled' => 'bg-red-100 text-red-700',
+                ];
+            @endphp
+
             @foreach ($chairs as $chair)
                 <div class="bg-white rounded-2xl shadow hover:shadow-lg transition overflow-hidden">
+                    {{-- Header --}}
                     <div class="flex items-center justify-between px-5 py-4 border-b">
                         <div>
                             <h5 class="font-semibold flex items-center gap-2">
@@ -65,22 +81,22 @@
                             <p class="text-xs text-gray-500">{{ $chair->chair_code }}</p>
                         </div>
 
+                        {{-- Status Badge --}}
                         <span
-                            class="px-3 py-1 text-xs font-semibold rounded-full
-                    @if ($chair->status === 'available') bg-green-100 text-green-700
-                    @elseif($chair->status === 'occupied') bg-yellow-100 text-yellow-700
-                    @elseif($chair->status === 'maintenance') bg-red-100 text-red-700
-                    @else bg-blue-100 text-blue-700 @endif">
+                            class="px-3 py-1 text-xs font-semibold rounded-full {{ $statusColors[$chair->status] ?? 'bg-blue-100 text-blue-700' }}">
                             {{ $chair->status_name }}
                         </span>
                     </div>
 
+                    {{-- Body --}}
                     <div class="p-5 text-sm text-gray-700">
+                        {{-- Location --}}
                         <div class="flex items-center gap-2 mb-3 text-gray-500">
                             <i class="fas fa-map-marker-alt"></i>
                             {{ $chair->location ?? 'Not specified' }}
                         </div>
 
+                        {{-- Current Appointment --}}
                         @if ($chair->currentAppointment)
                             <div class="bg-gray-50 rounded-xl p-4">
                                 <h6 class="font-semibold mb-2 flex items-center gap-2">
@@ -89,20 +105,14 @@
                                 </h6>
 
                                 <div class="mb-1"><strong>Name:</strong>
-                                    {{ $chair->currentAppointment->patient->full_name ?? 'N/A' }}
-                                </div>
+                                    {{ $chair->currentAppointment->patient->full_name ?? 'N/A' }}</div>
                                 <div class="mb-1"><strong>Doctor:</strong>
-                                    {{ $chair->currentAppointment->doctor->user->full_name ?? 'N/A' }}
-                                </div>
+                                    {{ $chair->currentAppointment->doctor->user->full_name ?? 'N/A' }}</div>
                                 <div class="mb-1"><strong>Appointment:</strong>
-                                    {{ $chair->currentAppointment->appointment_time }}
-                                </div>
+                                    {{ $chair->currentAppointment->appointment_time }}</div>
 
                                 <span
-                                    class="inline-block mt-2 px-3 py-1 text-xs rounded-full
-                            {{ $chair->currentAppointment->status === 'in_progress'
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : 'bg-blue-100 text-blue-700' }}">
+                                    class="inline-block mt-2 px-3 py-1 text-xs rounded-full {{ $appointmentStatusColors[$chair->currentAppointment->status] ?? 'bg-blue-100 text-blue-700' }}">
                                     {{ ucfirst($chair->currentAppointment->status) }}
                                 </span>
                             </div>
@@ -111,13 +121,12 @@
                                 <i class="fas fa-chair text-4xl mb-3"></i>
                                 <p>No current appointment</p>
                                 @if ($chair->last_used)
-                                    <p class="text-xs mt-1">
-                                        Last used: {{ $chair->formatted_last_used }}
-                                    </p>
+                                    <p class="text-xs mt-1">Last used: {{ $chair->formatted_last_used }}</p>
                                 @endif
                             </div>
                         @endif
 
+                        {{-- Notes --}}
                         @if ($chair->notes)
                             <div class="border-t mt-4 pt-3 text-xs text-gray-500 flex gap-2">
                                 <i class="fas fa-sticky-note"></i>

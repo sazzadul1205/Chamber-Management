@@ -227,7 +227,11 @@
             'title' => 'System',
             'icon' => 'Settings',
             'items' => [
-                ['label' => 'User Management'],
+                [
+                    'label' => 'User Management',
+                    'icon' => 'User',
+                    'route' => 'backend.user.index',
+                ],
                 [
                     'label' => 'Roles & Permissions',
                     'icon' => 'key',

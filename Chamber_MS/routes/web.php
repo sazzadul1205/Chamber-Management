@@ -8,6 +8,7 @@ use App\Http\Controllers\ProcedureCatalogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SystemSettingController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -158,6 +159,31 @@ Route::middleware('auth')->group(function () {
         Route::get('/{dentalChair}/edit', [DentalChairController::class, 'edit'])->name('edit');
         Route::put('/{dentalChair}', [DentalChairController::class, 'update'])->name('update');
         Route::delete('/{dentalChair}', [DentalChairController::class, 'destroy'])->name('destroy');
+    });
+
+    // Users Management
+    Route::prefix('users')->name('backend.user.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/create', [UserController::class, 'create'])->name('create');
+        Route::post('/', [UserController::class, 'store'])->name('store');
+
+        // Utility
+        Route::post('/{user}/reset-password', [UserController::class, 'resetPassword'])
+            ->name('reset-password');
+
+        // Soft delete handling
+        Route::post('/{user}/restore', [UserController::class, 'restore'])
+            ->name('restore');
+        Route::delete('/{user}/force', [UserController::class, 'forceDelete'])
+            ->name('force');
+
+        // Parameterized routes LAST
+        Route::get('/{user}', [UserController::class, 'show'])->name('show');
+        Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
+        Route::put('/{user}', [UserController::class, 'update'])->name('update');
+        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
     });
 });
 
