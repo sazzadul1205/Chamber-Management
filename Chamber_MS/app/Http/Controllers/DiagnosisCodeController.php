@@ -26,7 +26,7 @@ class DiagnosisCodeController extends Controller
             $query->where('status', $request->status);
         }
 
-        $diagnosisCodes = $query->orderBy('category')->orderBy('code')->paginate(9);
+        $diagnosisCodes = $query->orderBy('category')->orderBy('code')->paginate(12);
         $categories = DiagnosisCode::categories();
 
         return view('backend.diagnosis_codes.index', compact('diagnosisCodes', 'categories'));

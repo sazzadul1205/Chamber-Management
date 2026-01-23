@@ -1,7 +1,7 @@
 @extends('backend.layout.structure')
 
 @section('content')
-    <div class="p-6 space-y-6">
+    <div class="space-y-6">
 
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-4">
@@ -10,7 +10,7 @@
                 <!-- TV Display -->
                 <a href="{{ route('backend.dental-chairs.dashboard') }}" target="_blank"
                     class="flex items-center gap-2 px-4 py-2 bg-gray-300 hover:bg-gray-200 text-gray-800 rounded-md text-sm font-medium transition">
-                    @include('partials.sidebar-icon', ['name' => 'B_TV', 'class' => 'w-4 h-4'])
+                    @include('partials.icons', ['name' => 'TV', 'class' => 'w-4 h-4'])
                     <span>TV Display</span>
                 </a>
 
@@ -77,8 +77,8 @@
 
             <div class="md:col-span-1">
                 <a href="{{ route('backend.dental-chairs.schedule') }}"
-                    class="w-full flex justify-center items-center bg-gray-300 hover:bg-gray-200 text-gray-800 rounded px-3 py-2">
-                    @include('partials.sidebar-icon', ['name' => 'B_Calendar', 'class' => 'w-4 h-4'])
+                    class="w-full gap-2 flex justify-center items-center bg-gray-300 hover:bg-gray-200 text-gray-800 rounded px-3 py-2">
+                    @include('partials.icons', ['name' => 'Schedule', 'class' => 'w-4 h-4'])
                     <span>Schedule</span>
                 </a>
             </div>

@@ -1,7 +1,7 @@
 @extends('backend.layout.structure')
 
 @section('content')
-    <div class="p-6 space-y-6">
+    <div class=" space-y-6">
 
         <!-- Header -->
         <div class="flex justify-between items-center mb-6">
@@ -98,18 +98,10 @@
 
             </div>
 
-            <!-- Submit Button -->
-            <div class="flex justify-start mt-4">
-                <button type="submit"
-                    class="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition">
-                    <!-- SVG Save Icon -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Save Procedure
-                </button>
-            </div>
+            <!-- Submit -->
+            <x-back-submit-buttons back-url="{{ route('backend.procedure-catalog.index') }}"
+                submit-text="Save Procedure" />
+
 
         </form>
     </div>

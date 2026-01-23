@@ -1,6 +1,7 @@
 @extends('backend.layout.structure')
 
 @section('content')
+    {{-- Header --}}
     <div class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md">
         <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
@@ -25,7 +26,8 @@
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-6 py-6">
+    {{-- Content --}}
+    <div class=" mx-auto px-6 py-6">
 
         {{-- Stats --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -134,9 +136,8 @@
             Last updated: {{ now()->format('h:i:s A') }}
         </div>
     </div>
-@endsection
 
-@section('scripts')
+    {{-- Scripts --}}
     <script>
         function updateTime() {
             const now = new Date();

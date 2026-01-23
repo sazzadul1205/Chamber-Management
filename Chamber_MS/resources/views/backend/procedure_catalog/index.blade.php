@@ -1,7 +1,7 @@
 @extends('backend.layout.structure')
 
 @section('content')
-    <div class="p-6 space-y-6">
+    <div class="space-y-4">
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-4">
             <h2 class="text-2xl font-semibold mb-3 md:mb-0">Dental Procedure Catalog</h2>
@@ -128,9 +128,11 @@
                                             'class' => 'w-4 h-4',
                                         ])
                                     </a>
-                                    <button type="button"
-                                        class="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded delete-procedure"
-                                        data-id="{{ $procedure->id }}" data-name="{{ $procedure->procedure_name }}">
+                                    <!-- Delete Button using component -->
+                                    <button type="button" data-modal-target="deleteModal"
+                                        data-route="{{ route('backend.procedure-catalog.destroy', $procedure->id) }}"
+                                        data-name="{{ $procedure->name }}"
+                                        class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs">
                                         @include('partials.sidebar-icon', [
                                             'name' => 'B_Delete',
                                             'class' => 'w-4 h-4',
@@ -147,66 +149,12 @@
                 </tbody>
             </table>
 
+
             <!-- Pagination -->
-            @if ($procedures->lastPage() > 1)
-                <div class="mt-3 flex justify-center items-center space-x-4 px-4 py-3 bg-white border rounded shadow-sm">
-                    @if ($procedures->onFirstPage())
-                        <span class="px-3 py-1 text-gray-400 bg-gray-100 rounded cursor-not-allowed">Previous</span>
-                    @else
-                        <a href="{{ $procedures->previousPageUrl() }}"
-                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded">Previous</a>
-                    @endif
-
-                    <span class="text-sm font-medium text-gray-700">Page {{ $procedures->currentPage() }} of
-                        {{ $procedures->lastPage() }}</span>
-
-                    @if ($procedures->hasMorePages())
-                        <a href="{{ $procedures->nextPageUrl() }}"
-                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded">Next</a>
-                    @else
-                        <span class="px-3 py-1 text-gray-400 bg-gray-100 rounded cursor-not-allowed">Next</span>
-                    @endif
-                </div>
-            @endif
+            <x-pagination :paginator="$procedures" class="mt-3" />
         </div>
     </div>
 
-    <!-- Delete Modal -->
-    <div id="deleteProcedureModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded shadow-lg w-full max-w-md p-6">
-            <h3 class="text-lg font-semibold mb-4">Delete Procedure</h3>
-            <p class="mb-2">Are you sure you want to delete procedure "<span id="deleteProcedureName"
-                    class="font-medium"></span>"?</p>
-            <p class="text-red-600 text-sm mb-4">This action cannot be undone!</p>
-            <div class="flex justify-end space-x-2">
-                <button type="button" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                    onclick="closeDeleteModal()">Cancel</button>
-                <form id="deleteProcedureForm" method="POST">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit"
-                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded">Delete</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.delete-procedure').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    const name = this.dataset.name;
-                    document.getElementById('deleteProcedureName').textContent = name;
-                    document.getElementById('deleteProcedureForm').action =
-                        `/procedure-catalog/${id}`;
-                    document.getElementById('deleteProcedureModal').classList.remove('hidden');
-                });
-            });
-        });
-
-        function closeDeleteModal() {
-            document.getElementById('deleteProcedureModal').classList.add('hidden');
-        }
-    </script>
+    <!-- Delete Modal Component -->
+    <x-delete-modal id="deleteModal" title="Delete Dental Chair" message="Are you sure?" :route="null" />
 @endsection

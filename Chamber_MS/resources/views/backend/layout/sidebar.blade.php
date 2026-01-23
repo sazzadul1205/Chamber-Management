@@ -75,7 +75,7 @@
         // ===============================
         [
             'title' => 'Treatments',
-            'icon' => 'activity',
+            'icon' => 'Treatment',
             'items' => [
                 ['label' => 'Treatment Plan'],
                 ['label' => 'Treatment Sessions'],
@@ -89,7 +89,7 @@
                 ],
                 [
                     'label' => 'Diagnosis Codes',
-                    'icon' => 'file-text',
+                    'icon' => 'Diagnostic-Code',
                     'route' => 'backend.diagnosis-codes.index',
                 ],
                 ['label' => 'Treatment History'],
@@ -225,7 +225,7 @@
         // ===============================
         [
             'title' => 'System',
-            'icon' => 'settings',
+            'icon' => 'Settings',
             'items' => [
                 ['label' => 'User Management'],
                 [

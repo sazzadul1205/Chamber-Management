@@ -1,7 +1,7 @@
 @extends('backend.layout.structure')
 
 @section('content')
-    <div class="p-6 space-y-6">
+    <div class="space-y-6">
 
         <!-- Header & Date Filter -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-2">
