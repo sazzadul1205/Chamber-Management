@@ -7,13 +7,18 @@ use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
+    // =======================
+    // LIST ROLES
+    // =======================
     public function index()
     {
         $roles = Role::latest()->get();
-
         return view('backend.roles.index', compact('roles'));
     }
 
+    // =======================
+    // CREATE ROLE
+    // =======================
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -27,6 +32,9 @@ class RoleController extends Controller
             ->with('success', 'Role created successfully.');
     }
 
+    // =======================
+    // UPDATE ROLE
+    // =======================
     public function update(Request $request, Role $role)
     {
         $validated = $request->validate([
@@ -40,6 +48,9 @@ class RoleController extends Controller
             ->with('success', 'Role updated successfully.');
     }
 
+    // =======================
+    // SOFT DELETE ROLE
+    // =======================
     public function destroy(Role $role)
     {
         if ($role->users()->exists()) {
@@ -55,6 +66,9 @@ class RoleController extends Controller
             ->with('success', 'Role deleted successfully.');
     }
 
+    // =======================
+    // RESTORE SOFT DELETED ROLE
+    // =======================
     public function restore(Role $role)
     {
         $role->restore();
@@ -64,6 +78,9 @@ class RoleController extends Controller
             ->with('success', 'Role restored successfully.');
     }
 
+    // =======================
+    // FORCE DELETE ROLE
+    // =======================
     public function forceDelete(Role $role)
     {
         $role->forceDelete();

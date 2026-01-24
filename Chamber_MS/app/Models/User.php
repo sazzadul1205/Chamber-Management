@@ -12,6 +12,9 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
+    // =======================
+    // Mass Assignable Fields
+    // =======================
     protected $fillable = [
         'role_id',
         'full_name',
@@ -21,11 +24,17 @@ class User extends Authenticatable
         'status',
     ];
 
+    // =======================
+    // Hidden Fields
+    // =======================
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    // =======================
+    // Attribute Casting
+    // =======================
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
@@ -36,6 +45,9 @@ class User extends Authenticatable
     // Relationships
     // =======================
 
+    /**
+     * Role relationship
+     */
     public function role()
     {
         return $this->belongsTo(Role::class)->withDefault([
@@ -43,83 +55,86 @@ class User extends Authenticatable
         ]);
     }
 
+    /**
+     * Doctor profile relationship
+     */
     public function doctor()
     {
-        if (class_exists(\App\Models\Doctor::class)) {
-            return $this->hasOne(\App\Models\Doctor::class);
-        }
-        return $this->hasOneDummy();
+        return $this->hasOne(Doctor::class);
     }
 
+    /**
+     * Appointments created by this user
+     */
     public function createdAppointments()
     {
-        if (class_exists(\App\Models\Appointment::class)) {
-            return $this->hasMany(\App\Models\Appointment::class, 'created_by');
-        }
-        return $this->hasManyDummy();
+        return $this->hasMany(Appointment::class, 'created_by');
     }
 
+    /**
+     * Appointments updated by this user
+     */
     public function updatedAppointments()
     {
-        if (class_exists(\App\Models\Appointment::class)) {
-            return $this->hasMany(\App\Models\Appointment::class, 'updated_by');
-        }
-        return $this->hasManyDummy();
+        return $this->hasMany(Appointment::class, 'updated_by');
     }
 
+    /**
+     * Treatments created by this user
+     */
     public function createdTreatments()
     {
-        if (class_exists(\App\Models\Treatment::class)) {
-            return $this->hasMany(\App\Models\Treatment::class, 'created_by');
-        }
-        return $this->hasManyDummy();
+        return $this->hasMany(Treatment::class, 'created_by');
     }
 
+    /**
+     * Audit logs for this user
+     */
     public function auditLogs()
     {
-        if (class_exists(\App\Models\AuditLog::class)) {
-            return $this->hasMany(\App\Models\AuditLog::class);
-        }
-        return $this->hasManyDummy();
-    }
-
-    // Fallback helper for missing relations
-    protected function hasManyDummy()
-    {
-        return $this->hasMany(static::class)->whereRaw('1 = 0');
+        return $this->hasMany(AuditLog::class);
     }
 
     // =======================
-    // Scopes
+    // Query Scopes
     // =======================
 
+    /**
+     * Only active users
+     */
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
     }
 
+    /**
+     * Only inactive users
+     */
     public function scopeInactive($query)
     {
         return $query->where('status', 'inactive');
     }
 
+    /**
+     * Filter by role
+     */
     public function scopeByRole($query, $roleId)
     {
         return $query->where('role_id', $roleId);
     }
 
     // =======================
-    // Helper Methods
+    // Role Helper Methods
     // =======================
 
     public function isSuperAdmin()
     {
-        return $this->role_id === 1; // Super Admin
+        return $this->role_id === 1;
     }
 
     public function isAdmin()
     {
-        return in_array($this->role_id, [1, 2]); // Admins
+        return in_array($this->role_id, [1, 2]);
     }
 
     public function isDoctor()
@@ -132,19 +147,29 @@ class User extends Authenticatable
         return $this->role_id === 4;
     }
 
+    /**
+     * Get role name
+     */
     public function getRoleName()
     {
         return $this->role->name ?? 'Unknown';
     }
 
+    /**
+     * Get Tailwind-friendly status badge
+     */
     public function getStatusBadge()
     {
         $badges = [
-            'active' => 'success',
-            'inactive' => 'secondary',
-            'suspended' => 'danger',
+            'active' => 'green',
+            'inactive' => 'gray',
+            'suspended' => 'red',
         ];
 
-        return '<span class="badge bg-' . ($badges[$this->status] ?? 'secondary') . '">' . ucfirst($this->status) . '</span>';
+        $color = $badges[$this->status] ?? 'gray';
+
+        return '<span class="bg-' . $color . '-100 text-' . $color . '-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">'
+            . ucfirst($this->status)
+            . '</span>';
     }
 }

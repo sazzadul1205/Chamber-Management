@@ -12,11 +12,14 @@ use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
+    // =======================
+    // LIST USERS
+    // =======================
     public function index(Request $request)
     {
         $query = User::with('role');
 
-        // Search
+        // Search by name, phone, email
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -42,6 +45,9 @@ class UserController extends Controller
         return view('backend.user.index', compact('users', 'roles'));
     }
 
+    // =======================
+    // CREATE USER
+    // =======================
     public function create()
     {
         $roles = Role::all();
@@ -83,12 +89,18 @@ class UserController extends Controller
         }
     }
 
+    // =======================
+    // VIEW USER
+    // =======================
     public function show(User $user)
     {
         $user->load('role');
         return view('backend.user.show', compact('user'));
     }
 
+    // =======================
+    // EDIT USER
+    // =======================
     public function edit(User $user)
     {
         $roles = Role::all();
@@ -124,7 +136,10 @@ class UserController extends Controller
 
             DB::commit();
 
-            Log::info("User updated: {$user->id} by " . auth()->id(), ['old' => $oldData, 'new' => $user->toArray()]);
+            Log::info("User updated: {$user->id} by " . auth()->id(), [
+                'old' => $oldData,
+                'new' => $user->toArray()
+            ]);
 
             return redirect()->route('backend.user.index')
                 ->with('success', 'User updated successfully.');
@@ -135,6 +150,9 @@ class UserController extends Controller
         }
     }
 
+    // =======================
+    // DELETE / SOFT DELETE USER
+    // =======================
     public function destroy(User $user)
     {
         if ($user->isSuperAdmin()) {
@@ -142,7 +160,7 @@ class UserController extends Controller
                 ->with('error', 'Cannot delete Super Admin user.');
         }
 
-        if ($user->id == auth()->id()) {
+        if ($user->id === auth()->id()) {
             return redirect()->route('backend.user.index')
                 ->with('error', 'Cannot delete your own account.');
         }
@@ -163,10 +181,14 @@ class UserController extends Controller
         }
     }
 
+    // =======================
+    // RESTORE SOFT DELETED USER
+    // =======================
     public function restore($id)
     {
         $user = User::withTrashed()->findOrFail($id);
 
+        // Only Admins/Super Admins
         if (!in_array(auth()->user()->role_id, [1, 2])) {
             abort(403, 'Unauthorized action.');
         }
@@ -179,6 +201,9 @@ class UserController extends Controller
             ->with('success', 'User restored successfully.');
     }
 
+    // =======================
+    // FORCE DELETE USER
+    // =======================
     public function forceDelete($id)
     {
         $user = User::withTrashed()->findOrFail($id);
