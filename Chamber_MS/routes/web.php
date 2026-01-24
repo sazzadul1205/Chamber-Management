@@ -1,14 +1,18 @@
 <?php
 
+use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DentalChairController;
+use App\Http\Controllers\DentalChartController;
 use App\Http\Controllers\DiagnosisCodeController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\MedicineController;
+use App\Http\Controllers\PatientFamilyController;
 use App\Http\Controllers\ProcedureCatalogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SystemSettingController;
+use App\Http\Controllers\TreatmentController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -204,6 +208,136 @@ Route::middleware('auth')->group(function () {
         Route::get('/{doctor}/edit', [DoctorController::class, 'edit'])->name('edit');
         Route::put('/{doctor}', [DoctorController::class, 'update'])->name('update');
         Route::delete('/{doctor}', [DoctorController::class, 'destroy'])->name('destroy');
+    });
+
+    // Patient Families Management
+    Route::prefix('patient-families')->name('backend.patient-families.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [PatientFamilyController::class, 'index'])->name('index');
+        Route::get('/create', [PatientFamilyController::class, 'create'])->name('create');
+        Route::post('/', [PatientFamilyController::class, 'store'])->name('store');
+
+        // Static / utility routes first
+        Route::get('/generate-code', [PatientFamilyController::class, 'generateCode'])->name('generate-code');
+
+        // Family member operations
+        Route::post('/{family}/members', [PatientFamilyController::class, 'addMember'])
+            ->name('members.add');
+
+        Route::delete('/{family}/members/{patient}', [PatientFamilyController::class, 'removeMember'])
+            ->name('members.remove');
+
+        Route::post('/{family}/set-head/{patient}', [PatientFamilyController::class, 'setHead'])
+            ->name('set-head');
+
+        // Parameterized CRUD routes LAST
+        Route::get('/{family}', [PatientFamilyController::class, 'show'])->name('show');
+        Route::get('/{family}/edit', [PatientFamilyController::class, 'edit'])->name('edit');
+        Route::put('/{family}', [PatientFamilyController::class, 'update'])->name('update');
+        Route::delete('/{family}', [PatientFamilyController::class, 'destroy'])->name('destroy');
+    });
+
+    // Dental Charts
+    Route::prefix('dental-charts')->name('backend.dental-charts.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [DentalChartController::class, 'index'])->name('index');
+        Route::get('/create', [DentalChartController::class, 'create'])->name('create');
+        Route::post('/', [DentalChartController::class, 'store'])->name('store');
+
+        // Utility / special routes (STATIC FIRST)
+        Route::get('/patient/{patient}/chart', [DentalChartController::class, 'patientChart'])
+            ->name('patient-chart');
+
+        Route::post('/quick-add', [DentalChartController::class, 'quickAdd'])
+            ->name('quick-add');
+
+        Route::get('/api/patient/{patient}/chart-data', [DentalChartController::class, 'getPatientChartData'])
+            ->name('patient-chart-data');
+
+        // Parameterized CRUD routes LAST
+        Route::get('/{dentalChart}', [DentalChartController::class, 'show'])->name('show');
+        Route::get('/{dentalChart}/edit', [DentalChartController::class, 'edit'])->name('edit');
+        Route::put('/{dentalChart}', [DentalChartController::class, 'update'])->name('update');
+        Route::delete('/{dentalChart}', [DentalChartController::class, 'destroy'])->name('destroy');
+    });
+
+    // Appointments
+    Route::prefix('appointments')->name('backend.appointments.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [AppointmentController::class, 'index'])->name('index');
+        Route::get('/create', [AppointmentController::class, 'create'])->name('create');
+        Route::post('/', [AppointmentController::class, 'store'])->name('store');
+
+        // Views / dashboards (STATIC FIRST)
+        Route::get('/calendar', [AppointmentController::class, 'calendar'])->name('calendar');
+        Route::get('/today', [AppointmentController::class, 'today'])->name('today');
+
+        // Utility / API-style routes
+        Route::get('/api/available-slots', [AppointmentController::class, 'getAvailableSlots'])
+            ->name('available-slots');
+
+        // Status / workflow actions
+        Route::post('/{appointment}/check-in', [AppointmentController::class, 'checkIn'])
+            ->name('check-in');
+
+        Route::post('/{appointment}/start', [AppointmentController::class, 'start'])
+            ->name('start');
+
+        Route::post('/{appointment}/complete', [AppointmentController::class, 'complete'])
+            ->name('complete');
+
+        Route::post('/{appointment}/cancel', [AppointmentController::class, 'cancel'])
+            ->name('cancel');
+
+        // Parameterized CRUD routes LAST
+        Route::get('/{appointment}', [AppointmentController::class, 'show'])->name('show');
+        Route::get('/{appointment}/edit', [AppointmentController::class, 'edit'])->name('edit');
+        Route::put('/{appointment}', [AppointmentController::class, 'update'])->name('update');
+        Route::delete('/{appointment}', [AppointmentController::class, 'destroy'])->name('destroy');
+    });
+
+    // Treatments
+    Route::prefix('treatments')->name('backend.treatments.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [TreatmentController::class, 'index'])->name('index');
+        Route::get('/create', [TreatmentController::class, 'create'])->name('create');
+        Route::post('/', [TreatmentController::class, 'store'])->name('store');
+
+        // Utility / quick actions (STATIC FIRST)
+        Route::post('/quick-create', [TreatmentController::class, 'quickCreate'])
+            ->name('quick-create');
+
+        Route::get('/patient/{patientId}', [TreatmentController::class, 'patientTreatments'])
+            ->name('patient-treatments');
+
+        // Status / workflow actions
+        Route::post('/{treatment}/start', [TreatmentController::class, 'start'])
+            ->name('start');
+
+        Route::post('/{treatment}/complete', [TreatmentController::class, 'complete'])
+            ->name('complete');
+
+        Route::post('/{treatment}/cancel', [TreatmentController::class, 'cancel'])
+            ->name('cancel');
+
+        Route::post('/{treatment}/hold', [TreatmentController::class, 'hold'])
+            ->name('hold');
+
+        Route::post('/{treatment}/resume', [TreatmentController::class, 'resume'])
+            ->name('resume');
+
+        Route::post('/{treatment}/add-session', [TreatmentController::class, 'addSession'])
+            ->name('add-session');
+
+        // Parameterized CRUD routes (ALWAYS LAST)
+        Route::get('/{treatment}', [TreatmentController::class, 'show'])->name('show');
+        Route::get('/{treatment}/edit', [TreatmentController::class, 'edit'])->name('edit');
+        Route::put('/{treatment}', [TreatmentController::class, 'update'])->name('update');
+        Route::delete('/{treatment}', [TreatmentController::class, 'destroy'])->name('destroy');
     });
 });
 
