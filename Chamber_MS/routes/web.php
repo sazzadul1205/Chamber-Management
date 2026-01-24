@@ -13,6 +13,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\TreatmentController;
+use App\Http\Controllers\TreatmentProcedureController;
+use App\Http\Controllers\TreatmentSessionController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -338,6 +340,85 @@ Route::middleware('auth')->group(function () {
         Route::get('/{treatment}/edit', [TreatmentController::class, 'edit'])->name('edit');
         Route::put('/{treatment}', [TreatmentController::class, 'update'])->name('update');
         Route::delete('/{treatment}', [TreatmentController::class, 'destroy'])->name('destroy');
+    });
+
+    // Treatment Procedures
+    Route::prefix('treatment-procedures')->name('backend.treatment-procedures.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [TreatmentProcedureController::class, 'index'])->name('index');
+        Route::get('/create', [TreatmentProcedureController::class, 'create'])->name('create');
+        Route::post('/', [TreatmentProcedureController::class, 'store'])->name('store');
+
+        // Static / utility routes (STATIC FIRST)
+        Route::get('/catalog/search', [TreatmentProcedureController::class, 'getCatalogProcedures'])
+            ->name('catalog.search');
+
+        // Create from a specific treatment
+        Route::get('/create/{treatment}', [TreatmentProcedureController::class, 'create'])
+            ->name('create-for-treatment');
+
+        // Bulk actions
+        Route::post('/{treatment}/bulk-add', [TreatmentProcedureController::class, 'bulkAdd'])
+            ->name('bulk-add');
+
+        // Treatment-wise listing
+        Route::get('/treatment/{treatment}', [TreatmentProcedureController::class, 'treatmentProcedures'])
+            ->name('by-treatment');
+
+        // Workflow / status actions
+        Route::post('/{treatmentProcedure}/start', [TreatmentProcedureController::class, 'start'])
+            ->name('start');
+
+        Route::post('/{treatmentProcedure}/complete', [TreatmentProcedureController::class, 'complete'])
+            ->name('complete');
+
+        Route::post('/{treatmentProcedure}/cancel', [TreatmentProcedureController::class, 'cancel'])
+            ->name('cancel');
+
+        // Parameterized CRUD routes (ALWAYS LAST)
+        Route::get('/{treatmentProcedure}', [TreatmentProcedureController::class, 'show'])
+            ->name('show');
+
+        Route::get('/{treatmentProcedure}/edit', [TreatmentProcedureController::class, 'edit'])
+            ->name('edit');
+
+        Route::put('/{treatmentProcedure}', [TreatmentProcedureController::class, 'update'])
+            ->name('update');
+
+        Route::delete('/{treatmentProcedure}', [TreatmentProcedureController::class, 'destroy'])
+            ->name('destroy');
+    });
+
+    // Treatment Sessions
+    Route::prefix('treatment-sessions')->name('backend.treatment-sessions.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [TreatmentSessionController::class, 'index'])->name('index');
+        Route::get('/create', [TreatmentSessionController::class, 'create'])->name('create');
+        Route::post('/', [TreatmentSessionController::class, 'store'])->name('store');
+
+        // Utility / static routes (STATIC FIRST)
+        Route::get('/today', [TreatmentSessionController::class, 'today'])->name('today');
+
+        Route::get('/treatment/{treatment}', [TreatmentSessionController::class, 'treatmentSessions'])
+            ->name('by-treatment');
+
+        Route::post('/quick-create/{treatment}', [TreatmentSessionController::class, 'quickCreate'])
+            ->name('quick-create');
+
+        // Workflow / status actions
+        Route::post('/{treatmentSession}/start', [TreatmentSessionController::class, 'start'])->name('start');
+        Route::post('/{treatmentSession}/complete', [TreatmentSessionController::class, 'complete'])->name('complete');
+        Route::post('/{treatmentSession}/cancel', [TreatmentSessionController::class, 'cancel'])->name('cancel');
+        Route::post('/{treatmentSession}/postpone', [TreatmentSessionController::class, 'postpone'])->name('postpone');
+        Route::post('/{treatmentSession}/reschedule', [TreatmentSessionController::class, 'reschedule'])->name('reschedule');
+
+        // Parameterized CRUD routes (ALWAYS LAST)
+        Route::get('/{treatmentSession}', [TreatmentSessionController::class, 'show'])->name('show');
+        Route::get('/{treatmentSession}/edit', [TreatmentSessionController::class, 'edit'])->name('edit');
+        Route::put('/{treatmentSession}', [TreatmentSessionController::class, 'update'])->name('update');
+        Route::delete('/{treatmentSession}', [TreatmentSessionController::class, 'destroy'])->name('destroy');
     });
 });
 
