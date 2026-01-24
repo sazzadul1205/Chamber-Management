@@ -8,6 +8,7 @@ use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\InventoryStockController;
 use App\Http\Controllers\InventoryTransactionController;
+use App\Http\Controllers\InventoryUsageController;
 use App\Http\Controllers\MedicalFileController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\PatientFamilyController;
@@ -522,6 +523,29 @@ Route::middleware('auth')->group(function () {
 
         // Stock movement
         Route::get('/{itemId}/movement', [InventoryTransactionController::class, 'stockMovement'])->name('movement');
+    });
+
+    // Inventory usage
+    Route::prefix('inventory-usage')->name('backend.inventory_usage.')->group(function () {
+
+        // CRUD routes
+        Route::get('/', [InventoryUsageController::class, 'index'])->name('index');
+        Route::get('/create', [InventoryUsageController::class, 'create'])->name('create');
+        Route::post('/', [InventoryUsageController::class, 'store'])->name('store');
+        Route::get('/{id}', [InventoryUsageController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [InventoryUsageController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InventoryUsageController::class, 'update'])->name('update');
+        Route::delete('/{id}', [InventoryUsageController::class, 'destroy'])->name('destroy');
+
+        // Reports & summaries
+        Route::get('/report', [InventoryUsageController::class, 'report'])->name('report');
+
+        // Usage by treatment / patient
+        Route::get('/treatment/{treatmentId}', [InventoryUsageController::class, 'treatmentUsage'])->name('treatment');
+        Route::get('/patient/{patientId}', [InventoryUsageController::class, 'patientUsage'])->name('patient');
+
+        // Quick-use AJAX route
+        Route::post('/quick-use', [InventoryUsageController::class, 'quickUse'])->name('quick_use');
     });
 });
 
