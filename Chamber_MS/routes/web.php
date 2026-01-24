@@ -15,6 +15,7 @@ use App\Http\Controllers\MedicalFileController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PatientFamilyController;
+use App\Http\Controllers\PaymentInstallmentController;
 use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\ProcedureCatalogController;
 use App\Http\Controllers\ProfileController;
@@ -219,6 +220,450 @@ Route::middleware('auth')->group(function () {
         Route::put('/{doctor}', [DoctorController::class, 'update'])->name('update');
         Route::delete('/{doctor}', [DoctorController::class, 'destroy'])->name('destroy');
     });
+
+    // Patients Management
+    Route::prefix('backend/patients')->name('backend.patients.')->group(function () {
+
+        // List & search
+        Route::get('/', [PatientController::class, 'index'])->name('index');
+
+        // Create
+        Route::get('/create', [PatientController::class, 'create'])->name('create');
+        Route::post('/', [PatientController::class, 'store'])->name('store');
+
+        // Show
+        Route::get('/{patient}', [PatientController::class, 'show'])->name('show');
+
+        // Edit & update
+        Route::get('/{patient}/edit', [PatientController::class, 'edit'])->name('edit');
+        Route::put('/{patient}', [PatientController::class, 'update'])->name('update');
+
+        // Delete
+        Route::delete('/{patient}', [PatientController::class, 'destroy'])->name('destroy');
+
+        // Extra features
+        Route::post('/quick-add', [PatientController::class, 'quickAdd'])->name('quick_add');
+        Route::get('/search/ajax', [PatientController::class, 'search'])->name('search');
+        Route::get('/{patient}/medical-history', [PatientController::class, 'medicalHistory'])
+            ->name('medical_history');
+    });
+
+    // Patient Families Management
+    Route::prefix('patient-families')->name('backend.patient-families.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [PatientFamilyController::class, 'index'])->name('index');
+        Route::get('/create', [PatientFamilyController::class, 'create'])->name('create');
+        Route::post('/', [PatientFamilyController::class, 'store'])->name('store');
+
+        // Static / utility routes first
+        Route::get('/generate-code', [PatientFamilyController::class, 'generateCode'])->name('generate-code');
+
+        // Family member operations
+        Route::post('/{family}/members', [PatientFamilyController::class, 'addMember'])
+            ->name('members.add');
+
+        Route::delete('/{family}/members/{patient}', [PatientFamilyController::class, 'removeMember'])
+            ->name('members.remove');
+
+        Route::post('/{family}/set-head/{patient}', [PatientFamilyController::class, 'setHead'])
+            ->name('set-head');
+
+        // Parameterized CRUD routes LAST
+        Route::get('/{family}', [PatientFamilyController::class, 'show'])->name('show');
+        Route::get('/{family}/edit', [PatientFamilyController::class, 'edit'])->name('edit');
+        Route::put('/{family}', [PatientFamilyController::class, 'update'])->name('update');
+        Route::delete('/{family}', [PatientFamilyController::class, 'destroy'])->name('destroy');
+    });
+
+    // Dental Charts
+    Route::prefix('dental-charts')->name('backend.dental-charts.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [DentalChartController::class, 'index'])->name('index');
+        Route::get('/create', [DentalChartController::class, 'create'])->name('create');
+        Route::post('/', [DentalChartController::class, 'store'])->name('store');
+
+        // Utility / special routes (STATIC FIRST)
+        Route::get('/patient/{patient}/chart', [DentalChartController::class, 'patientChart'])
+            ->name('patient-chart');
+
+        Route::post('/quick-add', [DentalChartController::class, 'quickAdd'])
+            ->name('quick-add');
+
+        Route::get('/api/patient/{patient}/chart-data', [DentalChartController::class, 'getPatientChartData'])
+            ->name('patient-chart-data');
+
+        // Parameterized CRUD routes LAST
+        Route::get('/{dentalChart}', [DentalChartController::class, 'show'])->name('show');
+        Route::get('/{dentalChart}/edit', [DentalChartController::class, 'edit'])->name('edit');
+        Route::put('/{dentalChart}', [DentalChartController::class, 'update'])->name('update');
+        Route::delete('/{dentalChart}', [DentalChartController::class, 'destroy'])->name('destroy');
+    });
+
+    // Appointments
+    Route::prefix('appointments')->name('backend.appointments.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [AppointmentController::class, 'index'])->name('index');
+        Route::get('/create', [AppointmentController::class, 'create'])->name('create');
+        Route::post('/', [AppointmentController::class, 'store'])->name('store');
+
+        // Views / dashboards (STATIC FIRST)
+        Route::get('/calendar', [AppointmentController::class, 'calendar'])->name('calendar');
+        Route::get('/today', [AppointmentController::class, 'today'])->name('today');
+
+        // Utility / API-style routes
+        Route::get('/api/available-slots', [AppointmentController::class, 'getAvailableSlots'])
+            ->name('available-slots');
+
+        // Status / workflow actions
+        Route::post('/{appointment}/check-in', [AppointmentController::class, 'checkIn'])
+            ->name('check-in');
+
+        Route::post('/{appointment}/start', [AppointmentController::class, 'start'])
+            ->name('start');
+
+        Route::post('/{appointment}/complete', [AppointmentController::class, 'complete'])
+            ->name('complete');
+
+        Route::post('/{appointment}/cancel', [AppointmentController::class, 'cancel'])
+            ->name('cancel');
+
+        // Parameterized CRUD routes LAST
+        Route::get('/{appointment}', [AppointmentController::class, 'show'])->name('show');
+        Route::get('/{appointment}/edit', [AppointmentController::class, 'edit'])->name('edit');
+        Route::put('/{appointment}', [AppointmentController::class, 'update'])->name('update');
+        Route::delete('/{appointment}', [AppointmentController::class, 'destroy'])->name('destroy');
+    });
+
+    // Treatments
+    Route::prefix('treatments')->name('backend.treatments.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [TreatmentController::class, 'index'])->name('index');
+        Route::get('/create', [TreatmentController::class, 'create'])->name('create');
+        Route::post('/', [TreatmentController::class, 'store'])->name('store');
+
+        // Utility / quick actions (STATIC FIRST)
+        Route::post('/quick-create', [TreatmentController::class, 'quickCreate'])
+            ->name('quick-create');
+
+        Route::get('/patient/{patientId}', [TreatmentController::class, 'patientTreatments'])
+            ->name('patient-treatments');
+
+        // Status / workflow actions
+        Route::post('/{treatment}/start', [TreatmentController::class, 'start'])
+            ->name('start');
+
+        Route::post('/{treatment}/complete', [TreatmentController::class, 'complete'])
+            ->name('complete');
+
+        Route::post('/{treatment}/cancel', [TreatmentController::class, 'cancel'])
+            ->name('cancel');
+
+        Route::post('/{treatment}/hold', [TreatmentController::class, 'hold'])
+            ->name('hold');
+
+        Route::post('/{treatment}/resume', [TreatmentController::class, 'resume'])
+            ->name('resume');
+
+        Route::post('/{treatment}/add-session', [TreatmentController::class, 'addSession'])
+            ->name('add-session');
+
+        // Parameterized CRUD routes (ALWAYS LAST)
+        Route::get('/{treatment}', [TreatmentController::class, 'show'])->name('show');
+        Route::get('/{treatment}/edit', [TreatmentController::class, 'edit'])->name('edit');
+        Route::put('/{treatment}', [TreatmentController::class, 'update'])->name('update');
+        Route::delete('/{treatment}', [TreatmentController::class, 'destroy'])->name('destroy');
+    });
+
+    // Treatment Procedures
+    Route::prefix('treatment-procedures')->name('backend.treatment-procedures.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [TreatmentProcedureController::class, 'index'])->name('index');
+        Route::get('/create', [TreatmentProcedureController::class, 'create'])->name('create');
+        Route::post('/', [TreatmentProcedureController::class, 'store'])->name('store');
+
+        // Static / utility routes (STATIC FIRST)
+        Route::get('/catalog/search', [TreatmentProcedureController::class, 'getCatalogProcedures'])
+            ->name('catalog.search');
+
+        // Create from a specific treatment
+        Route::get('/create/{treatment}', [TreatmentProcedureController::class, 'create'])
+            ->name('create-for-treatment');
+
+        // Bulk actions
+        Route::post('/{treatment}/bulk-add', [TreatmentProcedureController::class, 'bulkAdd'])
+            ->name('bulk-add');
+
+        // Treatment-wise listing
+        Route::get('/treatment/{treatment}', [TreatmentProcedureController::class, 'treatmentProcedures'])
+            ->name('by-treatment');
+
+        // Workflow / status actions
+        Route::post('/{treatmentProcedure}/start', [TreatmentProcedureController::class, 'start'])
+            ->name('start');
+
+        Route::post('/{treatmentProcedure}/complete', [TreatmentProcedureController::class, 'complete'])
+            ->name('complete');
+
+        Route::post('/{treatmentProcedure}/cancel', [TreatmentProcedureController::class, 'cancel'])
+            ->name('cancel');
+
+        // Parameterized CRUD routes (ALWAYS LAST)
+        Route::get('/{treatmentProcedure}', [TreatmentProcedureController::class, 'show'])
+            ->name('show');
+
+        Route::get('/{treatmentProcedure}/edit', [TreatmentProcedureController::class, 'edit'])
+            ->name('edit');
+
+        Route::put('/{treatmentProcedure}', [TreatmentProcedureController::class, 'update'])
+            ->name('update');
+
+        Route::delete('/{treatmentProcedure}', [TreatmentProcedureController::class, 'destroy'])
+            ->name('destroy');
+    });
+
+    // Treatment Sessions
+    Route::prefix('treatment-sessions')->name('backend.treatment-sessions.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [TreatmentSessionController::class, 'index'])->name('index');
+        Route::get('/create', [TreatmentSessionController::class, 'create'])->name('create');
+        Route::post('/', [TreatmentSessionController::class, 'store'])->name('store');
+
+        // Utility / static routes (STATIC FIRST)
+        Route::get('/today', [TreatmentSessionController::class, 'today'])->name('today');
+
+        Route::get('/treatment/{treatment}', [TreatmentSessionController::class, 'treatmentSessions'])
+            ->name('by-treatment');
+
+        Route::post('/quick-create/{treatment}', [TreatmentSessionController::class, 'quickCreate'])
+            ->name('quick-create');
+
+        // Workflow / status actions
+        Route::post('/{treatmentSession}/start', [TreatmentSessionController::class, 'start'])->name('start');
+        Route::post('/{treatmentSession}/complete', [TreatmentSessionController::class, 'complete'])->name('complete');
+        Route::post('/{treatmentSession}/cancel', [TreatmentSessionController::class, 'cancel'])->name('cancel');
+        Route::post('/{treatmentSession}/postpone', [TreatmentSessionController::class, 'postpone'])->name('postpone');
+        Route::post('/{treatmentSession}/reschedule', [TreatmentSessionController::class, 'reschedule'])->name('reschedule');
+
+        // Parameterized CRUD routes (ALWAYS LAST)
+        Route::get('/{treatmentSession}', [TreatmentSessionController::class, 'show'])->name('show');
+        Route::get('/{treatmentSession}/edit', [TreatmentSessionController::class, 'edit'])->name('edit');
+        Route::put('/{treatmentSession}', [TreatmentSessionController::class, 'update'])->name('update');
+        Route::delete('/{treatmentSession}', [TreatmentSessionController::class, 'destroy'])->name('destroy');
+    });
+
+    // Prescriptions
+    Route::prefix('prescriptions')->name('backend.prescriptions.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [PrescriptionController::class, 'index'])->name('index');
+        Route::get('/create', [PrescriptionController::class, 'create'])->name('create');
+        Route::post('/', [PrescriptionController::class, 'store'])->name('store');
+
+        // Utility / static routes
+        Route::get('/treatment/{treatment}', [PrescriptionController::class, 'treatmentPrescriptions'])
+            ->name('by-treatment');
+
+        Route::get('/get-medicines', [PrescriptionController::class, 'getMedicines'])
+            ->name('get-medicines');
+
+        Route::post('/quick-create', [PrescriptionController::class, 'quickCreate'])
+            ->name('quick-create');
+
+        Route::get('/{prescription}/print', [PrescriptionController::class, 'print'])
+            ->name('print');
+
+        // Workflow / status actions
+        Route::post('/{prescription}/expire', [PrescriptionController::class, 'expire'])->name('expire');
+        Route::post('/{prescription}/cancel', [PrescriptionController::class, 'cancel'])->name('cancel');
+        Route::post('/{prescription}/mark-as-filled', [PrescriptionController::class, 'markAsFilled'])->name('mark-as-filled');
+        Route::post('/{prescription}/dispense-all', [PrescriptionController::class, 'dispenseAll'])->name('dispense-all');
+
+        // Prescription item actions
+        Route::post('/{prescription}/add-item', [PrescriptionController::class, 'addItem'])->name('add-item');
+        Route::post('/prescription-item/{item}/dispense', [PrescriptionController::class, 'dispenseItem'])->name('item.dispense');
+        Route::post('/prescription-item/{item}/cancel', [PrescriptionController::class, 'cancelItem'])->name('item.cancel');
+        Route::delete('/prescription-item/{item}', [PrescriptionController::class, 'removeItem'])->name('item.remove');
+
+        // Parameterized CRUD routes (ALWAYS LAST)
+        Route::get('/{prescription}', [PrescriptionController::class, 'show'])->name('show');
+        Route::get('/{prescription}/edit', [PrescriptionController::class, 'edit'])->name('edit');
+        Route::put('/{prescription}', [PrescriptionController::class, 'update'])->name('update');
+        Route::delete('/{prescription}', [PrescriptionController::class, 'destroy'])->name('destroy');
+    });
+
+    // Medical files
+    Route::prefix('medical-files')->name('backend.medical_files.')->group(function () {
+
+        // CRUD
+        Route::get('/', [MedicalFileController::class, 'index'])->name('index');
+        Route::get('/create', [MedicalFileController::class, 'create'])->name('create');
+        Route::post('/', [MedicalFileController::class, 'store'])->name('store');
+
+        // Utility / AJAX routes
+        Route::get('/patient/{patientId}', [MedicalFileController::class, 'getFilesByPatient'])->name('by-patient');
+        Route::get('/{id}/download', [MedicalFileController::class, 'download'])->name('download');
+
+        // Parameterized CRUD
+        Route::get('/{id}', [MedicalFileController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [MedicalFileController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [MedicalFileController::class, 'update'])->name('update');
+        Route::delete('/{id}', [MedicalFileController::class, 'destroy'])->name('destroy');
+    });
+
+    // Inventory Stock
+    Route::prefix('inventory-stock')->name('backend.inventory_stock.')->group(function () {
+
+        // CRUD Routes
+        Route::get('/', [InventoryStockController::class, 'index'])->name('index');
+        Route::get('/create', [InventoryStockController::class, 'create'])->name('create');
+        Route::post('/', [InventoryStockController::class, 'store'])->name('store');
+        Route::get('/{id}', [InventoryStockController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [InventoryStockController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InventoryStockController::class, 'update'])->name('update');
+        Route::delete('/{id}', [InventoryStockController::class, 'destroy'])->name('destroy');
+
+        // Stock adjustment
+        Route::post('/{id}/adjust', [InventoryStockController::class, 'adjustStock'])->name('adjust');
+
+        // Reports
+        Route::get('/reports/low-stock', [InventoryStockController::class, 'lowStockReport'])->name('reports.low_stock');
+        Route::get('/reports/expiry', [InventoryStockController::class, 'expiryReport'])->name('reports.expiry');
+    });
+
+    // Inventory transactions
+    Route::prefix('inventory-transactions')->name('backend.inventory_transactions.')->group(function () {
+
+        // CRUD Routes
+        Route::get('/', [InventoryTransactionController::class, 'index'])->name('index');
+        Route::get('/create', [InventoryTransactionController::class, 'create'])->name('create');
+        Route::post('/', [InventoryTransactionController::class, 'store'])->name('store');
+        Route::get('/{id}', [InventoryTransactionController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [InventoryTransactionController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InventoryTransactionController::class, 'update'])->name('update');
+        Route::delete('/{id}', [InventoryTransactionController::class, 'destroy'])->name('destroy');
+
+        // Reports
+        Route::get('/reports/purchases', [InventoryTransactionController::class, 'purchaseReport'])->name('reports.purchase');
+        Route::get('/reports/consumptions', [InventoryTransactionController::class, 'consumptionReport'])->name('reports.consumption');
+
+        // Stock movement
+        Route::get('/{itemId}/movement', [InventoryTransactionController::class, 'stockMovement'])->name('movement');
+    });
+
+    // Inventory usage
+    Route::prefix('inventory-usage')->name('backend.inventory_usage.')->group(function () {
+
+        // CRUD routes
+        Route::get('/', [InventoryUsageController::class, 'index'])->name('index');
+        Route::get('/create', [InventoryUsageController::class, 'create'])->name('create');
+        Route::post('/', [InventoryUsageController::class, 'store'])->name('store');
+        Route::get('/{id}', [InventoryUsageController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [InventoryUsageController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InventoryUsageController::class, 'update'])->name('update');
+        Route::delete('/{id}', [InventoryUsageController::class, 'destroy'])->name('destroy');
+
+        // Reports & summaries
+        Route::get('/report', [InventoryUsageController::class, 'report'])->name('report');
+
+        // Usage by treatment / patient
+        Route::get('/treatment/{treatmentId}', [InventoryUsageController::class, 'treatmentUsage'])->name('treatment');
+        Route::get('/patient/{patientId}', [InventoryUsageController::class, 'patientUsage'])->name('patient');
+
+        // Quick-use AJAX route
+        Route::post('/quick-use', [InventoryUsageController::class, 'quickUse'])->name('quick_use');
+    });
+
+    // Invoices 
+    Route::prefix('invoices')->name('invoices.')->group(function () {
+
+        // CRUD routes
+        Route::get('/', [InvoiceController::class, 'index'])->name('index');
+        Route::get('/create', [InvoiceController::class, 'create'])->name('create');
+        Route::post('/', [InvoiceController::class, 'store'])->name('store');
+        Route::get('/{id}', [InvoiceController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [InvoiceController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InvoiceController::class, 'update'])->name('update');
+        Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('destroy');
+
+        // Print & send
+        Route::get('/{id}/print', [InvoiceController::class, 'print'])->name('print');
+        Route::post('/{id}/send', [InvoiceController::class, 'send'])->name('send');
+
+        // Cancel invoice
+        Route::post('/{id}/cancel', [InvoiceController::class, 'cancel'])->name('cancel');
+
+        // Payments
+        Route::post('/{id}/add-payment', [InvoiceController::class, 'addPayment'])->name('add_payment');
+
+        // Reports
+        Route::get('/reports/overdue', [InvoiceController::class, 'overdueReport'])->name('reports.overdue');
+
+        // Patient-specific invoices
+        Route::get('/patient/{patientId}', [InvoiceController::class, 'patientInvoices'])->name('patient');
+
+        // AJAX: Get item details for invoice items
+        Route::get('/item-details', [InvoiceController::class, 'getItemDetails'])->name('item_details');
+    });
+
+    // Invoice items
+    Route::prefix('invoices/{invoiceId}/items')->name('invoice_items.')->group(function () {
+
+        // List items for an invoice
+        Route::get('/', [InvoiceItemController::class, 'index'])->name('index');
+
+        // Add new item
+        Route::get('/create', [InvoiceItemController::class, 'create'])->name('create');
+        Route::post('/', [InvoiceItemController::class, 'store'])->name('store');
+
+        // Edit existing item
+        Route::get('/{id}/edit', [InvoiceItemController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InvoiceItemController::class, 'update'])->name('update');
+
+        // Delete item
+        Route::delete('/{id}', [InvoiceItemController::class, 'destroy'])->name('destroy');
+    });
+
+    // Payment installments
+    Route::prefix('invoices/{invoice}/installments')->name('payment_installments.')->group(function () {
+
+        Route::get('/', [PaymentInstallmentController::class, 'index'])->name('index');
+
+        Route::get('/create', [PaymentInstallmentController::class, 'create'])->name('create');
+
+        Route::post('/', [PaymentInstallmentController::class, 'store'])->name('store');
+
+        Route::get('/{installment}', [PaymentInstallmentController::class, 'show'])->name('show');
+
+        Route::get('/{installment}/edit', [PaymentInstallmentController::class, 'edit'])->name('edit');
+
+        Route::put('/{installment}', [PaymentInstallmentController::class, 'update'])->name('update');
+
+        Route::delete('/{installment}', [PaymentInstallmentController::class, 'destroy'])->name('destroy');
+
+        Route::post('/{installment}/payment', [PaymentInstallmentController::class, 'addPayment'])->name('add_payment');
+
+        Route::post('/{installment}/late-fee', [PaymentInstallmentController::class, 'applyLateFee'])->name('apply_late_fee');
+
+        Route::post('/{installment}/update-status', [PaymentInstallmentController::class, 'updateStatus'])->name('update_status');
+    });
+
+    // Payment Report Management
+    Route::prefix('payment-installments/reports')
+        ->name('payment_installments.reports.')
+        ->group(function () {
+
+            Route::get('/overdue', [PaymentInstallmentController::class, 'overdueReport'])
+                ->name('overdue');
+
+            Route::get('/due-soon', [PaymentInstallmentController::class, 'dueSoonReport'])
+                ->name('due_soon');
+        });
 });
 
 require __DIR__ . '/auth.php';
