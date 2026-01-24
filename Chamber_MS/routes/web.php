@@ -15,6 +15,8 @@ use App\Http\Controllers\MedicalFileController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PatientFamilyController;
+use App\Http\Controllers\PaymentAllocationController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentInstallmentController;
 use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\ProcedureCatalogController;
@@ -664,6 +666,81 @@ Route::middleware('auth')->group(function () {
             Route::get('/due-soon', [PaymentInstallmentController::class, 'dueSoonReport'])
                 ->name('due_soon');
         });
+
+    // Payments
+    Route::prefix('payments')->name('payments.')->group(function () {
+
+        // List all payments
+        Route::get('/', [PaymentController::class, 'index'])->name('index');
+
+        // Create payment
+        Route::get('/create', [PaymentController::class, 'create'])->name('create');
+        Route::post('/', [PaymentController::class, 'store'])->name('store');
+
+        // View payment details
+        Route::get('/{id}', [PaymentController::class, 'show'])->name('show');
+
+        // Edit payment
+        Route::get('/{id}/edit', [PaymentController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [PaymentController::class, 'update'])->name('update');
+
+        // Delete payment
+        Route::delete('/{id}', [PaymentController::class, 'destroy'])->name('destroy');
+
+        // Refund payment
+        Route::post('/{id}/refund', [PaymentController::class, 'refund'])->name('refund');
+
+        // Cancel pending payment
+        Route::post('/{id}/cancel', [PaymentController::class, 'cancel'])->name('cancel');
+
+        // Allocate payment to installment
+        Route::post('/{id}/allocate', [PaymentController::class, 'allocate'])->name('allocate');
+
+        // Generate receipt
+        Route::post('/{id}/generate-receipt', [PaymentController::class, 'generateReceipt'])
+            ->name('generate_receipt');
+
+        // Payments by patient
+        Route::get('/patient/{patientId}', [PaymentController::class, 'patientPayments'])
+            ->name('patient');
+
+        // Payments by invoice
+        Route::get('/invoice/{invoiceId}', [PaymentController::class, 'invoicePayments'])
+            ->name('invoice');
+
+        // Daily collection report
+        Route::get('/reports/daily', [PaymentController::class, 'dailyCollection'])
+            ->name('daily_collection');
+    });
+
+    // Payment allocations
+    Route::prefix('payment-allocations')->name('payment_allocations.')->group(function () {
+
+        // List all allocations
+        Route::get('/', [PaymentAllocationController::class, 'index'])->name('index');
+
+        // Create allocation (manual override of resource)
+        Route::get('/create', [PaymentAllocationController::class, 'create'])->name('create');
+        Route::post('/', [PaymentAllocationController::class, 'store'])->name('store');
+
+        // View allocation details
+        Route::get('/{id}', [PaymentAllocationController::class, 'show'])->name('show');
+
+        // Edit allocation
+        Route::get('/{id}/edit', [PaymentAllocationController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [PaymentAllocationController::class, 'update'])->name('update');
+
+        // Delete allocation
+        Route::delete('/{id}', [PaymentAllocationController::class, 'destroy'])->name('destroy');
+
+        // Get allocations by payment
+        Route::get('/by-payment/{paymentId}', [PaymentAllocationController::class, 'getByPayment'])
+            ->name('by_payment');
+
+        // Allocation summary for a payment
+        Route::get('/summary/{paymentId}', [PaymentAllocationController::class, 'getSummary'])
+            ->name('summary');
+    });
 });
 
 require __DIR__ . '/auth.php';

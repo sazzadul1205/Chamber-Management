@@ -54,6 +54,11 @@ class PaymentInstallment extends Model
         return $this->hasMany(PaymentAllocation::class, 'installment_id');
     }
 
+    public function getRemainingBalanceAttribute()
+    {
+        return $this->amount_due - $this->amount_paid;
+    }
+
     // Scopes
     public function scopePending($query)
     {

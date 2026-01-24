@@ -278,4 +278,14 @@ class TreatmentSession extends Model
     {
         return $this->cost_for_session - $this->getTotalPaidAmount();
     }
+
+    public function allocations()
+    {
+        return $this->hasMany(PaymentAllocation::class);
+    }
+
+    public function getPaymentAllocatedAttribute()
+    {
+        return $this->allocations->sum('allocated_amount');
+    }
 }
