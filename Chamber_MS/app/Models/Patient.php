@@ -55,6 +55,12 @@ class Patient extends Model
         return $this->hasMany(Patient::class, 'referred_by');
     }
 
+
+    public function receipts()
+    {
+        return $this->hasMany(Receipt::class);
+    }
+
     public function appointments()
     {
         return $this->hasMany(Appointment::class);

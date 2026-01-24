@@ -21,6 +21,7 @@ use App\Http\Controllers\PaymentInstallmentController;
 use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\ProcedureCatalogController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\TreatmentController;
@@ -740,6 +741,42 @@ Route::middleware('auth')->group(function () {
         // Allocation summary for a payment
         Route::get('/summary/{paymentId}', [PaymentAllocationController::class, 'getSummary'])
             ->name('summary');
+    });
+
+    // Receipts
+    Route::prefix('receipts')->name('receipts.')->group(function () {
+
+        // List all receipts
+        Route::get('/', [ReceiptController::class, 'index'])->name('index');
+
+        // Create new receipt
+        Route::get('/create', [ReceiptController::class, 'create'])->name('create');
+        Route::post('/', [ReceiptController::class, 'store'])->name('store');
+
+        // View receipt details
+        Route::get('/{receipt}', [ReceiptController::class, 'show'])->name('show');
+
+        // Edit receipt
+        Route::get('/{receipt}/edit', [ReceiptController::class, 'edit'])->name('edit');
+        Route::put('/{receipt}', [ReceiptController::class, 'update'])->name('update');
+
+        // Delete receipt
+        Route::delete('/{receipt}', [ReceiptController::class, 'destroy'])->name('destroy');
+
+        // PDF download of receipt
+        Route::get('/{receipt}/pdf', [ReceiptController::class, 'pdf'])->name('pdf');
+
+        // Preview receipt
+        Route::get('/{receipt}/preview', [ReceiptController::class, 'preview'])->name('preview');
+
+        // Mark receipt as printed
+        Route::post('/{receipt}/mark-printed', [ReceiptController::class, 'markPrinted'])->name('mark_printed');
+
+        // Receipt statistics
+        Route::get('/statistics', [ReceiptController::class, 'statistics'])->name('statistics');
+
+        // Search payments for receipts
+        Route::get('/search-payments', [ReceiptController::class, 'searchPayments'])->name('search_payments');
     });
 });
 

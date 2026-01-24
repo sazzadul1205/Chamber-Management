@@ -65,6 +65,11 @@ class Payment extends Model
         return $this->hasMany(PaymentAllocation::class);
     }
 
+    public function getHasReceiptAttribute(): bool
+    {
+        return !is_null($this->receipt);
+    }
+
     public function getRemainingAmountAttribute()
     {
         return $this->amount - $this->allocations->sum('allocated_amount');
