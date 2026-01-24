@@ -9,6 +9,8 @@ use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\InventoryStockController;
 use App\Http\Controllers\InventoryTransactionController;
 use App\Http\Controllers\InventoryUsageController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\InvoiceItemController;
 use App\Http\Controllers\MedicalFileController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\PatientFamilyController;
@@ -546,6 +548,55 @@ Route::middleware('auth')->group(function () {
 
         // Quick-use AJAX route
         Route::post('/quick-use', [InventoryUsageController::class, 'quickUse'])->name('quick_use');
+    });
+
+    // Invoices 
+    Route::prefix('invoices')->name('invoices.')->group(function () {
+
+        // CRUD routes
+        Route::get('/', [InvoiceController::class, 'index'])->name('index');
+        Route::get('/create', [InvoiceController::class, 'create'])->name('create');
+        Route::post('/', [InvoiceController::class, 'store'])->name('store');
+        Route::get('/{id}', [InvoiceController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [InvoiceController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InvoiceController::class, 'update'])->name('update');
+        Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('destroy');
+
+        // Print & send
+        Route::get('/{id}/print', [InvoiceController::class, 'print'])->name('print');
+        Route::post('/{id}/send', [InvoiceController::class, 'send'])->name('send');
+
+        // Cancel invoice
+        Route::post('/{id}/cancel', [InvoiceController::class, 'cancel'])->name('cancel');
+
+        // Payments
+        Route::post('/{id}/add-payment', [InvoiceController::class, 'addPayment'])->name('add_payment');
+
+        // Reports
+        Route::get('/reports/overdue', [InvoiceController::class, 'overdueReport'])->name('reports.overdue');
+
+        // Patient-specific invoices
+        Route::get('/patient/{patientId}', [InvoiceController::class, 'patientInvoices'])->name('patient');
+
+        // AJAX: Get item details for invoice items
+        Route::get('/item-details', [InvoiceController::class, 'getItemDetails'])->name('item_details');
+    });
+
+    Route::prefix('invoices/{invoiceId}/items')->name('invoice_items.')->group(function () {
+
+        // List items for an invoice
+        Route::get('/', [InvoiceItemController::class, 'index'])->name('index');
+
+        // Add new item
+        Route::get('/create', [InvoiceItemController::class, 'create'])->name('create');
+        Route::post('/', [InvoiceItemController::class, 'store'])->name('store');
+
+        // Edit existing item
+        Route::get('/{id}/edit', [InvoiceItemController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InvoiceItemController::class, 'update'])->name('update');
+
+        // Delete item
+        Route::delete('/{id}', [InvoiceItemController::class, 'destroy'])->name('destroy');
     });
 });
 
