@@ -6,8 +6,12 @@ use App\Http\Controllers\DentalChartController;
 use App\Http\Controllers\DiagnosisCodeController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\InventoryItemController;
+use App\Http\Controllers\InventoryStockController;
+use App\Http\Controllers\InventoryTransactionController;
+use App\Http\Controllers\MedicalFileController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\PatientFamilyController;
+use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\ProcedureCatalogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -419,6 +423,105 @@ Route::middleware('auth')->group(function () {
         Route::get('/{treatmentSession}/edit', [TreatmentSessionController::class, 'edit'])->name('edit');
         Route::put('/{treatmentSession}', [TreatmentSessionController::class, 'update'])->name('update');
         Route::delete('/{treatmentSession}', [TreatmentSessionController::class, 'destroy'])->name('destroy');
+    });
+
+    // Prescriptions
+    Route::prefix('prescriptions')->name('backend.prescriptions.')->group(function () {
+
+        // Base CRUD
+        Route::get('/', [PrescriptionController::class, 'index'])->name('index');
+        Route::get('/create', [PrescriptionController::class, 'create'])->name('create');
+        Route::post('/', [PrescriptionController::class, 'store'])->name('store');
+
+        // Utility / static routes
+        Route::get('/treatment/{treatment}', [PrescriptionController::class, 'treatmentPrescriptions'])
+            ->name('by-treatment');
+
+        Route::get('/get-medicines', [PrescriptionController::class, 'getMedicines'])
+            ->name('get-medicines');
+
+        Route::post('/quick-create', [PrescriptionController::class, 'quickCreate'])
+            ->name('quick-create');
+
+        Route::get('/{prescription}/print', [PrescriptionController::class, 'print'])
+            ->name('print');
+
+        // Workflow / status actions
+        Route::post('/{prescription}/expire', [PrescriptionController::class, 'expire'])->name('expire');
+        Route::post('/{prescription}/cancel', [PrescriptionController::class, 'cancel'])->name('cancel');
+        Route::post('/{prescription}/mark-as-filled', [PrescriptionController::class, 'markAsFilled'])->name('mark-as-filled');
+        Route::post('/{prescription}/dispense-all', [PrescriptionController::class, 'dispenseAll'])->name('dispense-all');
+
+        // Prescription item actions
+        Route::post('/{prescription}/add-item', [PrescriptionController::class, 'addItem'])->name('add-item');
+        Route::post('/prescription-item/{item}/dispense', [PrescriptionController::class, 'dispenseItem'])->name('item.dispense');
+        Route::post('/prescription-item/{item}/cancel', [PrescriptionController::class, 'cancelItem'])->name('item.cancel');
+        Route::delete('/prescription-item/{item}', [PrescriptionController::class, 'removeItem'])->name('item.remove');
+
+        // Parameterized CRUD routes (ALWAYS LAST)
+        Route::get('/{prescription}', [PrescriptionController::class, 'show'])->name('show');
+        Route::get('/{prescription}/edit', [PrescriptionController::class, 'edit'])->name('edit');
+        Route::put('/{prescription}', [PrescriptionController::class, 'update'])->name('update');
+        Route::delete('/{prescription}', [PrescriptionController::class, 'destroy'])->name('destroy');
+    });
+
+    // Medical files
+    Route::prefix('medical-files')->name('backend.medical_files.')->group(function () {
+
+        // CRUD
+        Route::get('/', [MedicalFileController::class, 'index'])->name('index');
+        Route::get('/create', [MedicalFileController::class, 'create'])->name('create');
+        Route::post('/', [MedicalFileController::class, 'store'])->name('store');
+
+        // Utility / AJAX routes
+        Route::get('/patient/{patientId}', [MedicalFileController::class, 'getFilesByPatient'])->name('by-patient');
+        Route::get('/{id}/download', [MedicalFileController::class, 'download'])->name('download');
+
+        // Parameterized CRUD
+        Route::get('/{id}', [MedicalFileController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [MedicalFileController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [MedicalFileController::class, 'update'])->name('update');
+        Route::delete('/{id}', [MedicalFileController::class, 'destroy'])->name('destroy');
+    });
+
+    // Inventory Stock
+    Route::prefix('inventory-stock')->name('backend.inventory_stock.')->group(function () {
+
+        // CRUD Routes
+        Route::get('/', [InventoryStockController::class, 'index'])->name('index');
+        Route::get('/create', [InventoryStockController::class, 'create'])->name('create');
+        Route::post('/', [InventoryStockController::class, 'store'])->name('store');
+        Route::get('/{id}', [InventoryStockController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [InventoryStockController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InventoryStockController::class, 'update'])->name('update');
+        Route::delete('/{id}', [InventoryStockController::class, 'destroy'])->name('destroy');
+
+        // Stock adjustment
+        Route::post('/{id}/adjust', [InventoryStockController::class, 'adjustStock'])->name('adjust');
+
+        // Reports
+        Route::get('/reports/low-stock', [InventoryStockController::class, 'lowStockReport'])->name('reports.low_stock');
+        Route::get('/reports/expiry', [InventoryStockController::class, 'expiryReport'])->name('reports.expiry');
+    });
+
+    // Inventory transactions
+    Route::prefix('inventory-transactions')->name('backend.inventory_transactions.')->group(function () {
+
+        // CRUD Routes
+        Route::get('/', [InventoryTransactionController::class, 'index'])->name('index');
+        Route::get('/create', [InventoryTransactionController::class, 'create'])->name('create');
+        Route::post('/', [InventoryTransactionController::class, 'store'])->name('store');
+        Route::get('/{id}', [InventoryTransactionController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [InventoryTransactionController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InventoryTransactionController::class, 'update'])->name('update');
+        Route::delete('/{id}', [InventoryTransactionController::class, 'destroy'])->name('destroy');
+
+        // Reports
+        Route::get('/reports/purchases', [InventoryTransactionController::class, 'purchaseReport'])->name('reports.purchase');
+        Route::get('/reports/consumptions', [InventoryTransactionController::class, 'consumptionReport'])->name('reports.consumption');
+
+        // Stock movement
+        Route::get('/{itemId}/movement', [InventoryTransactionController::class, 'stockMovement'])->name('movement');
     });
 });
 
