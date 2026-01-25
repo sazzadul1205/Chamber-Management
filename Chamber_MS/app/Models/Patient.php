@@ -93,6 +93,15 @@ class Patient extends Model
     {
         return $this->hasMany(Payment::class);
     }
+    public function families()
+    {
+        return $this->belongsToMany(
+            PatientFamily::class,
+            'patient_family_members',
+            'patient_id',
+            'family_id'
+        )->withPivot('relationship', 'is_head')->withTimestamps();
+    }
 
     // =========================
     // SCOPES

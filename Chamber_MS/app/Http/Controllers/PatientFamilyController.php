@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PatientFamily;
 use App\Models\Patient;
+use App\Models\PatientFamilyMember;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -24,7 +25,7 @@ class PatientFamilyController extends Controller
 
         $families = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        return view('patient-families.index', compact('families'));
+        return view('backend.patient-families.index', compact('families'));
     }
 
     // =========================
@@ -33,7 +34,7 @@ class PatientFamilyController extends Controller
     public function create()
     {
         $patients = Patient::active()->get(); // Tailwind-ready: populate select dropdown
-        return view('patient-families.create', compact('patients'));
+        return view('backend.patient-families.create', compact('patients'));
     }
 
     // =========================
@@ -62,7 +63,7 @@ class PatientFamilyController extends Controller
         });
 
         return redirect()
-            ->route('patient-families.index')
+            ->route('backend.patient-families.index')
             ->with('success', 'Family created successfully.');
     }
 
@@ -75,11 +76,11 @@ class PatientFamilyController extends Controller
 
         // Get patients not in any family (for adding members)
         $availablePatients = Patient::active()
-            ->whereDoesntHave('family')
+            ->whereDoesntHave('families') // note the plural 'families' now
             ->where('id', '!=', $patientFamily->head_patient_id)
             ->get();
 
-        return view('patient-families.show', compact('patientFamily', 'availablePatients'));
+        return view('backend.patient-families.show', compact('patientFamily', 'availablePatients'));
     }
 
     // =========================
@@ -88,7 +89,7 @@ class PatientFamilyController extends Controller
     public function edit(PatientFamily $patientFamily)
     {
         $patients = Patient::active()->get();
-        return view('patient-families.edit', compact('patientFamily', 'patients'));
+        return view('backend.patient-families.edit', compact('patientFamily', 'patients'));
     }
 
     // =========================
@@ -112,7 +113,7 @@ class PatientFamilyController extends Controller
             ->update(['is_head' => true]);
 
         return redirect()
-            ->route('patient-families.index')
+            ->route('backend.patient-families.index')
             ->with('success', 'Family updated successfully.');
     }
 
@@ -124,7 +125,7 @@ class PatientFamilyController extends Controller
         $patientFamily->delete();
 
         return redirect()
-            ->route('patient-families.index')
+            ->route('backend.patient-families.index')
             ->with('success', 'Family deleted successfully.');
     }
 
@@ -146,6 +147,7 @@ class PatientFamilyController extends Controller
 
         return back()->with('success', 'Member added successfully.');
     }
+
 
     // =========================
     // REMOVE MEMBER FROM FAMILY

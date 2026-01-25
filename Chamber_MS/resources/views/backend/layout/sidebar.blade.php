@@ -35,8 +35,16 @@
                     'icon' => 'list',
                     'route' => 'backend.patients.index',
                 ],
-                ['label' => 'Family Management'],
-                ['label' => 'Referral Tracking'],
+                [
+                    'label' => 'Family Management',
+                    'icon' => 'Family',
+                    'route' => 'backend.patient-families.index',
+                ],
+                [
+                    'label' => 'Referral Tracking',
+                    'icon' => 'share-alt',
+                    'route' => 'backend.patients.search', // assuming search route
+                ],
             ],
         ],
 

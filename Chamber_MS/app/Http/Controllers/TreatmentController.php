@@ -9,7 +9,7 @@ use App\Models\DentalChair;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class AppointmentController extends Controller
+class TreatmentController extends Controller
 {
     // =========================
     // LIST APPOINTMENTS

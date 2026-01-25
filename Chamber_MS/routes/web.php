@@ -137,11 +137,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('backend/patients/search/ajax', [PatientController::class, 'search'])->name('backend.patients.search');
     Route::get('backend/patients/{patient}/medical-history', [PatientController::class, 'medicalHistory'])->name('backend.patients.medical_history');
 
+    // Patient Families
     Route::resource('patient-families', PatientFamilyController::class)->names('backend.patient-families');
     Route::get('patient-families/generate-code', [PatientFamilyController::class, 'generateCode'])->name('backend.patient-families.generate-code');
-    Route::post('patient-families/{family}/members', [PatientFamilyController::class, 'addMember'])->name('backend.patient-families.members.add');
-    Route::delete('patient-families/{family}/members/{patient}', [PatientFamilyController::class, 'removeMember'])->name('backend.patient-families.members.remove');
-    Route::post('patient-families/{family}/set-head/{patient}', [PatientFamilyController::class, 'setHead'])->name('backend.patient-families.set-head');
+    Route::post('patient-families/{patientFamily}/members', [PatientFamilyController::class, 'addMember'])->name('backend.patient-families.members.add');
+    Route::delete('patient-families/{patientFamily}/members/{patient}', [PatientFamilyController::class, 'removeMember'])->name('backend.patient-families.members.remove');
+    Route::post('patient-families/{patientFamily}/set-head/{patient}', [PatientFamilyController::class, 'setHead'])->name('backend.patient-families.set-head');
 
     // -----------------------------
     // Dental Charts
