@@ -9,6 +9,9 @@ class Payment extends Model
 {
     use HasFactory;
 
+    /*-----------------------------------
+     | Fillable & Casts
+     *-----------------------------------*/
     protected $fillable = [
         'payment_no',
         'invoice_id',
@@ -34,37 +37,41 @@ class Payment extends Model
         'is_advance' => 'boolean'
     ];
 
-    // Relationships
+    /*-----------------------------------
+     | Relationships
+     *-----------------------------------*/
     public function invoice()
     {
         return $this->belongsTo(Invoice::class);
     }
-
     public function patient()
     {
         return $this->belongsTo(Patient::class);
     }
-
     public function installment()
     {
         return $this->belongsTo(PaymentInstallment::class, 'installment_id');
     }
-
     public function treatmentSession()
     {
         return $this->belongsTo(TreatmentSession::class, 'for_treatment_session_id');
     }
-
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-
     public function allocations()
     {
         return $this->hasMany(PaymentAllocation::class);
     }
+    public function receipt()
+    {
+        return $this->hasOne(Receipt::class);
+    }
 
+    /*-----------------------------------
+     | Accessors
+     *-----------------------------------*/
     public function getHasReceiptAttribute(): bool
     {
         return !is_null($this->receipt);
@@ -75,53 +82,6 @@ class Payment extends Model
         return $this->amount - $this->allocations->sum('allocated_amount');
     }
 
-    public function receipt()
-    {
-        return $this->hasOne(Receipt::class);
-    }
-
-    // Scopes
-    public function scopeCompleted($query)
-    {
-        return $query->where('status', 'completed');
-    }
-
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
-
-    public function scopeCancelled($query)
-    {
-        return $query->where('status', 'cancelled');
-    }
-
-    public function scopeRefunded($query)
-    {
-        return $query->where('status', 'refunded');
-    }
-
-    public function scopeForInvoice($query, $invoiceId)
-    {
-        return $query->where('invoice_id', $invoiceId);
-    }
-
-    public function scopeForPatient($query, $patientId)
-    {
-        return $query->where('patient_id', $patientId);
-    }
-
-    public function scopeBetweenDates($query, $startDate, $endDate)
-    {
-        return $query->whereBetween('payment_date', [$startDate, $endDate]);
-    }
-
-    public function scopeByMethod($query, $method)
-    {
-        return $query->where('payment_method', $method);
-    }
-
-    // Accessors
     public function getStatusBadgeAttribute()
     {
         $badges = [
@@ -130,7 +90,6 @@ class Payment extends Model
             'cancelled' => 'badge bg-danger',
             'refunded' => 'badge bg-secondary'
         ];
-
         $labels = [
             'pending' => 'Pending',
             'completed' => 'Completed',
@@ -152,7 +111,6 @@ class Payment extends Model
             'mobile_banking' => 'badge bg-purple',
             'other' => 'badge bg-secondary'
         ];
-
         $labels = [
             'cash' => 'Cash',
             'card' => 'Card',
@@ -174,7 +132,6 @@ class Payment extends Model
             'advance' => 'badge bg-info',
             'refund' => 'badge bg-danger'
         ];
-
         $labels = [
             'full' => 'Full Payment',
             'partial' => 'Partial Payment',
@@ -188,8 +145,7 @@ class Payment extends Model
 
     public function getIsRefundableAttribute()
     {
-        return $this->status == 'completed' &&
-            $this->created_at->diffInDays(now()) <= 30; // Refund within 30 days
+        return $this->status == 'completed' && $this->created_at->diffInDays(now()) <= 30;
     }
 
     public function getFormattedPaymentDateAttribute()
@@ -197,19 +153,54 @@ class Payment extends Model
         return $this->payment_date->format('d M Y, h:i A');
     }
 
-    // Methods
+    /*-----------------------------------
+     | Scopes
+     *-----------------------------------*/
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', 'cancelled');
+    }
+    public function scopeRefunded($query)
+    {
+        return $query->where('status', 'refunded');
+    }
+    public function scopeForInvoice($query, $invoiceId)
+    {
+        return $query->where('invoice_id', $invoiceId);
+    }
+    public function scopeForPatient($query, $patientId)
+    {
+        return $query->where('patient_id', $patientId);
+    }
+    public function scopeBetweenDates($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('payment_date', [$startDate, $endDate]);
+    }
+    public function scopeByMethod($query, $method)
+    {
+        return $query->where('payment_method', $method);
+    }
+
+    /*-----------------------------------
+     | Payment Methods
+     *-----------------------------------*/
     public static function generatePaymentNo()
     {
         $latest = self::withTrashed()->latest()->first();
         $year = date('Y');
         $month = date('m');
 
-        if ($latest) {
-            $lastNo = $latest->payment_no;
-            if (str_starts_with($lastNo, 'PAY' . $year . $month)) {
-                $number = intval(substr($lastNo, 9)) + 1;
-                return 'PAY' . $year . $month . str_pad($number, 4, '0', STR_PAD_LEFT);
-            }
+        if ($latest && str_starts_with($latest->payment_no, 'PAY' . $year . $month)) {
+            $number = intval(substr($latest->payment_no, 9)) + 1;
+            return 'PAY' . $year . $month . str_pad($number, 4, '0', STR_PAD_LEFT);
         }
 
         return 'PAY' . $year . $month . '0001';
@@ -217,41 +208,29 @@ class Payment extends Model
 
     public function processPayment()
     {
-        // Update invoice paid amount
         $this->invoice->addPayment($this->amount);
 
-        // Update installment if applicable
         if ($this->installment_id) {
             $this->installment->addPayment($this->amount);
         }
 
-        // Mark as completed
         $this->status = 'completed';
         $this->save();
     }
 
     public function refund($reason = 'Refund requested')
     {
-        if (!$this->is_refundable) {
-            throw new \Exception('Payment is not refundable');
-        }
+        if (!$this->is_refundable) throw new \Exception('Payment is not refundable');
 
-        // Refund invoice payment
         $this->invoice->deductPayment($this->amount);
+        if ($this->installment_id) $this->installment->deductPayment($this->amount);
 
-        // Refund installment if applicable
-        if ($this->installment_id) {
-            $this->installment->deductPayment($this->amount);
-        }
-
-        // Update payment status
         $this->status = 'refunded';
         $this->remarks = ($this->remarks ? $this->remarks . "\n" : '') .
             date('Y-m-d H:i') . ': Refunded - ' . $reason;
         $this->save();
 
-        // Create a refund payment record
-        $refundPayment = self::create([
+        return self::create([
             'payment_no' => self::generatePaymentNo(),
             'invoice_id' => $this->invoice_id,
             'patient_id' => $this->patient_id,
@@ -264,15 +243,11 @@ class Payment extends Model
             'status' => 'completed',
             'created_by' => $this->created_by
         ]);
-
-        return $refundPayment;
     }
 
     public function cancel($reason = 'Payment cancelled')
     {
-        if ($this->status != 'pending') {
-            throw new \Exception('Only pending payments can be cancelled');
-        }
+        if ($this->status != 'pending') throw new \Exception('Only pending payments can be cancelled');
 
         $this->status = 'cancelled';
         $this->remarks = ($this->remarks ? $this->remarks . "\n" : '') .
@@ -282,18 +257,15 @@ class Payment extends Model
 
     public function allocateToInstallment($installmentId, $amount, $notes = null)
     {
-        // Create payment allocation (we'll create PaymentAllocation model in next package)
-        // For now, just update the installment
         $installment = PaymentInstallment::find($installmentId);
-        if ($installment) {
-            $installment->addPayment($amount);
+        if (!$installment) return;
 
-            // Record allocation in remarks
-            $this->remarks = ($this->remarks ? $this->remarks . "\n" : '') .
-                date('Y-m-d H:i') . ': Allocated ৳' . number_format($amount, 2) .
-                ' to installment ' . $installment->installment_number .
-                ($notes ? ' - ' . $notes : '');
-            $this->save();
-        }
+        $installment->addPayment($amount);
+
+        $this->remarks = ($this->remarks ? $this->remarks . "\n" : '') .
+            date('Y-m-d H:i') . ': Allocated ৳' . number_format($amount, 2) .
+            ' to installment ' . $installment->installment_number .
+            ($notes ? ' - ' . $notes : '');
+        $this->save();
     }
 }

@@ -11,6 +11,7 @@ class PaymentAllocation extends Model
 {
     use HasFactory;
 
+    // Fillable fields for mass assignment
     protected $fillable = [
         'payment_id',
         'installment_id',
@@ -21,94 +22,108 @@ class PaymentAllocation extends Model
         'created_by'
     ];
 
+    // Casts for automatic type conversion
     protected $casts = [
         'allocated_amount' => 'decimal:2',
         'allocation_date' => 'datetime',
     ];
 
-    /**
-     * Get the payment that owns the allocation
-     */
+    /*-----------------------------------
+     | Relationships
+     *-----------------------------------*/
+
+    // Payment this allocation belongs to
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class);
     }
 
-    /**
-     * Get the installment that owns the allocation
-     */
+    // Installment this allocation is applied to
     public function installment(): BelongsTo
     {
         return $this->belongsTo(PaymentInstallment::class, 'installment_id');
     }
 
-    /**
-     * Get the treatment session that owns the allocation
-     */
+    // Treatment session this allocation is applied to
     public function treatmentSession(): BelongsTo
     {
         return $this->belongsTo(TreatmentSession::class);
     }
 
-    /**
-     * Get the user who created the allocation
-     */
+    // User who created this allocation
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Scope: Allocations for a specific payment
-     */
+    /*-----------------------------------
+     | Scopes
+     *-----------------------------------*/
+
+    // Filter allocations by payment
     public function scopeForPayment($query, $paymentId)
     {
         return $query->where('payment_id', $paymentId);
     }
 
-    /**
-     * Scope: Allocations for a specific installment
-     */
+    // Filter allocations by installment
     public function scopeForInstallment($query, $installmentId)
     {
         return $query->where('installment_id', $installmentId);
     }
 
-    /**
-     * Scope: Allocations for a specific treatment session
-     */
+    // Filter allocations by treatment session
     public function scopeForTreatmentSession($query, $sessionId)
     {
         return $query->where('treatment_session_id', $sessionId);
     }
 
-    /**
-     * Get allocation type based on what it's allocated to
-     */
+    /*-----------------------------------
+     | Accessors
+     *-----------------------------------*/
+
+    // Determine allocation type
     public function getAllocationTypeAttribute(): string
     {
         if ($this->installment_id && $this->treatment_session_id) {
             return 'both';
-        } elseif ($this->installment_id) {
+        }
+        if ($this->installment_id) {
             return 'installment';
-        } elseif ($this->treatment_session_id) {
+        }
+        if ($this->treatment_session_id) {
             return 'session';
         }
         return 'unknown';
     }
 
-    /**
-     * Get description of what this allocation is for
-     */
+    // Describe allocation for display
     public function getAllocationDescriptionAttribute(): string
     {
-        if ($this->allocation_type === 'both') {
-            return "Installment #{$this->installment->installment_number} & Session #{$this->treatmentSession->session_number}";
-        } elseif ($this->allocation_type === 'installment') {
-            return "Installment #{$this->installment->installment_number}";
-        } elseif ($this->allocation_type === 'session') {
-            return "Session #{$this->treatmentSession->session_number}";
+        switch ($this->allocation_type) {
+            case 'both':
+                return "Installment #{$this->installment->installment_number} & Session #{$this->treatmentSession->session_number}";
+            case 'installment':
+                return "Installment #{$this->installment->installment_number}";
+            case 'session':
+                return "Session #{$this->treatmentSession->session_number}";
+            default:
+                return 'Unknown Allocation';
         }
-        return 'Unknown Allocation';
+    }
+
+    // Tailwind badge helper for allocation type
+    public function getAllocationBadgeAttribute(): string
+    {
+        $colors = [
+            'installment' => 'bg-blue-500',
+            'session' => 'bg-green-500',
+            'both' => 'bg-purple-500',
+            'unknown' => 'bg-gray-500'
+        ];
+
+        return "<span class='badge {$colors[$this->allocation_type]} text-white px-2 py-1 rounded'>"
+            . ucfirst($this->allocation_type) .
+            "</span>";
     }
 }

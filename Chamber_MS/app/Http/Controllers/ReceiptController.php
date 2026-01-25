@@ -12,45 +12,46 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class ReceiptController extends Controller
 {
     /**
+     * Load common receipt relationships
+     */
+    private function loadRelations(Receipt $receipt): Receipt
+    {
+        return $receipt->load([
+            'payment.invoice.treatment',
+            'payment.allocations.installment',
+            'payment.allocations.treatmentSession',
+            'patient',
+            'creator',
+            'printer'
+        ]);
+    }
+
+    /**
      * Display a listing of receipts
      */
     public function index(Request $request)
     {
+        // Base query with relations
         $query = Receipt::with(['payment', 'patient', 'creator', 'printer'])
             ->orderBy('receipt_date', 'desc');
 
-        // Apply filters
-        if ($request->filled('receipt_no')) {
-            $query->where('receipt_no', 'like', '%' . $request->receipt_no . '%');
-        }
-
-        if ($request->filled('patient_id')) {
-            $query->where('patient_id', $request->patient_id);
-        }
-
-        if ($request->filled('payment_id')) {
-            $query->where('payment_id', $request->payment_id);
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('receipt_date', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('receipt_date', '<=', $request->date_to);
-        }
-
-        if ($request->filled('printed')) {
-            if ($request->printed === 'yes') {
-                $query->whereNotNull('printed_at');
-            } else {
-                $query->whereNull('printed_at');
+        // Dynamic filters
+        foreach (['receipt_no', 'patient_id', 'payment_id', 'date_from', 'date_to'] as $filter) {
+            if ($request->$filter) {
+                if ($filter === 'date_from') $query->whereDate('receipt_date', '>=', $request->$filter);
+                elseif ($filter === 'date_to') $query->whereDate('receipt_date', '<=', $request->$filter);
+                else $query->where($filter, 'like', '%' . $request->$filter . '%');
             }
+        }
+
+        // Filter by printed/unprinted
+        if ($request->printed) {
+            $query->whereNotNull('printed_at', $request->printed === 'yes');
         }
 
         $receipts = $query->paginate(20);
 
-        // For patient filter dropdown
+        // Active patients for filter dropdown
         $patients = Patient::where('status', 'active')
             ->orderBy('full_name')
             ->get(['id', 'full_name', 'patient_code']);
@@ -63,27 +64,24 @@ class ReceiptController extends Controller
      */
     public function create(Request $request)
     {
-        $payment = null;
-        $payments = collect();
+        $payment = $request->payment_id
+            ? Payment::with(['patient', 'invoice'])->findOrFail($request->payment_id)
+            : null;
 
-        if ($request->filled('payment_id')) {
-            $payment = Payment::with(['patient', 'invoice'])->findOrFail($request->payment_id);
-
-            // Check if receipt already exists for this payment
-            $existingReceipt = Receipt::where('payment_id', $payment->id)->first();
-            if ($existingReceipt) {
-                return redirect()->route('receipts.show', $existingReceipt)
-                    ->with('info', 'A receipt already exists for this payment.');
-            }
-        } else {
-            // Get payments without receipts
-            $payments = Payment::whereDoesntHave('receipt')
-                ->where('status', 'completed')
-                ->with(['patient', 'invoice'])
-                ->orderBy('payment_date', 'desc')
-                ->limit(50)
-                ->get();
+        // Existing receipt check
+        if ($payment) {
+            $existing = Receipt::where('payment_id', $payment->id)->first();
+            if ($existing) return redirect()->route('receipts.show', $existing)
+                ->with('info', 'Receipt already exists.');
         }
+
+        // List of recent payments without receipts
+        $payments = $payment ? collect() : Payment::whereDoesntHave('receipt')
+            ->where('status', 'completed')
+            ->with(['patient', 'invoice'])
+            ->orderByDesc('payment_date')
+            ->limit(50)
+            ->get();
 
         return view('receipts.create', compact('payment', 'payments'));
     }
@@ -100,15 +98,13 @@ class ReceiptController extends Controller
         ]);
 
         DB::beginTransaction();
-
         try {
-            $payment = Payment::with(['patient'])->findOrFail($request->payment_id);
+            $payment = Payment::with('patient')->findOrFail($request->payment_id);
 
-            // Check if receipt already exists
-            $existingReceipt = Receipt::where('payment_id', $payment->id)->first();
-            if ($existingReceipt) {
-                return redirect()->route('receipts.show', $existingReceipt)
-                    ->with('warning', 'Receipt already exists for this payment.');
+            // Prevent duplicate receipt
+            if (Receipt::where('payment_id', $payment->id)->exists()) {
+                return redirect()->route('receipts.show', $payment->receipt)
+                    ->with('warning', 'Receipt already exists.');
             }
 
             // Create receipt
@@ -122,9 +118,8 @@ class ReceiptController extends Controller
             ]);
 
             DB::commit();
-
             return redirect()->route('receipts.show', $receipt)
-                ->with('success', 'Receipt created successfully. You can now print it.');
+                ->with('success', 'Receipt created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
@@ -134,49 +129,29 @@ class ReceiptController extends Controller
     }
 
     /**
-     * Display the specified receipt
+     * Display a specific receipt
      */
     public function show(Receipt $receipt)
     {
-        $receipt->load([
-            'payment.invoice.treatment',
-            'payment.allocations.installment',
-            'payment.allocations.treatmentSession',
-            'patient',
-            'creator',
-            'printer'
-        ]);
-
+        $receipt = $this->loadRelations($receipt);
         return view('receipts.show', compact('receipt'));
     }
 
     /**
-     * Show the form for editing the specified receipt
+     * Edit a receipt
      */
     public function edit(Receipt $receipt)
     {
-        // Only allow editing of unprinted receipts
-        if ($receipt->is_printed) {
-            return redirect()->route('receipts.show', $receipt)
-                ->with('warning', 'Printed receipts cannot be edited.');
-        }
-
-        $receipt->load(['payment']);
-
+        // Remove safe condition: editing allowed even if printed
+        $receipt->load('payment');
         return view('receipts.edit', compact('receipt'));
     }
 
     /**
-     * Update the specified receipt
+     * Update receipt
      */
     public function update(Request $request, Receipt $receipt)
     {
-        // Only allow updating of unprinted receipts
-        if ($receipt->is_printed) {
-            return redirect()->route('receipts.show', $receipt)
-                ->with('warning', 'Printed receipts cannot be updated.');
-        }
-
         $request->validate([
             'receipt_date' => 'required|date',
             'receipt_no' => 'required|string|max:20|unique:receipts,receipt_no,' . $receipt->id,
@@ -192,18 +167,11 @@ class ReceiptController extends Controller
     }
 
     /**
-     * Remove the specified receipt
+     * Delete receipt
      */
     public function destroy(Receipt $receipt)
     {
-        // Only allow deletion of unprinted receipts
-        if ($receipt->is_printed) {
-            return redirect()->route('receipts.show', $receipt)
-                ->with('warning', 'Printed receipts cannot be deleted.');
-        }
-
         $receipt->delete();
-
         return redirect()->route('receipts.index')
             ->with('success', 'Receipt deleted successfully.');
     }
@@ -213,23 +181,12 @@ class ReceiptController extends Controller
      */
     public function pdf(Receipt $receipt)
     {
-        $receipt->load([
-            'payment.invoice.treatment',
-            'payment.allocations.installment',
-            'payment.allocations.treatmentSession',
-            'patient',
-            'creator',
-            'printer'
-        ]);
+        $receipt = $this->loadRelations($receipt);
 
-        // Mark as printed if not already
-        if (!$receipt->is_printed) {
-            $receipt->markAsPrinted(auth()->id());
-        }
+        // Mark printed
+        $receipt->markAsPrinted(auth()->id());
 
-        $data = $receipt->getReceiptData();
-
-        $pdf = PDF::loadView('receipts.pdf', $data)
+        $pdf = PDF::loadView('receipts.pdf', $receipt->getReceiptData())
             ->setPaper('a4', 'portrait')
             ->setOptions([
                 'defaultFont' => 'sans-serif',
@@ -241,22 +198,12 @@ class ReceiptController extends Controller
     }
 
     /**
-     * Preview receipt as HTML
+     * Preview receipt HTML
      */
     public function preview(Receipt $receipt)
     {
-        $receipt->load([
-            'payment.invoice.treatment',
-            'payment.allocations.installment',
-            'payment.allocations.treatmentSession',
-            'patient',
-            'creator',
-            'printer'
-        ]);
-
-        $data = $receipt->getReceiptData();
-
-        return view('receipts.preview', $data);
+        $receipt = $this->loadRelations($receipt);
+        return view('receipts.preview', $receipt->getReceiptData());
     }
 
     /**
@@ -264,14 +211,9 @@ class ReceiptController extends Controller
      */
     public function markPrinted(Receipt $receipt)
     {
-        if (!$receipt->is_printed) {
-            $receipt->markAsPrinted(auth()->id());
-            return redirect()->route('receipts.show', $receipt)
-                ->with('success', 'Receipt marked as printed.');
-        }
-
+        $receipt->markAsPrinted(auth()->id());
         return redirect()->route('receipts.show', $receipt)
-            ->with('info', 'Receipt is already marked as printed.');
+            ->with('success', 'Receipt marked as printed.');
     }
 
     /**
@@ -283,39 +225,35 @@ class ReceiptController extends Controller
             ->where('status', 'completed')
             ->with(['patient', 'invoice']);
 
-        if ($request->filled('search')) {
+        if ($request->search) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
+            $query->where(
+                fn($q) =>
                 $q->where('payment_no', 'like', "%{$search}%")
-                    ->orWhereHas('patient', function ($q) use ($search) {
-                        $q->where('full_name', 'like', "%{$search}%")
-                            ->orWhere('patient_code', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('invoice', function ($q) use ($search) {
-                        $q->where('invoice_no', 'like', "%{$search}%");
-                    });
-            });
+                    ->orWhereHas(
+                        'patient',
+                        fn($q2) =>
+                        $q2->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('patient_code', 'like', "%{$search}%")
+                    )
+                    ->orWhereHas(
+                        'invoice',
+                        fn($q3) =>
+                        $q3->where('invoice_no', 'like', "%{$search}%")
+                    )
+            );
         }
 
-        $payments = $query->orderBy('payment_date', 'desc')
-            ->limit(20)
-            ->get();
-
-        return response()->json($payments);
+        return response()->json($query->orderByDesc('payment_date')->limit(20)->get());
     }
 
     /**
-     * Get receipt statistics
+     * Receipt statistics
      */
     public function statistics(Request $request)
     {
-        $startDate = $request->filled('start_date')
-            ? $request->start_date
-            : now()->startOfMonth()->toDateString();
-
-        $endDate = $request->filled('end_date')
-            ? $request->end_date
-            : now()->endOfMonth()->toDateString();
+        $startDate = $request->start_date ?: now()->startOfMonth()->toDateString();
+        $endDate = $request->end_date ?: now()->endOfMonth()->toDateString();
 
         $stats = DB::table('receipts')
             ->selectRaw('
@@ -325,22 +263,15 @@ class ReceiptController extends Controller
                 COUNT(CASE WHEN receipts.printed_at IS NULL THEN 1 END) as unprinted_receipts
             ')
             ->join('payments', 'receipts.payment_id', '=', 'payments.id')
-            ->whereDate('receipts.receipt_date', '>=', $startDate)
-            ->whereDate('receipts.receipt_date', '<=', $endDate)
+            ->whereBetween('receipts.receipt_date', [$startDate, $endDate])
             ->first();
 
-        // Daily receipt counts
         $dailyStats = DB::table('receipts')
-            ->selectRaw('
-                DATE(receipt_date) as date,
-                COUNT(*) as count,
-                SUM(payments.amount) as amount
-            ')
+            ->selectRaw('DATE(receipt_date) as date, COUNT(*) as count, SUM(payments.amount) as amount')
             ->join('payments', 'receipts.payment_id', '=', 'payments.id')
-            ->whereDate('receipts.receipt_date', '>=', $startDate)
-            ->whereDate('receipts.receipt_date', '<=', $endDate)
+            ->whereBetween('receipts.receipt_date', [$startDate, $endDate])
             ->groupBy('date')
-            ->orderBy('date', 'desc')
+            ->orderByDesc('date')
             ->get();
 
         return view('receipts.statistics', compact('stats', 'dailyStats', 'startDate', 'endDate'));

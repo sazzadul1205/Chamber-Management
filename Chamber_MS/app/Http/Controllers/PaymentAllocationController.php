@@ -11,70 +11,49 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentAllocationController extends Controller
 {
-    /**
-     * Display a listing of allocations for a payment
-     */
+    /*-----------------------------------
+     | List Allocations
+     *-----------------------------------*/
     public function index(Request $request)
     {
         $query = PaymentAllocation::with(['payment', 'installment', 'treatmentSession', 'creator']);
 
-        if ($request->has('payment_id')) {
-            $query->where('payment_id', $request->payment_id);
-        }
-
-        if ($request->has('installment_id')) {
-            $query->where('installment_id', $request->installment_id);
-        }
-
-        if ($request->has('treatment_session_id')) {
-            $query->where('treatment_session_id', $request->treatment_session_id);
-        }
+        if ($request->has('payment_id')) $query->where('payment_id', $request->payment_id);
+        if ($request->has('installment_id')) $query->where('installment_id', $request->installment_id);
+        if ($request->has('treatment_session_id')) $query->where('treatment_session_id', $request->treatment_session_id);
 
         $allocations = $query->orderBy('allocation_date', 'desc')->paginate(20);
 
         return view('payment-allocations.index', compact('allocations'));
     }
 
-    /**
-     * Show form to create allocation for a specific payment
-     */
+    /*-----------------------------------
+     | Show Form to Create Allocation
+     *-----------------------------------*/
     public function create(Request $request)
     {
         $payment = Payment::findOrFail($request->payment_id);
 
-        // Get unpaid installments for this payment's invoice
+        // Unpaid installments
         $installments = PaymentInstallment::where('invoice_id', $payment->invoice_id)
             ->where('status', '!=', 'paid')
-            ->orWhereRaw('amount_paid < amount_due')
             ->get();
 
-        // Get treatment sessions for this payment's treatment (if any)
-        $sessions = [];
-        if ($payment->for_treatment_session_id) {
-            $sessions = TreatmentSession::where(
-                'treatment_id',
-                $payment->installment?->invoice?->treatment_id ??
-                    $payment->treatmentSession?->treatment_id
-            )
-                ->get();
-        }
+        // Treatment sessions (if any)
+        $sessions = $payment->for_treatment_session_id
+            ? TreatmentSession::where('treatment_id', $payment->treatmentSession->treatment_id)->get()
+            : [];
 
-        // Calculate remaining unallocated amount
-        $allocatedAmount = PaymentAllocation::where('payment_id', $payment->id)
-            ->sum('allocated_amount');
+        // Calculate remaining allocation amount
+        $allocatedAmount = PaymentAllocation::where('payment_id', $payment->id)->sum('allocated_amount');
         $remainingAmount = $payment->amount - $allocatedAmount;
 
-        return view('payment-allocations.create', compact(
-            'payment',
-            'installments',
-            'sessions',
-            'remainingAmount'
-        ));
+        return view('payment-allocations.create', compact('payment', 'installments', 'sessions', 'remainingAmount'));
     }
 
-    /**
-     * Store a newly created allocation
-     */
+    /*-----------------------------------
+     | Store New Allocation
+     *-----------------------------------*/
     public function store(Request $request)
     {
         $request->validate([
@@ -86,26 +65,18 @@ class PaymentAllocationController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        // Ensure at least one allocation target
         if (!$request->installment_id && !$request->treatment_session_id) {
-            return redirect()->back()
-                ->withErrors(['error' => 'Please select either an installment or treatment session to allocate to.'])
-                ->withInput();
+            return redirect()->back()->withErrors(['error' => 'Select at least one allocation target.'])->withInput();
         }
 
         DB::beginTransaction();
-
         try {
             $payment = Payment::findOrFail($request->payment_id);
-
-            // Check if allocation exceeds payment amount
-            $allocatedAmount = PaymentAllocation::where('payment_id', $payment->id)
-                ->sum('allocated_amount');
-            $remainingAmount = $payment->amount - $allocatedAmount;
+            $remainingAmount = $payment->amount - PaymentAllocation::where('payment_id', $payment->id)->sum('allocated_amount');
 
             if ($request->allocated_amount > $remainingAmount) {
                 return redirect()->back()
-                    ->withErrors(['allocated_amount' => "Allocation amount exceeds remaining payment amount (₹{$remainingAmount})"])
+                    ->withErrors(['allocated_amount' => "Allocation exceeds remaining payment amount (₹{$remainingAmount})"])
                     ->withInput();
             }
 
@@ -120,36 +91,12 @@ class PaymentAllocationController extends Controller
                 'created_by' => auth()->id(),
             ]);
 
-            // Update installment if allocated to one
+            // Update installment and invoice if allocated to installment
             if ($request->installment_id) {
-                $installment = PaymentInstallment::find($request->installment_id);
-                $installment->amount_paid += $request->allocated_amount;
-
-                // Update status if fully paid
-                if ($installment->amount_paid >= $installment->amount_due) {
-                    $installment->status = 'paid';
-                } elseif ($installment->amount_paid > 0) {
-                    $installment->status = 'partial';
-                }
-
-                $installment->save();
-
-                // Update parent invoice
-                $invoice = $installment->invoice;
-                $invoice->paid_amount += $request->allocated_amount;
-                $invoice->balance_amount = $invoice->total_amount - $invoice->paid_amount;
-
-                if ($invoice->balance_amount <= 0) {
-                    $invoice->status = 'paid';
-                } elseif ($invoice->paid_amount > 0) {
-                    $invoice->status = 'partial';
-                }
-
-                $invoice->save();
+                $this->applyAllocationToInstallment($request->installment_id, $request->allocated_amount);
             }
 
             DB::commit();
-
             return redirect()->route('payment-allocations.show', $allocation)
                 ->with('success', 'Payment allocation created successfully.');
         } catch (\Exception $e) {
@@ -160,9 +107,9 @@ class PaymentAllocationController extends Controller
         }
     }
 
-    /**
-     * Display the specified allocation
-     */
+    /*-----------------------------------
+     | Show Single Allocation
+     *-----------------------------------*/
     public function show(PaymentAllocation $paymentAllocation)
     {
         $paymentAllocation->load([
@@ -175,33 +122,22 @@ class PaymentAllocationController extends Controller
         return view('payment-allocations.show', compact('paymentAllocation'));
     }
 
-    /**
-     * Show form to edit allocation
-     */
+    /*-----------------------------------
+     | Edit Allocation
+     *-----------------------------------*/
     public function edit(PaymentAllocation $paymentAllocation)
     {
-        $paymentAllocation->load(['payment']);
+        $installments = PaymentInstallment::where('invoice_id', $paymentAllocation->payment->invoice_id)->get();
+        $sessions = $paymentAllocation->payment->for_treatment_session_id
+            ? TreatmentSession::where('treatment_id', $paymentAllocation->payment->treatmentSession->treatment_id)->get()
+            : [];
 
-        $installments = PaymentInstallment::where('invoice_id', $paymentAllocation->payment->invoice_id)
-            ->get();
-
-        $sessions = TreatmentSession::where(
-            'treatment_id',
-            $paymentAllocation->payment->installment?->invoice?->treatment_id ??
-                $paymentAllocation->payment->treatmentSession?->treatment_id
-        )
-            ->get();
-
-        return view('payment-allocations.edit', compact(
-            'paymentAllocation',
-            'installments',
-            'sessions'
-        ));
+        return view('payment-allocations.edit', compact('paymentAllocation', 'installments', 'sessions'));
     }
 
-    /**
-     * Update the specified allocation
-     */
+    /*-----------------------------------
+     | Update Allocation
+     *-----------------------------------*/
     public function update(Request $request, PaymentAllocation $paymentAllocation)
     {
         $request->validate([
@@ -212,86 +148,28 @@ class PaymentAllocationController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        // Ensure at least one allocation target
         if (!$request->installment_id && !$request->treatment_session_id) {
-            return redirect()->back()
-                ->withErrors(['error' => 'Please select either an installment or treatment session to allocate to.'])
-                ->withInput();
+            return redirect()->back()->withErrors(['error' => 'Select at least one allocation target.'])->withInput();
         }
 
         DB::beginTransaction();
-
         try {
-            $oldAllocation = clone $paymentAllocation;
-            $oldAmount = $oldAllocation->allocated_amount;
+            $oldAmount = $paymentAllocation->allocated_amount;
 
-            // Revert old allocation if amount changed or target changed
-            if ($oldAllocation->installment_id) {
-                $oldInstallment = PaymentInstallment::find($oldAllocation->installment_id);
-                $oldInstallment->amount_paid -= $oldAmount;
-
-                // Recalculate status
-                if ($oldInstallment->amount_paid <= 0) {
-                    $oldInstallment->status = 'pending';
-                } elseif ($oldInstallment->amount_paid < $oldInstallment->amount_due) {
-                    $oldInstallment->status = 'partial';
-                }
-
-                $oldInstallment->save();
-
-                // Update parent invoice
-                $oldInvoice = $oldInstallment->invoice;
-                $oldInvoice->paid_amount -= $oldAmount;
-                $oldInvoice->balance_amount = $oldInvoice->total_amount - $oldInvoice->paid_amount;
-
-                if ($oldInvoice->paid_amount <= 0) {
-                    $oldInvoice->status = 'pending';
-                } elseif ($oldInvoice->paid_amount < $oldInvoice->total_amount) {
-                    $oldInvoice->status = 'partial';
-                }
-
-                $oldInvoice->save();
+            // Revert previous allocation from installment & invoice
+            if ($paymentAllocation->installment_id) {
+                $this->revertAllocationFromInstallment($paymentAllocation->installment_id, $oldAmount);
             }
 
             // Update allocation
-            $paymentAllocation->update([
-                'installment_id' => $request->installment_id,
-                'treatment_session_id' => $request->treatment_session_id,
-                'allocated_amount' => $request->allocated_amount,
-                'allocation_date' => $request->allocation_date,
-                'notes' => $request->notes,
-            ]);
+            $paymentAllocation->update($request->only('installment_id', 'treatment_session_id', 'allocated_amount', 'allocation_date', 'notes'));
 
-            // Apply new allocation
+            // Apply new allocation to installment & invoice
             if ($request->installment_id) {
-                $newInstallment = PaymentInstallment::find($request->installment_id);
-                $newInstallment->amount_paid += $request->allocated_amount;
-
-                // Update status
-                if ($newInstallment->amount_paid >= $newInstallment->amount_due) {
-                    $newInstallment->status = 'paid';
-                } elseif ($newInstallment->amount_paid > 0) {
-                    $newInstallment->status = 'partial';
-                }
-
-                $newInstallment->save();
-
-                // Update parent invoice
-                $newInvoice = $newInstallment->invoice;
-                $newInvoice->paid_amount += $request->allocated_amount;
-                $newInvoice->balance_amount = $newInvoice->total_amount - $newInvoice->paid_amount;
-
-                if ($newInvoice->balance_amount <= 0) {
-                    $newInvoice->status = 'paid';
-                } elseif ($newInvoice->paid_amount > 0) {
-                    $newInvoice->status = 'partial';
-                }
-
-                $newInvoice->save();
+                $this->applyAllocationToInstallment($request->installment_id, $request->allocated_amount);
             }
 
             DB::commit();
-
             return redirect()->route('payment-allocations.show', $paymentAllocation)
                 ->with('success', 'Payment allocation updated successfully.');
         } catch (\Exception $e) {
@@ -302,44 +180,18 @@ class PaymentAllocationController extends Controller
         }
     }
 
-    /**
-     * Remove the specified allocation
-     */
+    /*-----------------------------------
+     | Delete Allocation
+     *-----------------------------------*/
     public function destroy(PaymentAllocation $paymentAllocation)
     {
         DB::beginTransaction();
-
         try {
-            // Revert allocation before deleting
             if ($paymentAllocation->installment_id) {
-                $installment = PaymentInstallment::find($paymentAllocation->installment_id);
-                $installment->amount_paid -= $paymentAllocation->allocated_amount;
-
-                // Recalculate status
-                if ($installment->amount_paid <= 0) {
-                    $installment->status = 'pending';
-                } elseif ($installment->amount_paid < $installment->amount_due) {
-                    $installment->status = 'partial';
-                }
-
-                $installment->save();
-
-                // Update parent invoice
-                $invoice = $installment->invoice;
-                $invoice->paid_amount -= $paymentAllocation->allocated_amount;
-                $invoice->balance_amount = $invoice->total_amount - $invoice->paid_amount;
-
-                if ($invoice->paid_amount <= 0) {
-                    $invoice->status = 'pending';
-                } elseif ($invoice->paid_amount < $invoice->total_amount) {
-                    $invoice->status = 'partial';
-                }
-
-                $invoice->save();
+                $this->revertAllocationFromInstallment($paymentAllocation->installment_id, $paymentAllocation->allocated_amount);
             }
 
             $paymentAllocation->delete();
-
             DB::commit();
 
             return redirect()->route('payment-allocations.index')
@@ -351,27 +203,24 @@ class PaymentAllocationController extends Controller
         }
     }
 
-    /**
-     * Get allocations for a specific payment (AJAX)
-     */
+    /*-----------------------------------
+     | AJAX: Get Allocations by Payment
+     *-----------------------------------*/
     public function getByPayment($paymentId)
     {
         $allocations = PaymentAllocation::with(['installment', 'treatmentSession'])
-            ->where('payment_id', $paymentId)
-            ->get();
+            ->where('payment_id', $paymentId)->get();
 
         return response()->json($allocations);
     }
 
-    /**
-     * Get allocation summary for a payment
-     */
+    /*-----------------------------------
+     | AJAX: Allocation Summary for Payment
+     *-----------------------------------*/
     public function getSummary($paymentId)
     {
-        $totalAllocated = PaymentAllocation::where('payment_id', $paymentId)
-            ->sum('allocated_amount');
-
         $payment = Payment::findOrFail($paymentId);
+        $totalAllocated = PaymentAllocation::where('payment_id', $paymentId)->sum('allocated_amount');
         $remainingAmount = $payment->amount - $totalAllocated;
 
         return response()->json([
@@ -379,5 +228,43 @@ class PaymentAllocationController extends Controller
             'remaining_amount' => $remainingAmount,
             'payment_amount' => $payment->amount,
         ]);
+    }
+
+    /*-----------------------------------
+     | Helper: Apply Allocation to Installment & Invoice
+     *-----------------------------------*/
+    private function applyAllocationToInstallment($installmentId, $amount)
+    {
+        $installment = PaymentInstallment::find($installmentId);
+        $installment->amount_paid += $amount;
+        $installment->status = $installment->amount_paid >= $installment->amount_due
+            ? 'paid' : ($installment->amount_paid > 0 ? 'partial' : 'pending');
+        $installment->save();
+
+        $invoice = $installment->invoice;
+        $invoice->paid_amount += $amount;
+        $invoice->balance_amount = $invoice->total_amount - $invoice->paid_amount;
+        $invoice->status = $invoice->balance_amount <= 0
+            ? 'paid' : ($invoice->paid_amount > 0 ? 'partial' : 'pending');
+        $invoice->save();
+    }
+
+    /*-----------------------------------
+     | Helper: Revert Allocation from Installment & Invoice
+     *-----------------------------------*/
+    private function revertAllocationFromInstallment($installmentId, $amount)
+    {
+        $installment = PaymentInstallment::find($installmentId);
+        $installment->amount_paid -= $amount;
+        $installment->status = $installment->amount_paid <= 0
+            ? 'pending' : ($installment->amount_paid < $installment->amount_due ? 'partial' : 'paid');
+        $installment->save();
+
+        $invoice = $installment->invoice;
+        $invoice->paid_amount -= $amount;
+        $invoice->balance_amount = $invoice->total_amount - $invoice->paid_amount;
+        $invoice->status = $invoice->paid_amount <= 0
+            ? 'pending' : ($invoice->paid_amount < $invoice->total_amount ? 'partial' : 'paid');
+        $invoice->save();
     }
 }

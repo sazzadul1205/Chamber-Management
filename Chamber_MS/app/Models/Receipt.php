@@ -10,6 +10,9 @@ class Receipt extends Model
 {
     use HasFactory;
 
+    /*-----------------------------------
+     | Fillable Attributes
+     *-----------------------------------*/
     protected $fillable = [
         'receipt_no',
         'payment_id',
@@ -26,98 +29,83 @@ class Receipt extends Model
         'printed_at' => 'datetime',
     ];
 
-    /**
-     * Boot the model
-     */
+    /*-----------------------------------
+     | Boot: Auto-generate fields on create
+     *-----------------------------------*/
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($receipt) {
-            // Generate receipt number if not provided
+            // Auto-generate receipt number
             if (empty($receipt->receipt_no)) {
                 $receipt->receipt_no = static::generateReceiptNumber();
             }
 
-            // Set created_by if not set
+            // Set creator
             if (empty($receipt->created_by) && auth()->check()) {
                 $receipt->created_by = auth()->id();
             }
 
-            // Convert amount to words if not provided
+            // Convert payment amount to words
             if (empty($receipt->amount_words) && $receipt->payment) {
                 $receipt->amount_words = static::amountToWords($receipt->payment->amount);
             }
         });
     }
 
-    /**
-     * Get the payment associated with the receipt
-     */
+    /*-----------------------------------
+     | Relationships
+     *-----------------------------------*/
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class);
     }
 
-    /**
-     * Get the patient associated with the receipt
-     */
     public function patient(): BelongsTo
     {
         return $this->belongsTo(Patient::class);
     }
 
-    /**
-     * Get the user who printed the receipt
-     */
     public function printer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'printed_by');
     }
 
-    /**
-     * Get the user who created the receipt
-     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Scope: Printed receipts
-     */
+    /*-----------------------------------
+     | Scopes
+     *-----------------------------------*/
     public function scopePrinted($query)
     {
         return $query->whereNotNull('printed_at');
     }
 
-    /**
-     * Scope: Unprinted receipts
-     */
     public function scopeUnprinted($query)
     {
         return $query->whereNull('printed_at');
     }
 
-    /**
-     * Scope: Recent receipts
-     */
     public function scopeRecent($query, $days = 30)
     {
         return $query->where('receipt_date', '>=', now()->subDays($days));
     }
 
-    /**
-     * Check if receipt is printed
-     */
+    /*-----------------------------------
+     | Accessors
+     *-----------------------------------*/
     public function getIsPrintedAttribute(): bool
     {
         return !is_null($this->printed_at);
     }
 
-    /**
-     * Mark receipt as printed
-     */
+    /*-----------------------------------
+     | Actions
+     *-----------------------------------*/
     public function markAsPrinted($userId = null)
     {
         $this->printed_at = now();
@@ -125,57 +113,47 @@ class Receipt extends Model
         return $this->save();
     }
 
-    /**
-     * Generate receipt number
-     */
+    /*-----------------------------------
+     | Receipt Number Generator
+     *-----------------------------------*/
     public static function generateReceiptNumber(): string
     {
         $prefix = 'RCT';
         $year = date('Y');
         $month = date('m');
 
-        // Get last receipt number for this month
         $lastReceipt = static::where('receipt_no', 'like', "{$prefix}{$year}{$month}%")
             ->orderBy('receipt_no', 'desc')
             ->first();
 
-        if ($lastReceipt) {
-            $lastNumber = (int) substr($lastReceipt->receipt_no, -4);
-            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        } else {
-            $newNumber = '0001';
-        }
+        $newNumber = $lastReceipt
+            ? str_pad((int)substr($lastReceipt->receipt_no, -4) + 1, 4, '0', STR_PAD_LEFT)
+            : '0001';
 
         return "{$prefix}{$year}{$month}{$newNumber}";
     }
 
-    /**
-     * Convert amount to words (Indian numbering system)
-     */
+    /*-----------------------------------
+     | Convert Amount to Words (INR)
+     *-----------------------------------*/
     public static function amountToWords(float $amount): string
     {
         $amount = number_format($amount, 2, '.', '');
-        list($rupees, $paise) = explode('.', $amount);
+        [$rupees, $paise] = explode('.', $amount);
 
         $words = self::numberToWords((int)$rupees) . ' Rupees';
-
-        if ($paise > 0) {
+        if ((int)$paise > 0) {
             $words .= ' and ' . self::numberToWords((int)$paise) . ' Paise';
         }
-
-        $words .= ' Only';
-
-        return $words;
+        return $words . ' Only';
     }
 
-    /**
-     * Convert number to words (Indian numbering system)
-     */
+    /*-----------------------------------
+     | Convert number to words (Indian system)
+     *-----------------------------------*/
     private static function numberToWords(int $number): string
     {
-        if ($number == 0) {
-            return 'Zero';
-        }
+        if ($number === 0) return 'Zero';
 
         $ones = [
             '',
@@ -200,94 +178,47 @@ class Receipt extends Model
             'Nineteen'
         ];
 
-        $tens = [
-            '',
-            '',
-            'Twenty',
-            'Thirty',
-            'Forty',
-            'Fifty',
-            'Sixty',
-            'Seventy',
-            'Eighty',
-            'Ninety'
-        ];
-
+        $tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
         $scales = ['', 'Thousand', 'Lakh', 'Crore'];
 
-        // For numbers less than 20
-        if ($number < 20) {
-            return $ones[$number];
-        }
-
-        // For numbers less than 100
-        if ($number < 100) {
-            return $tens[(int)($number / 10)] .
-                ($number % 10 ? ' ' . $ones[$number % 10] : '');
-        }
-
-        // For numbers less than 1000
-        if ($number < 1000) {
-            $hundreds = (int)($number / 100);
-            $remainder = $number % 100;
-
-            $words = $ones[$hundreds] . ' Hundred';
-            if ($remainder) {
-                $words .= ' ' . self::numberToWords($remainder);
-            }
-            return $words;
-        }
-
-        // For larger numbers (Indian numbering system)
         $words = '';
         $scaleIndex = 0;
 
         while ($number > 0) {
-            // Handle last three digits
-            $chunk = $number % 1000;
-            $number = (int)($number / 1000);
-
-            if ($chunk > 0) {
-                $chunkWords = self::numberToWords($chunk);
-                if ($scaleIndex > 0) {
-                    $chunkWords .= ' ' . $scales[$scaleIndex];
-                }
-
-                if ($words) {
-                    $words = $chunkWords . ' ' . $words;
-                } else {
-                    $words = $chunkWords;
-                }
-            }
-
-            // For Indian numbering, next scale is lakh (2 more digits)
-            if ($number > 0) {
+            if ($scaleIndex === 0) {
+                $chunk = $number % 1000;
+                $number = (int)($number / 1000);
+            } else {
                 $chunk = $number % 100;
                 $number = (int)($number / 100);
+            }
 
-                if ($chunk > 0) {
-                    $chunkWords = self::numberToWords($chunk);
-                    $scaleIndex++;
-                    if ($scaleIndex < count($scales)) {
-                        $chunkWords .= ' ' . $scales[$scaleIndex];
-                    }
-
-                    if ($words) {
-                        $words = $chunkWords . ' ' . $words;
-                    } else {
-                        $words = $chunkWords;
+            if ($chunk > 0) {
+                $chunkWords = '';
+                if ($chunk < 20) {
+                    $chunkWords = $ones[$chunk];
+                } elseif ($chunk < 100) {
+                    $chunkWords = $tens[(int)($chunk / 10)] . ' ' . $ones[$chunk % 10];
+                } else {
+                    $chunkWords = $ones[(int)($chunk / 100)] . ' Hundred';
+                    if ($chunk % 100 > 0) {
+                        $chunkWords .= ' ' . self::numberToWords($chunk % 100);
                     }
                 }
-                $scaleIndex++;
+
+                if ($scaleIndex > 0) $chunkWords .= ' ' . $scales[$scaleIndex];
+                $words = $chunkWords . ($words ? ' ' . $words : '');
             }
+
+            $scaleIndex++;
         }
 
         return $words;
     }
 
-    /**
-     * Get receipt data for PDF generation
-     */
+    /*-----------------------------------
+     | Receipt Data for PDF/Print
+     *-----------------------------------*/
     public function getReceiptData(): array
     {
         $payment = $this->payment->load(['invoice', 'patient', 'allocations.installment', 'allocations.treatmentSession']);
