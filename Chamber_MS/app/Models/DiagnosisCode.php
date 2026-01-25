@@ -9,29 +9,49 @@ class DiagnosisCode extends Model
 {
     use HasFactory;
 
+    /**
+     * Mass assignable attributes
+     */
     protected $fillable = [
         'code',
         'description',
         'category',
-        'status'
+        'status',
     ];
 
+    /**
+     * Attribute casting
+     */
     protected $casts = [
-        'status' => 'string'
+        'status' => 'string',
     ];
 
-    // Scopes
+    /*
+    |--------------------------------------------------------------------------
+    | Query Scopes
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Only active diagnosis codes
+     */
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
     }
 
-    public function scopeByCategory($query, $category)
+    /**
+     * Filter by category
+     */
+    public function scopeByCategory($query, string $category)
     {
         return $query->where('category', $category);
     }
 
-    public function scopeSearch($query, $search)
+    /**
+     * Search by code, description, or category
+     */
+    public function scopeSearch($query, string $search)
     {
         return $query->where(function ($q) use ($search) {
             $q->where('code', 'like', "%{$search}%")
@@ -40,61 +60,71 @@ class DiagnosisCode extends Model
         });
     }
 
-    // Relationships
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Treatments associated with this diagnosis code
+     *
+     * NOTE:
+     * If this relationship breaks, it SHOULD fail.
+     * Silent failures hide real bugs.
+     */
     public function treatments()
     {
-        if (class_exists(\App\Models\Treatment::class)) {
-            return $this->hasMany(\App\Models\Treatment::class, 'diagnosis_code', 'code');
-        }
-
-        // Return an empty relation to avoid breaking queries
-        return $this->hasManyDummy();
+        return $this->hasMany(Treatment::class, 'diagnosis_code', 'code');
     }
 
-    // Helper methods
-    public static function categories()
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers / Accessors
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Available diagnosis categories
+     */
+    public static function categories(): array
     {
         return [
-            'dental_caries' => 'Dental Caries',
-            'pulp_diseases' => 'Pulp Diseases',
+            'dental_caries'        => 'Dental Caries',
+            'pulp_diseases'        => 'Pulp Diseases',
             'periodontal_diseases' => 'Periodontal Diseases',
-            'gingivitis' => 'Gingivitis',
-            'periodontitis' => 'Periodontitis',
-            'gingival_disorders' => 'Gingival Disorders',
+            'gingivitis'           => 'Gingivitis',
+            'periodontitis'        => 'Periodontitis',
+            'gingival_disorders'   => 'Gingival Disorders',
             'dentofacial_anomalies' => 'Dentofacial Anomalies',
-            'malocclusion' => 'Malocclusion',
-            'tooth_disorders' => 'Tooth Disorders',
-            'alveolar_disorders' => 'Alveolar Disorders',
-            'cysts' => 'Cysts',
-            'jaw_disorders' => 'Jaw Disorders',
-            'salivary_gland' => 'Salivary Gland',
-            'stomatitis' => 'Stomatitis',
-            'oral_mucosa' => 'Oral Mucosa',
-            'common_conditions' => 'Common Conditions',
-            'abscess' => 'Abscess',
-            'other' => 'Other'
+            'malocclusion'         => 'Malocclusion',
+            'tooth_disorders'      => 'Tooth Disorders',
+            'alveolar_disorders'   => 'Alveolar Disorders',
+            'cysts'                => 'Cysts',
+            'jaw_disorders'        => 'Jaw Disorders',
+            'salivary_gland'       => 'Salivary Gland',
+            'stomatitis'           => 'Stomatitis',
+            'oral_mucosa'          => 'Oral Mucosa',
+            'common_conditions'    => 'Common Conditions',
+            'abscess'              => 'Abscess',
+            'other'                => 'Other',
         ];
     }
 
-    public function getCategoryNameAttribute()
+    /**
+     * Human-readable category name
+     */
+    public function getCategoryNameAttribute(): string
     {
-        $categories = self::categories();
-        return $categories[$this->category] ?? ucfirst(str_replace('_', ' ', $this->category));
+        return self::categories()[$this->category]
+            ?? ucfirst(str_replace('_', ' ', $this->category));
     }
 
-    public function getFormattedCodeAttribute()
-    {
-        return '<span class="badge bg-primary">' . $this->code . '</span>';
-    }
-
-    public function getUsageCountAttribute()
+    /**
+     * Number of times this diagnosis is used
+     */
+    public function getUsageCountAttribute(): int
     {
         return $this->treatments()->count();
-    }
-
-    // Helper method to return an empty relation
-    protected function hasManyDummy()
-    {
-        return $this->hasMany(static::class)->whereRaw('1 = 0');
     }
 }

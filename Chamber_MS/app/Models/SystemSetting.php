@@ -9,6 +9,9 @@ class SystemSetting extends Model
 {
     use HasFactory;
 
+    // =======================
+    // Mass Assignable Fields
+    // =======================
     protected $fillable = [
         'setting_key',
         'setting_value',
@@ -16,65 +19,105 @@ class SystemSetting extends Model
         'category',
         'description',
         'is_public',
-        'updated_by'
+        'updated_by',
     ];
 
+    // =======================
+    // Attribute Casting
+    // =======================
     protected $casts = [
         'is_public' => 'boolean',
-        'setting_value' => 'array' // For JSON type
     ];
 
+    // =======================
     // Relationships
+    // =======================
+
+    /**
+     * User who last updated the setting
+     */
     public function updatedBy()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    // Helper methods
+    // =======================
+    // Accessors
+    // =======================
+
+    /**
+     * Always return the setting value
+     * casted based on setting_type
+     */
     public function getValueAttribute()
     {
         return $this->castValue($this->setting_value);
     }
 
+    // =======================
+    // Internal Helpers
+    // =======================
+
+    /**
+     * Cast value based on type
+     */
     protected function castValue($value)
     {
-        switch ($this->setting_type) {
-            case 'boolean':
-                return filter_var($value, FILTER_VALIDATE_BOOLEAN);
-            case 'number':
-                return is_numeric($value) ? (strpos($value, '.') !== false ? (float) $value : (int) $value) : $value;
-            case 'json':
-                return json_decode($value, true);
-            default:
-                return $value;
+        if ($value === null) {
+            return null;
         }
+
+        return match ($this->setting_type) {
+            'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            'number'  => str_contains($value, '.')
+                ? (float) $value
+                : (int) $value,
+            'json'    => json_decode($value, true),
+            default   => $value,
+        };
     }
 
-    // Static helper to get setting
-    public static function getValue($key, $default = null)
+    // =======================
+    // Static Helpers
+    // =======================
+
+    /**
+     * Get a setting value by key
+     */
+    public static function getValue(string $key, $default = null)
     {
-        $setting = self::where('setting_key', $key)->first();
-        return $setting ? $setting->value : $default;
+        return optional(
+            self::where('setting_key', $key)->first()
+        )->value ?? $default;
     }
 
-    // Static helper to set setting
-    public static function setValue($key, $value, $type = 'string', $category = 'general', $description = null, $isPublic = false)
-    {
+    /**
+     * Create or update a setting
+     */
+    public static function setValue(
+        string $key,
+        $value,
+        string $type = 'string',
+        string $category = 'general',
+        ?string $description = null,
+        bool $isPublic = false
+    ): bool {
         $setting = self::firstOrNew(['setting_key' => $key]);
 
-        if ($type === 'json' && is_array($value)) {
-            $value = json_encode($value);
-        } elseif ($type === 'boolean') {
-            $value = $value ? 'true' : 'false';
-        }
+        // Normalize value before saving
+        $normalizedValue = match ($type) {
+            'json'    => json_encode($value),
+            'boolean' => $value ? 'true' : 'false',
+            default   => (string) $value,
+        };
 
         $setting->fill([
-            'setting_value' => $value,
-            'setting_type' => $type,
-            'category' => $category,
-            'description' => $description,
-            'is_public' => $isPublic,
-            'updated_by' => auth()->id()
+            'setting_value' => $normalizedValue,
+            'setting_type'  => $type,
+            'category'      => $category,
+            'description'   => $description,
+            'is_public'     => $isPublic,
+            'updated_by'    => auth()->id(),
         ]);
 
         return $setting->save();

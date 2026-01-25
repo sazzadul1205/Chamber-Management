@@ -7,85 +7,61 @@ use Illuminate\Http\Request;
 
 class MedicineController extends Controller
 {
+    // =========================
+    // INDEX - LIST MEDICINES
+    // =========================
     public function index(Request $request)
     {
         $query = Medicine::query();
 
         // Search filter
-        if ($request->has('search') && $request->search != '') {
+        if ($request->filled('search')) {
             $query->search($request->search);
         }
 
         // Dosage form filter
-        if ($request->has('dosage_form') && $request->dosage_form != 'all') {
+        if ($request->filled('dosage_form') && $request->dosage_form !== 'all') {
             $query->where('dosage_form', $request->dosage_form);
         }
 
         // Status filter
-        if ($request->has('status') && $request->status != 'all') {
+        if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
-        // Sort by
+        // Sorting
         $sortBy = $request->get('sort_by', 'brand_name');
         $sortOrder = $request->get('sort_order', 'asc');
 
         $medicines = $query->orderBy($sortBy, $sortOrder)->paginate(8);
-        $dosageForms = Medicine::dosageForms();
-        $categories = Medicine::medicineCategories();
 
-        // Statistics
-        $totalMedicines = Medicine::count();
-        $activeMedicines = Medicine::active()->count();
-        $injectionsCount = Medicine::where('dosage_form', 'injection')->count();
-        $tabletsCount = Medicine::where('dosage_form', 'tablet')->count();
-
-        return view('backend.medicines.index', compact(
-            'medicines',
-            'dosageForms',
-            'categories',
-            'totalMedicines',
-            'activeMedicines',
-            'injectionsCount',
-            'tabletsCount',
-            'sortBy',
-            'sortOrder'
-        ));
+        return view('backend.medicines.index', [
+            'medicines' => $medicines,
+            'dosageForms' => Medicine::dosageForms(),
+            'categories' => Medicine::medicineCategories(),
+            'totalMedicines' => Medicine::count(),
+            'activeMedicines' => Medicine::active()->count(),
+            'injectionsCount' => Medicine::where('dosage_form', 'injection')->count(),
+            'tabletsCount' => Medicine::where('dosage_form', 'tablet')->count(),
+            'sortBy' => $sortBy,
+            'sortOrder' => $sortOrder,
+        ]);
     }
 
+    // =========================
+    // CREATE / STORE
+    // =========================
     public function create()
     {
-        $dosageForms = Medicine::dosageForms();
-        $units = [
-            'strip' => 'Strip',
-            'tablet' => 'Tablet',
-            'capsule' => 'Capsule',
-            'bottle' => 'Bottle',
-            'tube' => 'Tube',
-            'ampoule' => 'Ampoule',
-            'cartridge' => 'Cartridge',
-            'syringe' => 'Syringe',
-            'vial' => 'Vial',
-            'pack' => 'Pack',
-            'box' => 'Box',
-            'pcs' => 'Pieces'
-        ];
-
-        return view('backend.medicines.create', compact('dosageForms', 'units'));
+        return view('backend.medicines.create', [
+            'dosageForms' => Medicine::dosageForms(),
+            'units' => $this->units(),
+        ]);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'medicine_code' => 'required|string|max:20|unique:medicines',
-            'brand_name' => 'required|string|max:100',
-            'generic_name' => 'required|string|max:100',
-            'strength' => 'nullable|string|max:50',
-            'dosage_form' => 'required|in:' . implode(',', array_keys(Medicine::dosageForms())),
-            'unit' => 'required|string|max:20',
-            'manufacturer' => 'nullable|string|max:100',
-            'status' => 'required|in:active,inactive,discontinued'
-        ]);
+        $request->validate($this->validationRules());
 
         Medicine::create($request->all());
 
@@ -93,64 +69,32 @@ class MedicineController extends Controller
             ->with('success', 'Medicine added successfully.');
     }
 
+    // =========================
+    // SHOW
+    // =========================
     public function show(Medicine $medicine)
     {
-        // Only load prescriptionItems if table/column exist
-        if (
-            class_exists(\App\Models\PrescriptionItem::class) &&
-            \Schema::hasTable('prescription_items') &&
-            \Schema::hasColumn('prescription_items', 'medicine_id')
-        ) {
-            $medicine->load(['prescriptionItems' => function ($q) {
-                try {
-                    $q->with([
-                        'prescription.treatment.patient',
-                        'prescription.treatment.doctor.user'
-                    ])
-                        ->latest()
-                        ->limit(10);
-                } catch (\Exception $e) {
-                    // ignore errors and fallback to empty
-                }
-            }]);
-        }
+        // Load related prescription items with treatment, patient & doctor
+        $medicine->load('prescriptionItems.prescription.treatment.patient');
 
         return view('backend.medicines.show', compact('medicine'));
     }
 
+    // =========================
+    // EDIT / UPDATE
+    // =========================
     public function edit(Medicine $medicine)
     {
-        $dosageForms = Medicine::dosageForms();
-        $units = [
-            'strip' => 'Strip',
-            'tablet' => 'Tablet',
-            'capsule' => 'Capsule',
-            'bottle' => 'Bottle',
-            'tube' => 'Tube',
-            'ampoule' => 'Ampoule',
-            'cartridge' => 'Cartridge',
-            'syringe' => 'Syringe',
-            'vial' => 'Vial',
-            'pack' => 'Pack',
-            'box' => 'Box',
-            'pcs' => 'Pieces'
-        ];
-
-        return view('backend.medicines.edit', compact('medicine', 'dosageForms', 'units'));
+        return view('backend.medicines.edit', [
+            'medicine' => $medicine,
+            'dosageForms' => Medicine::dosageForms(),
+            'units' => $this->units(),
+        ]);
     }
 
     public function update(Request $request, Medicine $medicine)
     {
-        $request->validate([
-            'medicine_code' => 'required|string|max:20|unique:medicines,medicine_code,' . $medicine->id,
-            'brand_name' => 'required|string|max:100',
-            'generic_name' => 'required|string|max:100',
-            'strength' => 'nullable|string|max:50',
-            'dosage_form' => 'required|in:' . implode(',', array_keys(Medicine::dosageForms())),
-            'unit' => 'required|string|max:20',
-            'manufacturer' => 'nullable|string|max:100',
-            'status' => 'required|in:active,inactive,discontinued'
-        ]);
+        $request->validate($this->validationRules($medicine->id));
 
         $medicine->update($request->all());
 
@@ -158,25 +102,30 @@ class MedicineController extends Controller
             ->with('success', 'Medicine updated successfully.');
     }
 
+    // =========================
+    // DESTROY
+    // =========================
     public function destroy(Medicine $medicine)
     {
-        // Check if medicine is being used in prescriptions
         if ($medicine->prescriptionItems()->exists()) {
             return redirect()->route('backend.medicines.index')
                 ->with('error', 'Cannot delete medicine. It is being used in prescriptions.');
         }
 
         $medicine->delete();
+
         return redirect()->route('backend.medicines.index')
             ->with('success', 'Medicine deleted successfully.');
     }
 
-    // API endpoint for autocomplete
+    // =========================
+    // AUTOCOMPLETE API
+    // =========================
     public function autocomplete(Request $request)
     {
-        $query = $request->get('query');
+        $query = $request->get('query', '');
 
-        $medicines = Medicine::active()
+        $results = Medicine::active()
             ->where(function ($q) use ($query) {
                 $q->where('medicine_code', 'like', "%{$query}%")
                     ->orWhere('brand_name', 'like', "%{$query}%")
@@ -184,23 +133,23 @@ class MedicineController extends Controller
             })
             ->limit(15)
             ->get()
-            ->map(function ($medicine) {
-                return [
-                    'id' => $medicine->id,
-                    'value' => $medicine->brand_name . ' (' . $medicine->generic_name . ') ' . $medicine->strength,
-                    'code' => $medicine->medicine_code,
-                    'brand_name' => $medicine->brand_name,
-                    'generic_name' => $medicine->generic_name,
-                    'strength' => $medicine->strength,
-                    'dosage_form' => $medicine->dosage_form,
-                    'unit' => $medicine->unit
-                ];
-            });
+            ->map(fn($m) => [
+                'id' => $m->id,
+                'value' => "{$m->brand_name} ({$m->generic_name}) {$m->strength}",
+                'code' => $m->medicine_code,
+                'brand_name' => $m->brand_name,
+                'generic_name' => $m->generic_name,
+                'strength' => $m->strength,
+                'dosage_form' => $m->dosage_form,
+                'unit' => $m->unit,
+            ]);
 
-        return response()->json($medicines);
+        return response()->json($results);
     }
 
-    // Quick add modal endpoint
+    // =========================
+    // QUICK ADD API
+    // =========================
     public function quickAdd(Request $request)
     {
         $request->validate([
@@ -208,29 +157,18 @@ class MedicineController extends Controller
             'generic_name' => 'required|string|max:100',
             'strength' => 'nullable|string|max:50',
             'dosage_form' => 'required|in:' . implode(',', array_keys(Medicine::dosageForms())),
-            'unit' => 'required|string|max:20'
+            'unit' => 'required|string|max:20',
         ]);
 
-        // Generate medicine code
-        $prefix = strtoupper(substr($request->generic_name, 0, 3));
-        $strengthPart = preg_replace('/[^0-9]/', '', $request->strength);
-        $code = $prefix . '-' . $strengthPart;
-
-        $counter = 1;
-        while (Medicine::where('medicine_code', $code)->exists()) {
-            $code = $prefix . '-' . $strengthPart . '-' . $counter;
-            $counter++;
-        }
-
         $medicine = Medicine::create([
-            'medicine_code' => $code,
+            'medicine_code' => $this->generateCode($request->generic_name, $request->strength),
             'brand_name' => $request->brand_name,
             'generic_name' => $request->generic_name,
             'strength' => $request->strength,
             'dosage_form' => $request->dosage_form,
             'unit' => $request->unit,
             'manufacturer' => $request->manufacturer,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         return response()->json([
@@ -239,24 +177,21 @@ class MedicineController extends Controller
             'code' => $medicine->medicine_code,
             'brand_name' => $medicine->brand_name,
             'generic_name' => $medicine->generic_name,
-            'full_name' => $medicine->full_name
+            'full_name' => $medicine->full_name,
         ]);
     }
 
-    // Export to CSV
-    public function export(Request $request)
+    // =========================
+    // EXPORT CSV
+    // =========================
+    public function export()
     {
         $medicines = Medicine::all();
 
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="medicines_' . date('Y-m-d') . '.csv"',
-        ];
-
-        $callback = function () use ($medicines) {
+        return response()->streamDownload(function () use ($medicines) {
             $file = fopen('php://output', 'w');
 
-            // Header
+            // Header row
             fputcsv($file, [
                 'Medicine Code',
                 'Brand Name',
@@ -269,28 +204,28 @@ class MedicineController extends Controller
                 'Status'
             ]);
 
-            // Data
-            foreach ($medicines as $medicine) {
+            // Data rows
+            foreach ($medicines as $m) {
                 fputcsv($file, [
-                    $medicine->medicine_code,
-                    $medicine->brand_name,
-                    $medicine->generic_name,
-                    $medicine->strength,
-                    $medicine->dosage_form_name,
-                    $medicine->unit,
-                    $medicine->manufacturer,
-                    $medicine->category_name,
-                    ucfirst($medicine->status)
+                    $m->medicine_code,
+                    $m->brand_name,
+                    $m->generic_name,
+                    $m->strength,
+                    $m->dosage_form_name,
+                    $m->unit,
+                    $m->manufacturer,
+                    $m->category_name,
+                    ucfirst($m->status),
                 ]);
             }
 
             fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        }, 'medicines_' . date('Y-m-d') . '.csv');
     }
 
-    // Import from CSV
+    // =========================
+    // IMPORT CSV
+    // =========================
     public function import()
     {
         return view('backend.medicines.import');
@@ -299,70 +234,84 @@ class MedicineController extends Controller
     public function processImport(Request $request)
     {
         $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt'
+            'csv_file' => 'required|file|mimes:csv,txt',
         ]);
 
-        // Process CSV import
-        $path = $request->file('csv_file')->getRealPath();
-        $data = array_map('str_getcsv', file($path));
-
-        $header = array_shift($data);
+        $rows = array_map('str_getcsv', file($request->file('csv_file')->getRealPath()));
+        $header = array_shift($rows);
         $imported = 0;
-        $errors = [];
 
-        foreach ($data as $row) {
-            if (count($row) != count($header)) continue;
+        foreach ($rows as $row) {
+            if (count($row) !== count($header)) continue;
+            $data = array_combine($header, $row);
 
-            $rowData = array_combine($header, $row);
-
-            try {
-                // Generate code if not provided
-                if (empty($rowData['medicine_code'])) {
-                    $prefix = strtoupper(substr($rowData['generic_name'], 0, 3));
-                    $strengthPart = preg_replace('/[^0-9]/', '', $rowData['strength'] ?? '');
-                    $code = $prefix . '-' . $strengthPart;
-
-                    $counter = 1;
-                    while (Medicine::where('medicine_code', $code)->exists()) {
-                        $code = $prefix . '-' . $strengthPart . '-' . $counter;
-                        $counter++;
-                    }
-                    $rowData['medicine_code'] = $code;
-                }
-
-                Medicine::updateOrCreate(
-                    ['medicine_code' => $rowData['medicine_code']],
-                    [
-                        'brand_name' => $rowData['brand_name'],
-                        'generic_name' => $rowData['generic_name'],
-                        'strength' => $rowData['strength'] ?? null,
-                        'dosage_form' => $rowData['dosage_form'] ?? 'tablet',
-                        'unit' => $rowData['unit'] ?? 'strip',
-                        'manufacturer' => $rowData['manufacturer'] ?? null,
-                        'status' => $rowData['status'] ?? 'active'
-                    ]
-                );
-                $imported++;
-            } catch (\Exception $e) {
-                $errors[] = "Row error: " . $e->getMessage();
+            if (empty($data['medicine_code'])) {
+                $data['medicine_code'] = $this->generateCode($data['generic_name'], $data['strength'] ?? '');
             }
+
+            Medicine::updateOrCreate(
+                ['medicine_code' => $data['medicine_code']],
+                [
+                    'brand_name' => $data['brand_name'],
+                    'generic_name' => $data['generic_name'],
+                    'strength' => $data['strength'] ?? null,
+                    'dosage_form' => $data['dosage_form'] ?? 'tablet',
+                    'unit' => $data['unit'] ?? 'strip',
+                    'manufacturer' => $data['manufacturer'] ?? null,
+                    'status' => $data['status'] ?? 'active',
+                ]
+            );
+
+            $imported++;
         }
 
         return redirect()->route('backend.medicines.index')
-            ->with('success', "Imported {$imported} medicines successfully.")
-            ->with('errors', $errors);
+            ->with('success', "Imported {$imported} medicines successfully.");
     }
 
-    // Generate medicine code
-    public function generateCode(Request $request)
+    // =========================
+    // HELPER METHODS
+    // =========================
+
+    // Validation rules, reusable for store/update
+    private function validationRules($ignoreId = null): array
     {
-        $genericName = $request->get('generic_name');
-        $strength = $request->get('strength');
+        $uniqueCodeRule = 'unique:medicines,medicine_code' . ($ignoreId ? ',' . $ignoreId : '');
 
-        if (!$genericName) {
-            return response()->json(['code' => '']);
-        }
+        return [
+            'medicine_code' => "required|string|max:20|{$uniqueCodeRule}",
+            'brand_name' => 'required|string|max:100',
+            'generic_name' => 'required|string|max:100',
+            'strength' => 'nullable|string|max:50',
+            'dosage_form' => 'required|in:' . implode(',', array_keys(Medicine::dosageForms())),
+            'unit' => 'required|string|max:20',
+            'manufacturer' => 'nullable|string|max:100',
+            'status' => 'required|in:active,inactive,discontinued',
+        ];
+    }
 
+    // Medicine units list
+    private function units(): array
+    {
+        return [
+            'strip' => 'Strip',
+            'tablet' => 'Tablet',
+            'capsule' => 'Capsule',
+            'bottle' => 'Bottle',
+            'tube' => 'Tube',
+            'ampoule' => 'Ampoule',
+            'cartridge' => 'Cartridge',
+            'syringe' => 'Syringe',
+            'vial' => 'Vial',
+            'pack' => 'Pack',
+            'box' => 'Box',
+            'pcs' => 'Pieces',
+        ];
+    }
+
+    // Generate unique medicine code
+    private function generateCode(string $genericName, string $strength = ''): string
+    {
         $prefix = strtoupper(substr($genericName, 0, 3));
         $strengthPart = preg_replace('/[^0-9]/', '', $strength);
         $code = $prefix . '-' . $strengthPart;
@@ -373,6 +322,6 @@ class MedicineController extends Controller
             $counter++;
         }
 
-        return response()->json(['code' => $code]);
+        return $code;
     }
 }

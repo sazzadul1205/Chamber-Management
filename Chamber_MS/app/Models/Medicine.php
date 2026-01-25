@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 
 class Medicine extends Model
 {
@@ -18,7 +17,7 @@ class Medicine extends Model
         'dosage_form',
         'unit',
         'manufacturer',
-        'status'
+        'status',
     ];
 
     // =========================
@@ -29,13 +28,13 @@ class Medicine extends Model
         return $query->where('status', 'active');
     }
 
-    public function scopeSearch($query, $search)
+    public function scopeSearch($query, $term)
     {
-        return $query->where(function ($q) use ($search) {
-            $q->where('medicine_code', 'like', "%{$search}%")
-                ->orWhere('brand_name', 'like', "%{$search}%")
-                ->orWhere('generic_name', 'like', "%{$search}%")
-                ->orWhere('manufacturer', 'like', "%{$search}%");
+        return $query->where(function ($q) use ($term) {
+            $q->where('medicine_code', 'like', "%{$term}%")
+                ->orWhere('brand_name', 'like', "%{$term}%")
+                ->orWhere('generic_name', 'like', "%{$term}%")
+                ->orWhere('manufacturer', 'like', "%{$term}%");
         });
     }
 
@@ -45,43 +44,16 @@ class Medicine extends Model
     }
 
     // =========================
-    // RELATIONSHIPS (Safe)
+    // RELATIONSHIPS
     // =========================
     public function prescriptionItems()
     {
-        // Only return a real relation if the class and table exist
-        if (class_exists(\App\Models\PrescriptionItem::class) && Schema::hasTable('prescription_items')) {
-
-            // Make sure the column exists
-            if (Schema::hasColumn('prescription_items', 'medicine_id')) {
-                return $this->hasMany(\App\Models\PrescriptionItem::class, 'medicine_id', 'id');
-            }
-
-            // Table exists but column missing — return empty relation
-            return $this->hasManyDummy();
-        }
-
-        // Class or table missing — return empty relation
-        return $this->hasManyDummy();
+        return $this->hasMany(\App\Models\PrescriptionItem::class, 'medicine_id', 'id');
     }
-
 
     public function inventoryItems()
     {
-        if (
-            class_exists(\App\Models\InventoryItem::class)
-            && Schema::hasTable('inventory_items')
-        ) {
-            return $this->hasMany(\App\Models\InventoryItem::class, 'generic_name', 'generic_name');
-        }
-
-        return $this->hasManyDummy();
-    }
-
-    protected function hasManyDummy()
-    {
-        // Use a self-reference relation that never returns rows
-        return $this->hasMany(static::class, 'id', 'id')->whereRaw('1=0');
+        return $this->hasMany(\App\Models\InventoryItem::class, 'generic_name', 'generic_name');
     }
 
     // =========================
@@ -101,7 +73,7 @@ class Medicine extends Model
             'drops' => 'Drops',
             'powder' => 'Powder',
             'cream' => 'Cream',
-            'other' => 'Other'
+            'other' => 'Other',
         ];
     }
 
@@ -119,10 +91,13 @@ class Medicine extends Model
             'gi_medicine' => 'GI Medicine',
             'emergency' => 'Emergency Medicine',
             'dental_specific' => 'Dental Specific',
-            'other' => 'Other'
+            'other' => 'Other',
         ];
     }
 
+    // =========================
+    // ATTRIBUTES
+    // =========================
     public function getDosageFormNameAttribute()
     {
         $forms = self::dosageForms();
@@ -144,73 +119,60 @@ class Medicine extends Model
 
     public function getUsageCountAttribute()
     {
-        try {
-            return $this->prescriptionItems()->count();
-        } catch (\Exception $e) {
-            return 0;
-        }
+        return $this->prescriptionItems()->count();
     }
 
     // =========================
-    // CATEGORY INFERENCE (Safe)
+    // CATEGORY INFERENCE
     // =========================
-    public function inferCategory()
+    public function inferCategory(): string
     {
         $generic = strtolower($this->generic_name ?? '');
 
-        if (
-            str_contains($generic, 'paracetamol') || str_contains($generic, 'ibuprofen') ||
-            str_contains($generic, 'diclofenac') || str_contains($generic, 'aceclofenac') ||
-            str_contains($generic, 'tramadol')
-        ) {
+        if ($this->strContainsAny($generic, ['paracetamol', 'ibuprofen', 'diclofenac', 'aceclofenac', 'tramadol'])) {
             return 'analgesic';
-        } elseif (
-            str_contains($generic, 'amoxicillin') || str_contains($generic, 'metronidazole') ||
-            str_contains($generic, 'clarithromycin') || str_contains($generic, 'doxycycline') ||
-            str_contains($generic, 'cefixime')
-        ) {
+        }
+        if ($this->strContainsAny($generic, ['amoxicillin', 'metronidazole', 'clarithromycin', 'doxycycline', 'cefixime'])) {
             return 'antibiotic';
-        } elseif (str_contains($generic, 'lidocaine') || str_contains($generic, 'articaine')) {
+        }
+        if ($this->strContainsAny($generic, ['lidocaine', 'articaine'])) {
             return 'local_anesthetic';
-        } elseif (
-            str_contains($generic, 'chlorhexidine') || str_contains($generic, 'povidone') ||
-            str_contains($generic, 'fluoride')
-        ) {
+        }
+        if ($this->strContainsAny($generic, ['chlorhexidine', 'povidone', 'fluoride'])) {
             return 'mouthwash';
-        } elseif (str_contains($generic, 'gel') || str_contains($generic, 'ointment') || str_contains($generic, 'paste')) {
+        }
+        if ($this->strContainsAny($generic, ['gel', 'ointment', 'paste'])) {
             return 'topical';
-        } elseif (str_contains($generic, 'chlorzoxazone') || str_contains($generic, 'tizanidine')) {
+        }
+        if ($this->strContainsAny($generic, ['chlorzoxazone', 'tizanidine'])) {
             return 'muscle_relaxant';
-        } elseif (str_contains($generic, 'fluconazole') || str_contains($generic, 'nystatin')) {
+        }
+        if ($this->strContainsAny($generic, ['fluconazole', 'nystatin'])) {
             return 'antifungal';
-        } elseif (
-            str_contains($generic, 'dexamethasone') || str_contains($generic, 'prednisolone') ||
-            str_contains($generic, 'triamcinolone')
-        ) {
+        }
+        if ($this->strContainsAny($generic, ['dexamethasone', 'prednisolone', 'triamcinolone'])) {
             return 'corticosteroid';
-        } elseif (
-            str_contains($generic, 'pantoprazole') || str_contains($generic, 'omeprazole') ||
-            str_contains($generic, 'ranitidine')
-        ) {
+        }
+        if ($this->strContainsAny($generic, ['pantoprazole', 'omeprazole', 'ranitidine'])) {
             return 'gi_medicine';
-        } elseif (str_contains($generic, 'epinephrine') || str_contains($generic, 'chlorpheniramine')) {
+        }
+        if ($this->strContainsAny($generic, ['epinephrine', 'chlorpheniramine'])) {
             return 'emergency';
-        } elseif (
-            str_contains($generic, 'tranexamic') || str_contains($generic, 'hydrogen') ||
-            str_contains($generic, 'saline')
-        ) {
+        }
+        if ($this->strContainsAny($generic, ['tranexamic', 'hydrogen', 'saline'])) {
             return 'dental_specific';
         }
 
         return 'other';
     }
 
-    public function getCategoryAttribute()
+
+    public function getCategoryAttribute(): string
     {
         return $this->inferCategory();
     }
 
-    public function getCategoryNameAttribute()
+    public function getCategoryNameAttribute(): string
     {
         $categories = self::medicineCategories();
         $category = $this->inferCategory();

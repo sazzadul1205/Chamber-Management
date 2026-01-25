@@ -9,87 +9,129 @@ class ProcedureCatalog extends Model
 {
     use HasFactory;
 
+    // =======================
+    // Table Configuration
+    // =======================
     protected $table = 'procedure_catalog';
 
+    // =======================
+    // Mass Assignable Fields
+    // =======================
     protected $fillable = [
         'procedure_code',
         'procedure_name',
         'category',
-        'standard_duration',
+        'standard_duration', // minutes
         'standard_cost',
         'description',
-        'status'
+        'status',
     ];
 
+    // =======================
+    // Attribute Casting
+    // =======================
     protected $casts = [
         'standard_duration' => 'integer',
-        'standard_cost' => 'decimal:2'
+        'standard_cost'     => 'decimal:2',
     ];
 
-    // Scopes
+    // =======================
+    // Query Scopes
+    // =======================
+
+    /**
+     * Only active procedures
+     */
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
     }
 
-    public function scopeByCategory($query, $category)
+    /**
+     * Filter by category
+     */
+    public function scopeByCategory($query, string $category)
     {
         return $query->where('category', $category);
     }
 
+    // =======================
     // Relationships
+    // =======================
+
+    /**
+     * Procedures used in treatments
+     */
     public function treatmentProcedures()
     {
-        if (class_exists(\App\Models\TreatmentProcedure::class)) {
-            return $this->hasMany(\App\Models\TreatmentProcedure::class, 'procedure_code', 'procedure_code');
+        return $this->hasMany(
+            TreatmentProcedure::class,
+            'procedure_code',
+            'procedure_code'
+        );
+    }
+
+    // =======================
+    // Accessors
+    // =======================
+
+    /**
+     * Human-readable duration (e.g. "1 hour 30 minutes")
+     */
+    public function getFormattedDurationAttribute(): string
+    {
+        $minutes = $this->standard_duration;
+
+        if ($minutes < 60) {
+            return $minutes . ' minutes';
         }
 
-        // Return an empty relation to avoid breaking queries
-        return $this->hasManyDummy();
+        $hours = intdiv($minutes, 60);
+        $remaining = $minutes % 60;
+
+        return trim(
+            $hours . ' hour' . ($hours > 1 ? 's' : '') .
+                ($remaining ? ' ' . $remaining . ' minutes' : '')
+        );
     }
 
-    // Helper methods
-    public function getFormattedDurationAttribute()
+    /**
+     * Formatted cost (currency symbol handled here)
+     */
+    public function getFormattedCostAttribute(): string
     {
-        $hours = floor($this->standard_duration / 60);
-        $minutes = $this->standard_duration % 60;
-
-        if ($hours > 0) {
-            return $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ' . $minutes . ' minutes';
-        }
-        return $minutes . ' minutes';
+        return '₹' . number_format((float) $this->standard_cost, 2);
     }
 
-    public function getFormattedCostAttribute()
+    /**
+     * Human-readable category name
+     */
+    public function getCategoryNameAttribute(): string
     {
-        return '₹' . number_format($this->standard_cost, 2);
+        return self::categories()[$this->category]
+            ?? ucfirst(str_replace('_', ' ', $this->category));
     }
 
-    public static function categories()
+    // =======================
+    // Static Helpers
+    // =======================
+
+    /**
+     * Available procedure categories
+     */
+    public static function categories(): array
     {
         return [
-            'diagnostic' => 'Diagnostic',
-            'preventive' => 'Preventive',
-            'restorative' => 'Restorative',
-            'endodontic' => 'Endodontic',
-            'prosthodontic' => 'Prosthodontic',
-            'periodontic' => 'Periodontic',
-            'oral_surgery' => 'Oral Surgery',
-            'orthodontic' => 'Orthodontic',
-            'pediatric' => 'Pediatric',
-            'other' => 'Other'
+            'diagnostic'      => 'Diagnostic',
+            'preventive'      => 'Preventive',
+            'restorative'     => 'Restorative',
+            'endodontic'      => 'Endodontic',
+            'prosthodontic'   => 'Prosthodontic',
+            'periodontic'     => 'Periodontic',
+            'oral_surgery'    => 'Oral Surgery',
+            'orthodontic'     => 'Orthodontic',
+            'pediatric'       => 'Pediatric',
+            'other'           => 'Other',
         ];
-    }
-
-    public function getCategoryNameAttribute()
-    {
-        $categories = self::categories();
-        return $categories[$this->category] ?? ucfirst($this->category);
-    }
-
-    // Helper method to return an empty relation
-    protected function hasManyDummy()
-    {
-        return $this->hasMany(static::class)->whereRaw('1 = 0');
     }
 }

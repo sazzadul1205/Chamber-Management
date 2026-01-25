@@ -7,13 +7,19 @@ use Illuminate\Http\Request;
 
 class ProcedureCatalogController extends Controller
 {
+    /**
+     * Display a paginated, filterable list of procedures
+     */
     public function index(Request $request)
     {
         $query = ProcedureCatalog::query();
 
-        // Search
+        // -------------------------
+        // Search by code, name, category
+        // -------------------------
         if ($request->filled('search')) {
             $search = $request->search;
+
             $query->where(function ($q) use ($search) {
                 $q->where('procedure_code', 'like', "%{$search}%")
                     ->orWhere('procedure_name', 'like', "%{$search}%")
@@ -21,16 +27,23 @@ class ProcedureCatalogController extends Controller
             });
         }
 
-        // Category filter
-        if ($request->category && $request->category !== 'all') {
+        // -------------------------
+        // Filter by category
+        // -------------------------
+        if ($request->filled('category') && $request->category !== 'all') {
             $query->where('category', $request->category);
         }
 
-        // Status filter
-        if ($request->status && $request->status !== 'all') {
+        // -------------------------
+        // Filter by status
+        // -------------------------
+        if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
+        // -------------------------
+        // Final query execution
+        // -------------------------
         $procedures = $query
             ->orderBy('category')
             ->orderBy('procedure_name')
@@ -42,78 +55,104 @@ class ProcedureCatalogController extends Controller
         return view('backend.procedure_catalog.index', compact('procedures', 'categories'));
     }
 
-
+    /**
+     * Show create form
+     */
     public function create()
     {
         $categories = ProcedureCatalog::categories();
+
         return view('backend.procedure_catalog.create', compact('categories'));
     }
 
+    /**
+     * Store a new procedure
+     */
     public function store(Request $request)
     {
-        $request->validate([
-            'procedure_code' => 'required|string|max:20|unique:procedure_catalog',
-            'procedure_name' => 'required|string|max:100',
-            'category' => 'required|string|max:50',
-            'standard_duration' => 'required|integer|min:1',
-            'standard_cost' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'status' => 'required|in:active,inactive'
+        $validated = $request->validate([
+            'procedure_code'     => 'required|string|max:20|unique:procedure_catalog,procedure_code',
+            'procedure_name'     => 'required|string|max:100',
+            'category'           => 'required|string|max:50',
+            'standard_duration'  => 'required|integer|min:1',
+            'standard_cost'      => 'required|numeric|min:0',
+            'description'        => 'nullable|string',
+            'status'             => 'required|in:active,inactive',
         ]);
 
-        ProcedureCatalog::create($request->all());
+        ProcedureCatalog::create($validated);
 
-        return redirect()->route('backend.procedure-catalog.index')
+        return redirect()
+            ->route('backend.procedure-catalog.index')
             ->with('success', 'Dental procedure added successfully.');
     }
 
+    /**
+     * Display a single procedure
+     */
     public function show(ProcedureCatalog $procedureCatalog)
     {
         return view('backend.procedure_catalog.show', compact('procedureCatalog'));
     }
 
+    /**
+     * Show edit form
+     */
     public function edit(ProcedureCatalog $procedureCatalog)
     {
         $categories = ProcedureCatalog::categories();
-        return view('backend.procedure_catalog.edit', compact('procedureCatalog', 'categories'));
+
+        return view(
+            'backend.procedure_catalog.edit',
+            compact('procedureCatalog', 'categories')
+        );
     }
 
+    /**
+     * Update an existing procedure
+     */
     public function update(Request $request, ProcedureCatalog $procedureCatalog)
     {
-        $request->validate([
-            'procedure_code' => 'required|string|max:20|unique:procedure_catalog,procedure_code,' . $procedureCatalog->id,
-            'procedure_name' => 'required|string|max:100',
-            'category' => 'required|string|max:50',
-            'standard_duration' => 'required|integer|min:1',
-            'standard_cost' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'status' => 'required|in:active,inactive'
+        $validated = $request->validate([
+            'procedure_code'     => 'required|string|max:20|unique:procedure_catalog,procedure_code,' . $procedureCatalog->id,
+            'procedure_name'     => 'required|string|max:100',
+            'category'           => 'required|string|max:50',
+            'standard_duration'  => 'required|integer|min:1',
+            'standard_cost'      => 'required|numeric|min:0',
+            'description'        => 'nullable|string',
+            'status'             => 'required|in:active,inactive',
         ]);
 
-        $procedureCatalog->update($request->all());
+        $procedureCatalog->update($validated);
 
-        return redirect()->route('backend.procedure-catalog.index')
+        return redirect()
+            ->route('backend.procedure-catalog.index')
             ->with('success', 'Procedure updated successfully.');
     }
 
+    /**
+     * Delete a procedure
+     * (No safe/defensive conditions as requested)
+     */
     public function destroy(ProcedureCatalog $procedureCatalog)
     {
-        // Only check if the class exists
-        if (
-            class_exists(\App\Models\TreatmentProcedure::class) &&
-            $procedureCatalog->treatmentProcedures()->exists()
-        ) {
-            return redirect()->route('backend.procedure-catalog.index')
+        // Business rule: do not delete if used in treatments
+        if ($procedureCatalog->treatmentProcedures()->exists()) {
+            return redirect()
+                ->route('backend.procedure-catalog.index')
                 ->with('error', 'Cannot delete procedure. It is being used in treatments.');
         }
 
         $procedureCatalog->delete();
-        return redirect()->route('backend.procedure-catalog.index')
+
+        return redirect()
+            ->route('backend.procedure-catalog.index')
             ->with('success', 'Procedure deleted successfully.');
     }
 
-
-    // API endpoint for autocomplete
+    /**
+     * API: Autocomplete for procedures
+     */
     public function autocomplete(Request $request)
     {
         $query = $request->get('query');
@@ -125,43 +164,47 @@ class ProcedureCatalogController extends Controller
             })
             ->limit(10)
             ->get()
-            ->map(function ($procedure) {
-                return [
-                    'id' => $procedure->id,
-                    'value' => $procedure->procedure_code . ' - ' . $procedure->procedure_name,
-                    'code' => $procedure->procedure_code,
-                    'name' => $procedure->procedure_name,
-                    'duration' => $procedure->standard_duration,
-                    'cost' => $procedure->standard_cost,
-                    'category' => $procedure->category
-                ];
-            });
+            ->map(fn($procedure) => [
+                'id'       => $procedure->id,
+                'value'    => "{$procedure->procedure_code} - {$procedure->procedure_name}",
+                'code'     => $procedure->procedure_code,
+                'name'     => $procedure->procedure_name,
+                'duration' => $procedure->standard_duration,
+                'cost'     => $procedure->standard_cost,
+                'category' => $procedure->category,
+            ]);
 
         return response()->json($procedures);
     }
 
-    // Bulk import from CSV
+    /**
+     * Show CSV import page
+     */
     public function import()
     {
         return view('backend.procedure_catalog.import');
     }
 
+    /**
+     * Process CSV import
+     */
     public function processImport(Request $request)
     {
         $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt'
+            'csv_file' => 'required|file|mimes:csv,txt',
         ]);
 
-        // Process CSV import (simplified - in real app use Laravel Excel)
         $path = $request->file('csv_file')->getRealPath();
-        $data = array_map('str_getcsv', file($path));
+        $rows = array_map('str_getcsv', file($path));
 
-        $header = array_shift($data);
+        $header   = array_shift($rows);
         $imported = 0;
-        $errors = [];
+        $errors   = [];
 
-        foreach ($data as $row) {
-            if (count($row) != count($header)) continue;
+        foreach ($rows as $row) {
+            if (count($row) !== count($header)) {
+                continue;
+            }
 
             $rowData = array_combine($header, $row);
 
@@ -169,21 +212,23 @@ class ProcedureCatalogController extends Controller
                 ProcedureCatalog::updateOrCreate(
                     ['procedure_code' => $rowData['procedure_code']],
                     [
-                        'procedure_name' => $rowData['procedure_name'],
-                        'category' => $rowData['category'],
+                        'procedure_name'    => $rowData['procedure_name'],
+                        'category'          => $rowData['category'],
                         'standard_duration' => (int) $rowData['standard_duration'],
-                        'standard_cost' => (float) $rowData['standard_cost'],
-                        'description' => $rowData['description'] ?? null,
-                        'status' => $rowData['status'] ?? 'active'
+                        'standard_cost'     => (float) $rowData['standard_cost'],
+                        'description'       => $rowData['description'] ?? null,
+                        'status'            => $rowData['status'] ?? 'active',
                     ]
                 );
+
                 $imported++;
-            } catch (\Exception $e) {
-                $errors[] = "Row error: " . $e->getMessage();
+            } catch (\Throwable $e) {
+                $errors[] = $e->getMessage();
             }
         }
 
-        return redirect()->route('backend.procedure-catalog.index')
+        return redirect()
+            ->route('backend.procedure-catalog.index')
             ->with('success', "Imported {$imported} procedures successfully.")
             ->with('errors', $errors);
     }

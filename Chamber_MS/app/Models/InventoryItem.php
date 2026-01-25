@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 
 class InventoryItem extends Model
 {
     use HasFactory;
 
+    // =========================
+    // Fillable fields
+    // =========================
     protected $fillable = [
         'item_code',
         'name',
@@ -24,6 +26,9 @@ class InventoryItem extends Model
         'status'
     ];
 
+    // =========================
+    // Casts
+    // =========================
     protected $casts = [
         'reorder_level' => 'integer',
         'optimum_level' => 'integer'
@@ -39,15 +44,9 @@ class InventoryItem extends Model
 
     public function scopeLowStock($query)
     {
-        // Only apply if inventory_stocks table exists
-        if (Schema::hasTable('inventory_stocks')) {
-            return $query->whereHas('stock', function ($q) {
-                $q->whereRaw('current_stock <= reorder_level');
-            });
-        }
-
-        // Table missing → return empty result
-        return $query->whereRaw('1 = 0');
+        return $query->whereHas('stock', function ($q) {
+            $q->whereColumn('current_stock', '<=', 'reorder_level');
+        });
     }
 
     public function scopeByCategory($query, $category)
@@ -66,45 +65,21 @@ class InventoryItem extends Model
     }
 
     // =========================
-    // RELATIONSHIPS (Safe)
+    // RELATIONSHIPS
     // =========================
     public function stock()
     {
-        if (class_exists(\App\Models\InventoryStock::class) && Schema::hasTable('inventory_stocks')) {
-            return $this->hasOne(\App\Models\InventoryStock::class, 'item_id', 'id');
-        }
-
-        // Dummy relation to satisfy Eloquent
-        return $this->hasOne(static::class, 'id', 'id')->whereRaw('1 = 0');
+        return $this->hasOne(InventoryStock::class, 'item_id');
     }
 
     public function transactions()
     {
-        if (class_exists(\App\Models\InventoryTransaction::class) && Schema::hasTable('inventory_transactions')) {
-            return $this->hasMany(\App\Models\InventoryTransaction::class, 'item_id', 'id');
-        }
-
-        return $this->hasMany(static::class, 'id', 'id')->whereRaw('1 = 0');
+        return $this->hasMany(InventoryTransaction::class, 'item_id');
     }
 
     public function usages()
     {
-        if (class_exists(\App\Models\InventoryUsage::class) && Schema::hasTable('inventory_usages')) {
-            return $this->hasMany(\App\Models\InventoryUsage::class, 'item_id', 'id');
-        }
-
-        return $this->hasMany(static::class, 'id', 'id')->whereRaw('1 = 0');
-    }
-
-
-    protected function hasManyDummy()
-    {
-        return $this->hasMany(static::class)->whereRaw('1 = 0');
-    }
-
-    protected function hasOneDummy()
-    {
-        return $this->hasOne(static::class)->whereRaw('1 = 0');
+        return $this->hasMany(InventoryUsage::class, 'item_id');
     }
 
     // =========================
@@ -148,6 +123,9 @@ class InventoryItem extends Model
         ];
     }
 
+    // =========================
+    // Attribute Helpers
+    // =========================
     public function getCategoryNameAttribute()
     {
         return self::categories()[$this->category] ?? ucfirst($this->category);
@@ -160,18 +138,11 @@ class InventoryItem extends Model
 
     public function getCurrentStockAttribute()
     {
-        if (!Schema::hasTable('inventory_stocks') || !$this->relationLoaded('stock')) {
-            return 0;
-        }
-        return $this->stock ? $this->stock->current_stock : 0;
+        return $this->stock?->current_stock ?? 0;
     }
 
     public function getStockStatusAttribute()
     {
-        if (!Schema::hasTable('inventory_stocks')) {
-            return 'unknown';
-        }
-
         $current = $this->current_stock;
 
         if ($current <= 0) return 'out_of_stock';
@@ -182,10 +153,10 @@ class InventoryItem extends Model
     public function getStockStatusColorAttribute()
     {
         return match ($this->stock_status) {
-            'out_of_stock' => 'danger',
-            'low_stock' => 'warning',
-            'in_stock' => 'success',
-            default => 'secondary',
+            'out_of_stock' => 'danger',  // Tailwind: red
+            'low_stock' => 'warning',   // Tailwind: yellow
+            'in_stock' => 'success',    // Tailwind: green
+            default => 'secondary',     // Tailwind: gray
         };
     }
 

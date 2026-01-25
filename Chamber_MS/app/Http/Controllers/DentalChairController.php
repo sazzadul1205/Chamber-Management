@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\DentalChair;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 
 class DentalChairController extends Controller
 {
@@ -21,7 +20,7 @@ class DentalChairController extends Controller
         }
 
         // Status filter
-        if ($request->filled('status') && $request->status != 'all') {
+        if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
@@ -29,11 +28,11 @@ class DentalChairController extends Controller
         $dentalChairs = $query->orderBy('name')->paginate(20);
         $statuses = DentalChair::statuses();
 
-        // Statistics safely
-        $totalChairs = Schema::hasTable('dental_chairs') ? DentalChair::count() : 0;
-        $availableChairs = Schema::hasTable('dental_chairs') ? DentalChair::available()->count() : 0;
-        $occupiedChairs = Schema::hasTable('dental_chairs') ? DentalChair::occupied()->count() : 0;
-        $maintenanceChairs = Schema::hasTable('dental_chairs') ? DentalChair::underMaintenance()->count() : 0;
+        // Statistics
+        $totalChairs = DentalChair::count();
+        $availableChairs = DentalChair::available()->count();
+        $occupiedChairs = DentalChair::occupied()->count();
+        $maintenanceChairs = DentalChair::underMaintenance()->count();
 
         return view('backend.dental_chairs.index', compact(
             'dentalChairs',
@@ -78,15 +77,13 @@ class DentalChairController extends Controller
     // =========================
     public function show(DentalChair $dentalChair)
     {
-        if (Schema::hasTable('appointments')) {
-            $dentalChair->load([
-                'appointments' => function ($q) {
-                    $q->with(['patient', 'doctor.user'])->latest()->limit(10);
-                },
-                'currentAppointment.patient',
-                'currentAppointment.doctor.user'
-            ]);
-        }
+        // Load related appointments & current appointment details
+        $dentalChair->load([
+            'appointments.patient',
+            'appointments.doctor.user',
+            'currentAppointment.patient',
+            'currentAppointment.doctor.user'
+        ]);
 
         return view('backend.dental_chairs.show', compact('dentalChair'));
     }
@@ -98,40 +95,17 @@ class DentalChairController extends Controller
     {
         $statuses = DentalChair::statuses();
 
-        /**
-         * Fallback-safe demo logic
-         * Appointments / Treatments NOT connected yet
-         */
-
-        // Appointments count
-        if (
-            method_exists($dentalChair, 'appointments') &&
-            Schema::hasTable('appointments')
-        ) {
-            try {
-                $appointmentCount = $dentalChair->appointments()->count();
-            } catch (\Throwable $e) {
-                $appointmentCount = rand(0, 10); // fallback
-            }
-        } else {
-            $appointmentCount = rand(0, 10); // demo
-        }
-
-        // Last used date
-        if (!empty($dentalChair->last_used_at)) {
-            $lastUsed = $dentalChair->last_used_at->format('d M Y, h:i A');
-        } else {
-            $lastUsed = now()->subDays(rand(0, 7))->format('d M Y, h:i A'); // demo
-        }
+        // Last used date display
+        $lastUsed = $dentalChair->last_used
+            ? $dentalChair->last_used->format('d M Y, h:i A')
+            : 'Never';
 
         return view('backend.dental_chairs.edit', compact(
             'dentalChair',
             'statuses',
-            'appointmentCount',
             'lastUsed'
         ));
     }
-
 
     // =========================
     // UPDATE CHAIR
@@ -157,7 +131,7 @@ class DentalChairController extends Controller
     // =========================
     public function destroy(DentalChair $dentalChair)
     {
-        if (Schema::hasTable('appointments') && $dentalChair->appointments()->exists()) {
+        if ($dentalChair->appointments()->exists()) {
             return redirect()->route('backend.dental-chairs.index')
                 ->with('error', 'Cannot delete dental chair. It has appointment history.');
         }
@@ -168,25 +142,19 @@ class DentalChairController extends Controller
     }
 
     // =========================
-    // API: AVAILABLE CHAIRS
+    // API: GET AVAILABLE CHAIRS
     // =========================
     public function getAvailableChairs()
     {
         $chairs = DentalChair::available()
             ->orderBy('name')
-            ->get()
-            ->map(fn($chair) => [
-                'id' => $chair->id,
-                'code' => $chair->chair_code,
-                'name' => $chair->name,
-                'location' => $chair->location
-            ]);
+            ->get(['id', 'chair_code', 'name', 'location']);
 
         return response()->json($chairs);
     }
 
     // =========================
-    // UPDATE CHAIR STATUS
+    // UPDATE CHAIR STATUS (API)
     // =========================
     public function updateStatus(Request $request, DentalChair $dentalChair)
     {
@@ -227,7 +195,7 @@ class DentalChairController extends Controller
     }
 
     // =========================
-    // GENERATE CHAIR CODE
+    // GENERATE NEXT CHAIR CODE
     // =========================
     public function generateCode()
     {
@@ -256,17 +224,12 @@ class DentalChairController extends Controller
     }
 
     // =========================
-    // SCHEDULE FOR A SPECIFIC DATE
+    // SCHEDULE VIEW FOR SPECIFIC DATE
     // =========================
     public function schedule(Request $request)
     {
         $date = $request->get('date', now()->toDateString());
-
-        // Return chairs with empty appointments if table not ready
-        $chairs = DentalChair::all()->map(function ($chair) use ($date) {
-            $chair->appointments = collect(); // empty collection
-            return $chair;
-        });
+        $chairs = DentalChair::all();
 
         return view('backend.dental_chairs.schedule', compact('chairs', 'date'));
     }

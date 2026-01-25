@@ -7,7 +7,36 @@ use Illuminate\Http\Request;
 
 class SystemSettingController extends Controller
 {
-    // Show settings index page (grouped by category)
+    // =======================
+    // CONSTANTS
+    // =======================
+
+    private const SETTING_TYPES = ['string', 'number', 'boolean', 'json', 'date'];
+
+    private const CATEGORIES = [
+        'general',
+        'appointment',
+        'billing',
+        'notification',
+        'inventory',
+        'patient',
+        'doctor',
+        'email',
+        'sms',
+        'other',
+    ];
+
+    private const CRITICAL_SETTINGS = [
+        'clinic_name',
+        'clinic_address',
+        'clinic_phone',
+        'currency',
+        'timezone',
+    ];
+
+    // =======================
+    // LIST SETTINGS
+    // =======================
     public function index()
     {
         $settings = SystemSetting::orderBy('category')
@@ -15,139 +44,148 @@ class SystemSettingController extends Controller
             ->get()
             ->groupBy('category');
 
-        $categories = $settings->keys();
-
-        return view('backend.system_settings.index', compact('settings', 'categories'));
+        return view('backend.system_settings.index', [
+            'settings'   => $settings,
+            'categories' => $settings->keys(),
+        ]);
     }
 
-    // Show create form
+    // =======================
+    // CREATE SETTING
+    // =======================
     public function create()
     {
-        $settingTypes = ['string', 'number', 'boolean', 'json', 'date'];
-        $categories = ['general', 'appointment', 'billing', 'notification', 'inventory', 'patient', 'doctor', 'email', 'sms', 'other'];
-
-        return view('backend.system_settings.create', compact('settingTypes', 'categories'));
+        return view('backend.system_settings.create', [
+            'settingTypes' => self::SETTING_TYPES,
+            'categories'   => self::CATEGORIES,
+        ]);
     }
 
-    // Store new setting
     public function store(Request $request)
     {
-        $request->validate([
-            'setting_key' => 'required|string|max:100|unique:system_settings',
+        $validated = $request->validate([
+            'setting_key'   => 'required|string|max:100|unique:system_settings,setting_key',
             'setting_value' => 'required',
-            'setting_type' => 'required|in:string,number,boolean,json,date',
-            'category' => 'required|string|max:50',
-            'description' => 'nullable|string',
-            'is_public' => 'boolean'
+            'setting_type'  => 'required|in:' . implode(',', self::SETTING_TYPES),
+            'category'      => 'required|string|max:50',
+            'description'   => 'nullable|string',
+            'is_public'     => 'boolean',
         ]);
 
         SystemSetting::create([
-            'setting_key' => $request->setting_key,
-            'setting_value' => $this->formatValue($request->setting_type, $request->setting_value),
-            'setting_type' => $request->setting_type,
-            'category' => $request->category,
-            'description' => $request->description,
-            'is_public' => $request->boolean('is_public'),
-            'updated_by' => auth()->id()
+            'setting_key'   => $validated['setting_key'],
+            'setting_value' => $this->formatValue($validated['setting_type'], $validated['setting_value']),
+            'setting_type'  => $validated['setting_type'],
+            'category'      => $validated['category'],
+            'description'   => $validated['description'] ?? null,
+            'is_public'     => $request->boolean('is_public'),
+            'updated_by'    => auth()->id(),
         ]);
 
-        return redirect()->route('system-settings.index')
+        return redirect()
+            ->route('backend.system-settings.index')
             ->with('success', 'System setting created successfully.');
     }
 
-    // Show edit form
+    // =======================
+    // EDIT SETTING
+    // =======================
     public function edit(SystemSetting $systemSetting)
     {
-        $settingTypes = ['string', 'number', 'boolean', 'json', 'date'];
-        $categories = ['general', 'appointment', 'billing', 'notification', 'inventory', 'patient', 'doctor', 'email', 'sms', 'other'];
-
-        return view('backend.system_settings.edit', compact('systemSetting', 'settingTypes', 'categories'));
+        return view('backend.system_settings.edit', [
+            'systemSetting' => $systemSetting,
+            'settingTypes'  => self::SETTING_TYPES,
+            'categories'    => self::CATEGORIES,
+        ]);
     }
 
-    // Update setting
     public function update(Request $request, SystemSetting $systemSetting)
     {
-        $request->validate([
+        $validated = $request->validate([
             'setting_value' => 'required',
-            'setting_type' => 'required|in:string,number,boolean,json,date',
-            'category' => 'required|string|max:50',
-            'description' => 'nullable|string',
-            'is_public' => 'boolean'
+            'setting_type'  => 'required|in:' . implode(',', self::SETTING_TYPES),
+            'category'      => 'required|string|max:50',
+            'description'   => 'nullable|string',
+            'is_public'     => 'boolean',
         ]);
 
         $systemSetting->update([
-            'setting_value' => $this->formatValue($request->setting_type, $request->setting_value),
-            'setting_type' => $request->setting_type,
-            'category' => $request->category,
-            'description' => $request->description,
-            'is_public' => $request->boolean('is_public'),
-            'updated_by' => auth()->id()
+            'setting_value' => $this->formatValue($validated['setting_type'], $validated['setting_value']),
+            'setting_type'  => $validated['setting_type'],
+            'category'      => $validated['category'],
+            'description'   => $validated['description'] ?? null,
+            'is_public'     => $request->boolean('is_public'),
+            'updated_by'    => auth()->id(),
         ]);
 
-        return redirect()->route('system-settings.index')
+        return redirect()
+            ->route('backend.system-settings.index')
             ->with('success', 'System setting updated successfully.');
     }
 
-    // Delete setting
+    // =======================
+    // DELETE SETTING
+    // =======================
     public function destroy(SystemSetting $systemSetting)
     {
-        // Don't allow deletion of critical settings
-        $criticalSettings = [
-            'clinic_name',
-            'clinic_address',
-            'clinic_phone',
-            'currency',
-            'timezone'
-        ];
-
-        if (in_array($systemSetting->setting_key, $criticalSettings)) {
-            return redirect()->route('system-settings.index')
+        if (in_array($systemSetting->setting_key, self::CRITICAL_SETTINGS, true)) {
+            return redirect()
+                ->route('backend.system-settings.index')
                 ->with('error', 'Cannot delete critical system setting.');
         }
 
         $systemSetting->delete();
-        return redirect()->route('system-settings.index')
+
+        return redirect()
+            ->route('backend.system-settings.index')
             ->with('success', 'System setting deleted successfully.');
     }
 
-    // API endpoint to get setting value
-    public function getValue($key)
+    // =======================
+    // API: GET VALUE
+    // =======================
+    public function getValue(string $key)
     {
-        $value = SystemSetting::getValue($key);
-        return response()->json(['value' => $value]);
+        return response()->json([
+            'value' => SystemSetting::getValue($key),
+        ]);
     }
 
-    // Format value based on type
-    private function formatValue($type, $value)
-    {
-        switch ($type) {
-            case 'boolean':
-                return $value ? 'true' : 'false';
-            case 'json':
-                return is_array($value) ? json_encode($value) : $value;
-            case 'number':
-                return is_numeric($value) ? $value : 0;
-            default:
-                return $value;
-        }
-    }
-
-    // Bulk update settings from array
+    // =======================
+    // BULK UPDATE
+    // =======================
     public function bulkUpdate(Request $request)
     {
-        $settings = $request->input('settings', []); // <-- get the nested array
+        $settings = $request->input('settings', []);
 
         foreach ($settings as $key => $value) {
             $setting = SystemSetting::where('setting_key', $key)->first();
-            if ($setting) {
-                $setting->update([
-                    'setting_value' => $this->formatValue($setting->setting_type, $value),
-                    'updated_by' => auth()->id()
-                ]);
+
+            if (!$setting) {
+                continue;
             }
+
+            $setting->update([
+                'setting_value' => $this->formatValue($setting->setting_type, $value),
+                'updated_by'    => auth()->id(),
+            ]);
         }
 
-        return redirect()->route('backend.system-settings.index')
+        return redirect()
+            ->route('backend.system-settings.index')
             ->with('success', 'Settings updated successfully.');
+    }
+
+    // =======================
+    // VALUE FORMATTER
+    // =======================
+    private function formatValue(string $type, $value): string
+    {
+        return match ($type) {
+            'boolean' => $value ? 'true' : 'false',
+            'json'    => json_encode($value),
+            'number'  => is_numeric($value) ? (string) $value : '0',
+            default   => (string) $value,
+        };
     }
 }

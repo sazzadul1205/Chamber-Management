@@ -4,58 +4,50 @@ namespace App\Http\Controllers;
 
 use App\Models\InventoryItem;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 
 class InventoryItemController extends Controller
 {
+    // =========================
+    // LIST INVENTORY ITEMS
+    // =========================
     public function index(Request $request)
     {
-        $query = InventoryItem::query();
+        $query = InventoryItem::with('stock'); // eager load stock
 
-        // Load stock only if table exists
-        if (Schema::hasTable('inventory_stocks')) {
-            $query->with('stock');
-        }
-
-        // Search
+        // --- Search filter ---
         if ($request->filled('search')) {
             $query->search($request->search);
         }
 
-        // Category filter
+        // --- Category filter ---
         if ($request->category && $request->category !== 'all') {
             $query->where('category', $request->category);
         }
 
-        // Status filter
+        // --- Status filter ---
         if ($request->status && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
-        // Stock filter (safe)
-        if (
-            $request->stock_status === 'low_stock' &&
-            Schema::hasTable('inventory_stocks')
-        ) {
+        // --- Stock status filter ---
+        if ($request->stock_status === 'low_stock') {
             $query->lowStock();
         }
 
-        $inventoryItems = $query
-            ->orderBy('category')
+        // --- Pagination ---
+        $inventoryItems = $query->orderBy('category')
             ->orderBy('name')
             ->paginate(9)
             ->withQueryString();
 
+        // --- Categories & units for filters ---
         $categories = InventoryItem::categories();
         $units = InventoryItem::units();
 
-        // Stats (safe)
-        $totalItems  = InventoryItem::count();
+        // --- Stats ---
+        $totalItems = InventoryItem::count();
         $activeItems = InventoryItem::active()->count();
-
-        $lowStockItems = Schema::hasTable('inventory_stocks')
-            ? InventoryItem::active()->lowStock()->count()
-            : 0;
+        $lowStockItems = InventoryItem::active()->lowStock()->count();
 
         return view('backend.inventory_items.index', compact(
             'inventoryItems',
@@ -67,6 +59,9 @@ class InventoryItemController extends Controller
         ));
     }
 
+    // =========================
+    // CREATE INVENTORY ITEM FORM
+    // =========================
     public function create()
     {
         return view('backend.inventory_items.create', [
@@ -76,9 +71,12 @@ class InventoryItemController extends Controller
         ]);
     }
 
+    // =========================
+    // STORE NEW ITEM
+    // =========================
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'item_code' => 'required|string|max:30|unique:inventory_items,item_code',
             'name' => 'required|string|max:100',
             'category' => 'required',
@@ -92,42 +90,36 @@ class InventoryItemController extends Controller
             'status' => 'required|in:active,inactive,discontinued',
         ]);
 
-        $item = InventoryItem::create($request->all());
+        $item = InventoryItem::create($validated);
 
-        // Create stock placeholder only if table exists
-        if (Schema::hasTable('inventory_stocks')) {
-            $item->stock()->create([
-                'current_stock' => 0,
-                'opening_stock' => 0,
-            ]);
-        }
+        // Initialize stock
+        $item->stock()->create([
+            'current_stock' => 0,
+            'opening_stock' => 0,
+        ]);
 
         return redirect()
             ->route('backend.inventory-items.index')
             ->with('success', 'Inventory item created successfully.');
     }
 
+    // =========================
+    // SHOW ITEM DETAILS
+    // =========================
     public function show(InventoryItem $inventoryItem)
     {
-        if (Schema::hasTable('inventory_stocks')) {
-            $inventoryItem->load('stock');
-        }
-
-        if (Schema::hasTable('inventory_transactions')) {
-            $inventoryItem->load([
-                'transactions' => fn($q) => $q->latest()->limit(20)
-            ]);
-        }
-
-        if (Schema::hasTable('inventory_usages')) {
-            $inventoryItem->load([
-                'usages' => fn($q) => $q->latest()->limit(20)
-            ]);
-        }
+        $inventoryItem->load([
+            'stock',
+            'transactions' => fn($q) => $q->latest()->limit(20),
+            'usages' => fn($q) => $q->latest()->limit(20),
+        ]);
 
         return view('backend.inventory_items.show', compact('inventoryItem'));
     }
 
+    // =========================
+    // EDIT ITEM FORM
+    // =========================
     public function edit(InventoryItem $inventoryItem)
     {
         return view('backend.inventory_items.edit', [
@@ -138,9 +130,12 @@ class InventoryItemController extends Controller
         ]);
     }
 
+    // =========================
+    // UPDATE ITEM
+    // =========================
     public function update(Request $request, InventoryItem $inventoryItem)
     {
-        $request->validate([
+        $validated = $request->validate([
             'item_code' => 'required|string|max:30|unique:inventory_items,item_code,' . $inventoryItem->id,
             'name' => 'required|string|max:100',
             'category' => 'required',
@@ -154,27 +149,23 @@ class InventoryItemController extends Controller
             'status' => 'required|in:active,inactive,discontinued',
         ]);
 
-        $inventoryItem->update($request->all());
+        $inventoryItem->update($validated);
 
         return redirect()
             ->route('backend.inventory-items.index')
             ->with('success', 'Inventory item updated successfully.');
     }
 
+    // =========================
+    // DELETE ITEM
+    // =========================
     public function destroy(InventoryItem $inventoryItem)
     {
-        if (
-            Schema::hasTable('inventory_stocks') &&
-            $inventoryItem->stock &&
-            $inventoryItem->stock->current_stock > 0
-        ) {
+        if ($inventoryItem->stock && $inventoryItem->stock->current_stock > 0) {
             return back()->with('error', 'Cannot delete item with stock.');
         }
 
-        if (
-            Schema::hasTable('inventory_transactions') &&
-            $inventoryItem->transactions()->exists()
-        ) {
+        if ($inventoryItem->transactions()->exists()) {
             return back()->with('error', 'Cannot delete item with transaction history.');
         }
 
@@ -182,9 +173,12 @@ class InventoryItemController extends Controller
 
         return redirect()
             ->route('backend.inventory-items.index')
-            ->with('success', 'Inventory item deleted.');
+            ->with('success', 'Inventory item deleted successfully.');
     }
 
+    // =========================
+    // AUTOCOMPLETE FOR SEARCH
+    // =========================
     public function autocomplete(Request $request)
     {
         $query = $request->get('query', '');
@@ -203,12 +197,15 @@ class InventoryItemController extends Controller
                 'name' => $item->name,
                 'unit' => $item->unit,
                 'category' => $item->category,
-                'current_stock' => $item->current_stock ?? 0,
+                'current_stock' => $item->current_stock,
             ]);
 
         return response()->json($items);
     }
 
+    // =========================
+    // GENERATE ITEM CODE
+    // =========================
     public function generateCode(Request $request)
     {
         $category = $request->get('category', 'other');
@@ -218,15 +215,16 @@ class InventoryItemController extends Controller
             ->orderByDesc('item_code')
             ->first();
 
-        $next = $last
-            ? ((int) substr($last->item_code, -3)) + 1
-            : 1;
+        $next = $last ? ((int) substr($last->item_code, -3)) + 1 : 1;
 
         return response()->json([
             'code' => "{$prefix}-" . str_pad($next, 3, '0', STR_PAD_LEFT)
         ]);
     }
 
+    // =========================
+    // SUBCATEGORIES HELPER
+    // =========================
     private function getSubcategories()
     {
         return [
@@ -237,6 +235,9 @@ class InventoryItemController extends Controller
         ];
     }
 
+    // =========================
+    // EXPORT INVENTORY ITEMS TO CSV
+    // =========================
     public function export()
     {
         $items = InventoryItem::all();
@@ -244,6 +245,7 @@ class InventoryItemController extends Controller
         return response()->streamDownload(function () use ($items) {
             $file = fopen('php://output', 'w');
 
+            // CSV Header
             fputcsv($file, [
                 'Item Code',
                 'Name',
@@ -260,7 +262,7 @@ class InventoryItemController extends Controller
                     $item->name,
                     $item->category,
                     $item->unit,
-                    $item->current_stock ?? 0,
+                    $item->current_stock,
                     $item->reorder_level,
                     ucfirst($item->status),
                 ]);
