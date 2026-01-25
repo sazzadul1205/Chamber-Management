@@ -35,7 +35,7 @@ class DentalChartController extends Controller
         $charts = $query->orderBy('chart_date', 'desc')->paginate(20);
         $patients = Patient::active()->get(); // For filter dropdown
 
-        return view('dental-charts.index', compact('charts', 'patients'));
+        return view('backend.dental-charts.index', compact('charts', 'patients'));
     }
 
     // =========================
@@ -44,7 +44,7 @@ class DentalChartController extends Controller
     public function create()
     {
         $patients = Patient::active()->get();
-        return view('dental-charts.create', compact('patients'));
+        return view('backend.dental-charts.create', compact('patients'));
     }
 
     // =========================
@@ -68,7 +68,7 @@ class DentalChartController extends Controller
         DentalChart::create($validated);
 
         return redirect()
-            ->route('dental-charts.index')
+            ->route('backend.dental-charts.index')
             ->with('success', 'Dental chart record created successfully.');
     }
 
@@ -78,7 +78,7 @@ class DentalChartController extends Controller
     public function show(DentalChart $dentalChart)
     {
         $dentalChart->load(['patient', 'updater']);
-        return view('dental-charts.show', compact('dentalChart'));
+        return view('backend.dental-charts.show', compact('dentalChart'));
     }
 
     // =========================
@@ -87,7 +87,7 @@ class DentalChartController extends Controller
     public function edit(DentalChart $dentalChart)
     {
         $patients = Patient::active()->get();
-        return view('dental-charts.edit', compact('dentalChart', 'patients'));
+        return view('backend.dental-charts.edit', compact('dentalChart', 'patients'));
     }
 
     // =========================
@@ -111,7 +111,7 @@ class DentalChartController extends Controller
         $dentalChart->update($validated);
 
         return redirect()
-            ->route('dental-charts.index')
+            ->route('backend.dental-charts.index')
             ->with('success', 'Dental chart record updated successfully.');
     }
 
@@ -123,7 +123,7 @@ class DentalChartController extends Controller
         $dentalChart->delete();
 
         return redirect()
-            ->route('dental-charts.index')
+            ->route('backend.dental-charts.index')
             ->with('success', 'Dental chart record deleted successfully.');
     }
 
@@ -137,7 +137,7 @@ class DentalChartController extends Controller
             ->orderBy('chart_date', 'desc')
             ->get();
 
-        return view('dental-charts.patient-chart', compact('patient', 'charts'));
+        return view('backend.dental-charts.patient-chart', compact('patient', 'charts'));
     }
 
     // =========================

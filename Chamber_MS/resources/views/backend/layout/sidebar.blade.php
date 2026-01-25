@@ -120,9 +120,18 @@
         // ===============================
         [
             'title' => 'Dental Charting',
-            'icon' => 'tooth',
+            'icon' => 'Tooth',
             'items' => [
-                ['label' => 'Dental Chart'],
+                [
+                    'label' => 'Add Dental Record',
+                    'icon' => 'Add_Tooth',
+                    'route' => 'backend.dental-charts.create',
+                ],
+                [
+                    'label' => 'Dental Records',
+                    'icon' => 'list',
+                    'route' => 'backend.dental-charts.index',
+                ],
                 ['label' => 'Tooth Conditions'],
                 ['label' => 'Chart History'],
                 ['label' => 'X-Ray Viewer'],
