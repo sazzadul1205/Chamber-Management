@@ -11,39 +11,32 @@ use Illuminate\Support\Facades\DB;
 
 class PrescriptionController extends Controller
 {
+    // =========================
+    // LIST PRESCRIPTIONS
+    // =========================
     public function index(Request $request)
     {
         $query = Prescription::with(['treatment.patient', 'creator', 'items.medicine']);
 
-        if ($request->filled('search')) {
-            $query->search($request->search);
-        }
+        if ($request->filled('search')) $query->search($request->search);
+        if ($request->filled('status')) $query->where('status', $request->status);
+        if ($request->filled('treatment_id')) $query->where('treatment_id', $request->treatment_id);
+        if ($request->filled('date')) $query->whereDate('prescription_date', $request->date);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('treatment_id')) {
-            $query->where('treatment_id', $request->treatment_id);
-        }
-
-        if ($request->filled('date')) {
-            $query->whereDate('prescription_date', $request->date);
-        }
-
-        $prescriptions = $query->orderBy('created_at', 'desc')->paginate(20);
+        $prescriptions = $query->orderByDesc('created_at')->paginate(20);
         $treatments = Treatment::active()->get();
 
         return view('prescriptions.index', compact('prescriptions', 'treatments'));
     }
 
+    // =========================
+    // CREATE PRESCRIPTION
+    // =========================
     public function create(Request $request)
     {
-        $treatment = null;
-
-        if ($request->filled('treatment_id')) {
-            $treatment = Treatment::with('patient')->findOrFail($request->treatment_id);
-        }
+        $treatment = $request->filled('treatment_id')
+            ? Treatment::with('patient')->findOrFail($request->treatment_id)
+            : null;
 
         $treatments = Treatment::active()->with('patient')->get();
         $medicines = Medicine::active()->get();
@@ -67,8 +60,7 @@ class PrescriptionController extends Controller
             'items.*.instructions' => 'nullable|string|max:255',
         ]);
 
-        DB::beginTransaction();
-        try {
+        DB::transaction(function () use ($request) {
             $prescription = Prescription::create([
                 'prescription_code' => Prescription::generatePrescriptionCode(),
                 'treatment_id' => $request->treatment_id,
@@ -90,35 +82,27 @@ class PrescriptionController extends Controller
                     'quantity' => $item['quantity'],
                 ]);
             }
+        });
 
-            DB::commit();
-
-            return redirect()
-                ->route('prescriptions.show', $prescription)
-                ->with('success', 'Prescription created successfully.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Failed to create prescription: ' . $e->getMessage())->withInput();
-        }
+        return redirect()->route('prescriptions.index')->with('success', 'Prescription created successfully.');
     }
 
+    // =========================
+    // SHOW PRESCRIPTION
+    // =========================
     public function show(Prescription $prescription)
     {
-        $prescription->load([
-            'treatment.patient',
-            'treatment.doctor.user',
-            'creator',
-            'items.medicine'
-        ]);
-
+        $prescription->load(['treatment.patient', 'treatment.doctor.user', 'creator', 'items.medicine']);
         return view('prescriptions.show', compact('prescription'));
     }
 
+    // =========================
+    // EDIT / UPDATE PRESCRIPTION
+    // =========================
     public function edit(Prescription $prescription)
     {
         $prescription->load(['treatment', 'items.medicine']);
         $medicines = Medicine::active()->get();
-
         return view('prescriptions.edit', compact('prescription', 'medicines'));
     }
 
@@ -131,18 +115,15 @@ class PrescriptionController extends Controller
             'status' => 'required|in:active,expired,cancelled,filled',
         ]);
 
-        $prescription->update([
-            'prescription_date' => $request->prescription_date,
-            'validity_days' => $request->validity_days,
-            'notes' => $request->notes,
-            'status' => $request->status,
-        ]);
+        $prescription->update($request->only(['prescription_date', 'validity_days', 'notes', 'status']));
 
-        return redirect()
-            ->route('prescriptions.show', $prescription)
+        return redirect()->route('prescriptions.show', $prescription)
             ->with('success', 'Prescription updated successfully.');
     }
 
+    // =========================
+    // DELETE PRESCRIPTION
+    // =========================
     public function destroy(Prescription $prescription)
     {
         if ($prescription->items()->where('status', 'dispensed')->exists()) {
@@ -150,12 +131,12 @@ class PrescriptionController extends Controller
         }
 
         $prescription->delete();
-
-        return redirect()
-            ->route('prescriptions.index')
-            ->with('success', 'Prescription deleted successfully.');
+        return redirect()->route('prescriptions.index')->with('success', 'Prescription deleted successfully.');
     }
 
+    // =========================
+    // PRESCRIPTION ITEMS ACTIONS
+    // =========================
     public function addItem(Request $request, Prescription $prescription)
     {
         $request->validate([
@@ -167,8 +148,7 @@ class PrescriptionController extends Controller
             'instructions' => 'nullable|string|max:255',
         ]);
 
-        PrescriptionItem::create([
-            'prescription_id' => $prescription->id,
+        $prescription->items()->create([
             'medicine_id' => $request->medicine_id,
             'dosage' => $request->dosage,
             'frequency' => $request->frequency,
@@ -188,7 +168,6 @@ class PrescriptionController extends Controller
         }
 
         $prescriptionItem->delete();
-
         return back()->with('success', 'Medicine removed from prescription.');
     }
 
@@ -212,23 +191,17 @@ class PrescriptionController extends Controller
 
     public function dispenseAll(Prescription $prescription)
     {
-        DB::beginTransaction();
-        try {
-            foreach ($prescription->items()->where('status', 'pending')->get() as $item) {
-                $item->update(['status' => 'dispensed']);
-            }
-
+        DB::transaction(function () use ($prescription) {
+            $prescription->items()->where('status', 'pending')->update(['status' => 'dispensed']);
             $prescription->update(['status' => 'filled']);
+        });
 
-            DB::commit();
-
-            return back()->with('success', 'All items dispensed.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Failed to dispense items: ' . $e->getMessage());
-        }
+        return back()->with('success', 'All items dispensed.');
     }
 
+    // =========================
+    // PRESCRIPTION STATUS ACTIONS
+    // =========================
     public function expire(Prescription $prescription)
     {
         if ($prescription->expire()) {
@@ -256,53 +229,55 @@ class PrescriptionController extends Controller
         return back()->with('error', 'Cannot mark this prescription as filled.');
     }
 
+    // =========================
+    // PRINT PRESCRIPTION
+    // =========================
     public function print(Prescription $prescription)
     {
-        $prescription->load([
-            'treatment.patient',
-            'treatment.doctor.user',
-            'items.medicine'
-        ]);
-
+        $prescription->load(['treatment.patient', 'treatment.doctor.user', 'items.medicine']);
         return view('prescriptions.print', compact('prescription'));
     }
 
+    // =========================
+    // TREATMENT PRESCRIPTIONS
+    // =========================
     public function treatmentPrescriptions(Treatment $treatment)
     {
-        $prescriptions = Prescription::where('treatment_id', $treatment->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
+        $prescriptions = $treatment->prescriptions()->orderByDesc('created_at')->get();
         return view('prescriptions.treatment-prescriptions', compact('treatment', 'prescriptions'));
     }
 
+    // =========================
+    // AJAX: SEARCH MEDICINES
+    // =========================
     public function getMedicines(Request $request)
     {
         $search = $request->get('search', '');
 
-        $medicines = Medicine::where('status', 'active')
-            ->where(function ($query) use ($search) {
-                $query->where('brand_name', 'like', "%{$search}%")
+        $medicines = Medicine::active()
+            ->where(function ($q) use ($search) {
+                $q->where('brand_name', 'like', "%{$search}%")
                     ->orWhere('generic_name', 'like', "%{$search}%")
                     ->orWhere('medicine_code', 'like', "%{$search}%");
             })
             ->limit(10)
             ->get()
-            ->map(function ($medicine) {
-                return [
-                    'id' => $medicine->id,
-                    'text' => "{$medicine->medicine_code} - {$medicine->brand_name} ({$medicine->generic_name})",
-                    'brand_name' => $medicine->brand_name,
-                    'generic_name' => $medicine->generic_name,
-                    'strength' => $medicine->strength,
-                    'dosage_form' => $medicine->dosage_form,
-                    'unit' => $medicine->unit,
-                ];
-            });
+            ->map(fn($medicine) => [
+                'id' => $medicine->id,
+                'text' => "{$medicine->medicine_code} - {$medicine->brand_name} ({$medicine->generic_name})",
+                'brand_name' => $medicine->brand_name,
+                'generic_name' => $medicine->generic_name,
+                'strength' => $medicine->strength,
+                'dosage_form' => $medicine->dosage_form,
+                'unit' => $medicine->unit,
+            ]);
 
         return response()->json($medicines);
     }
 
+    // =========================
+    // QUICK CREATE PRESCRIPTION (AJAX)
+    // =========================
     public function quickCreate(Request $request)
     {
         $request->validate([
@@ -313,8 +288,7 @@ class PrescriptionController extends Controller
             'duration' => 'required|string|max:50',
         ]);
 
-        DB::beginTransaction();
-        try {
+        $prescription = DB::transaction(function () use ($request) {
             $prescription = Prescription::create([
                 'prescription_code' => Prescription::generatePrescriptionCode(),
                 'treatment_id' => $request->treatment_id,
@@ -323,8 +297,7 @@ class PrescriptionController extends Controller
                 'created_by' => auth()->id(),
             ]);
 
-            PrescriptionItem::create([
-                'prescription_id' => $prescription->id,
+            $prescription->items()->create([
                 'medicine_id' => $request->medicine_id,
                 'dosage' => $request->dosage,
                 'frequency' => $request->frequency,
@@ -334,21 +307,15 @@ class PrescriptionController extends Controller
                 'quantity' => $request->quantity ?? 1,
             ]);
 
-            DB::commit();
+            return $prescription;
+        });
 
-            return response()->json([
-                'success' => true,
-                'prescription' => [
-                    'id' => $prescription->id,
-                    'code' => $prescription->prescription_code,
-                ]
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'prescription' => [
+                'id' => $prescription->id,
+                'code' => $prescription->prescription_code,
+            ]
+        ]);
     }
 }

@@ -9,6 +9,9 @@ class TreatmentProcedure extends Model
 {
     use HasFactory;
 
+    // =========================
+    // MASS ASSIGNABLE FIELDS
+    // =========================
     protected $fillable = [
         'treatment_id',
         'procedure_code',
@@ -23,6 +26,9 @@ class TreatmentProcedure extends Model
         'completed_by',
     ];
 
+    // =========================
+    // CASTS
+    // =========================
     protected $casts = [
         'cost' => 'decimal:2',
         'completed_at' => 'datetime',
@@ -30,7 +36,9 @@ class TreatmentProcedure extends Model
         'updated_at' => 'datetime',
     ];
 
-    // Relationships
+    // =========================
+    // RELATIONSHIPS
+    // =========================
     public function treatment()
     {
         return $this->belongsTo(Treatment::class);
@@ -41,7 +49,9 @@ class TreatmentProcedure extends Model
         return $this->belongsTo(User::class, 'completed_by');
     }
 
-    // Scopes
+    // =========================
+    // SCOPES
+    // =========================
     public function scopeByTreatment($query, $treatmentId)
     {
         return $query->where('treatment_id', $treatmentId);
@@ -67,14 +77,16 @@ class TreatmentProcedure extends Model
         return $query->where('tooth_number', $toothNumber);
     }
 
-    // Helper Methods
+    // =========================
+    // STATUS HELPERS
+    // =========================
     public static function statuses()
     {
         return [
-            'planned' => 'Planned',
+            'planned'     => 'Planned',
             'in_progress' => 'In Progress',
-            'completed' => 'Completed',
-            'cancelled' => 'Cancelled',
+            'completed'   => 'Completed',
+            'cancelled'   => 'Cancelled',
         ];
     }
 
@@ -86,10 +98,10 @@ class TreatmentProcedure extends Model
     public function getStatusColorAttribute()
     {
         $colors = [
-            'planned' => 'info',
+            'planned'     => 'info',
             'in_progress' => 'warning',
-            'completed' => 'success',
-            'cancelled' => 'danger',
+            'completed'   => 'success',
+            'cancelled'   => 'danger',
         ];
 
         return $colors[$this->status] ?? 'secondary';
@@ -97,13 +109,22 @@ class TreatmentProcedure extends Model
 
     public function getStatusBadgeAttribute()
     {
-        return '<span class="badge bg-' . $this->status_color . '">' . $this->status_text . '</span>';
+        // Tailwind-ready badge
+        return '<span class="inline-block px-2 py-1 text-xs font-semibold rounded bg-'
+            . $this->status_color . '-500 text-white">'
+            . $this->status_text . '</span>';
     }
 
+    // =========================
+    // FORMATTED ATTRIBUTES
+    // =========================
     public function getFormattedCostAttribute()
     {
-        return '৳ ' . number_format($this->cost, 2);
+        return $this->cost !== null
+            ? '৳ ' . number_format((float) $this->cost, 2)
+            : 'N/A';
     }
+
 
     public function getDurationTextAttribute()
     {
@@ -122,6 +143,9 @@ class TreatmentProcedure extends Model
         return $info;
     }
 
+    // =========================
+    // STATUS CHECKS
+    // =========================
     public function isCompleted()
     {
         return $this->status === 'completed';
@@ -132,45 +156,42 @@ class TreatmentProcedure extends Model
         return in_array($this->status, ['planned', 'in_progress']);
     }
 
+    // =========================
+    // STATUS TRANSITIONS
+    // =========================
     public function start()
     {
-        if ($this->status === 'planned') {
-            $this->update(['status' => 'in_progress']);
-            return true;
-        }
-        return false;
+        $this->update(['status' => 'in_progress']);
+        return true;
     }
 
     public function complete($userId = null)
     {
-        if ($this->status !== 'cancelled') {
-            $this->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-                'completed_by' => $userId ?? auth()->id(),
-            ]);
+        $this->update([
+            'status'       => 'completed',
+            'completed_at' => now(),
+            'completed_by' => $userId ?? auth()->id(),
+        ]);
 
-            // Update treatment actual cost
-            $this->treatment->updateActualCost();
+        // Update treatment actual cost
+        $this->treatment->updateActualCost();
 
-            return true;
-        }
-        return false;
+        return true;
     }
 
     public function cancel()
     {
-        if ($this->isPending()) {
-            $this->update(['status' => 'cancelled']);
+        $this->update(['status' => 'cancelled']);
 
-            // Update treatment actual cost
-            $this->treatment->updateActualCost();
+        // Update treatment actual cost
+        $this->treatment->updateActualCost();
 
-            return true;
-        }
-        return false;
+        return true;
     }
 
+    // =========================
+    // COMMON PROCEDURES
+    // =========================
     public static function getCommonProcedures()
     {
         return [

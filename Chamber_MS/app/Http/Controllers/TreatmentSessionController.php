@@ -7,35 +7,26 @@ use App\Models\Treatment;
 use App\Models\Appointment;
 use App\Models\DentalChair;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class TreatmentSessionController extends Controller
 {
+    // =========================
+    // LIST SESSIONS WITH FILTERS
+    // =========================
     public function index(Request $request)
     {
         $query = TreatmentSession::with(['treatment.patient', 'appointment', 'chair']);
 
-        if ($request->filled('treatment_id')) {
-            $query->where('treatment_id', $request->treatment_id);
-        }
+        // Filters
+        if ($request->filled('treatment_id')) $query->where('treatment_id', $request->treatment_id);
+        if ($request->filled('status')) $query->where('status', $request->status);
+        if ($request->filled('date')) $query->whereDate('scheduled_date', $request->date);
+        else $query->whereDate('scheduled_date', '>=', today());
+        if ($request->filled('chair_id')) $query->where('chair_id', $request->chair_id);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('date')) {
-            $query->whereDate('scheduled_date', $request->date);
-        } else {
-            $query->whereDate('scheduled_date', '>=', today());
-        }
-
-        if ($request->filled('chair_id')) {
-            $query->where('chair_id', $request->chair_id);
-        }
-
-        $sessions = $query->orderBy('scheduled_date', 'desc')
-            ->orderBy('session_number')
-            ->paginate(20);
+        $sessions = $query->orderBy('scheduled_date', 'desc')->orderBy('session_number')->paginate(20);
 
         $treatments = Treatment::active()->get();
         $chairs = DentalChair::active()->get();
@@ -43,6 +34,9 @@ class TreatmentSessionController extends Controller
         return view('treatment-sessions.index', compact('sessions', 'treatments', 'chairs'));
     }
 
+    // =========================
+    // SHOW CREATE FORM
+    // =========================
     public function create(Request $request)
     {
         $treatment = null;
@@ -60,6 +54,9 @@ class TreatmentSessionController extends Controller
         return view('treatment-sessions.create', compact('treatment', 'sessionNumber', 'treatments', 'appointments', 'chairs'));
     }
 
+    // =========================
+    // STORE NEW SESSION
+    // =========================
     public function store(Request $request)
     {
         $request->validate([
@@ -76,50 +73,52 @@ class TreatmentSessionController extends Controller
             'next_session_date' => 'nullable|date|after_or_equal:scheduled_date',
         ]);
 
-        // Check for duplicate session number
-        $exists = TreatmentSession::where('treatment_id', $request->treatment_id)
-            ->where('session_number', $request->session_number)
-            ->exists();
-
-        if ($exists) {
+        // Prevent duplicate session numbers
+        if (TreatmentSession::where('treatment_id', $request->treatment_id)
+            ->where('session_number', $request->session_number)->exists()
+        ) {
             return back()->with('error', 'Session number already exists for this treatment.')->withInput();
         }
 
-        $session = TreatmentSession::create([
-            'treatment_id' => $request->treatment_id,
-            'session_number' => $request->session_number,
-            'session_title' => $request->session_title,
-            'appointment_id' => $request->appointment_id,
-            'scheduled_date' => $request->scheduled_date,
-            'actual_date' => $request->status === 'completed' ? ($request->actual_date ?? now()) : null,
-            'chair_id' => $request->chair_id,
-            'status' => $request->status,
-            'procedure_details' => $request->procedure_details,
-            'materials_used' => $request->materials_used,
-            'doctor_notes' => $request->doctor_notes,
-            'assistant_notes' => $request->assistant_notes,
-            'duration_planned' => $request->duration_planned,
-            'duration_actual' => $request->duration_actual,
-            'cost_for_session' => $request->cost_for_session,
-            'next_session_date' => $request->next_session_date,
-            'next_session_notes' => $request->next_session_notes,
-            'created_by' => auth()->id(),
-            'updated_by' => auth()->id(),
-        ]);
+        $session = TreatmentSession::create(array_merge(
+            $request->only([
+                'treatment_id',
+                'session_number',
+                'session_title',
+                'appointment_id',
+                'scheduled_date',
+                'chair_id',
+                'status',
+                'procedure_details',
+                'materials_used',
+                'doctor_notes',
+                'assistant_notes',
+                'duration_planned',
+                'duration_actual',
+                'cost_for_session',
+                'next_session_date',
+                'next_session_notes'
+            ]),
+            [
+                'actual_date' => $request->status === 'completed' ? ($request->actual_date ?? now()) : null,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
+            ]
+        ));
 
-        // Update appointment status if linked
+        // Sync appointment status
         if ($request->appointment_id && in_array($request->status, ['in_progress', 'completed'])) {
             $appointment = Appointment::find($request->appointment_id);
-            if ($appointment) {
-                $appointment->update(['status' => $request->status === 'completed' ? 'completed' : 'in_progress']);
-            }
+            if ($appointment) $appointment->update(['status' => $request->status === 'completed' ? 'completed' : 'in_progress']);
         }
 
-        return redirect()
-            ->route('treatment-sessions.show', $session)
+        return redirect()->route('treatment-sessions.show', $session)
             ->with('success', 'Treatment session created successfully.');
     }
 
+    // =========================
+    // SHOW SESSION DETAILS
+    // =========================
     public function show(TreatmentSession $treatmentSession)
     {
         $treatmentSession->load([
@@ -134,18 +133,23 @@ class TreatmentSessionController extends Controller
         return view('treatment-sessions.show', compact('treatmentSession'));
     }
 
+    // =========================
+    // EDIT FORM
+    // =========================
     public function edit(TreatmentSession $treatmentSession)
     {
         $treatmentSession->load('treatment');
         $treatments = Treatment::active()->with('patient')->get();
         $appointments = Appointment::where('status', 'scheduled')
-            ->orWhere('id', $treatmentSession->appointment_id)
-            ->get();
+            ->orWhere('id', $treatmentSession->appointment_id)->get();
         $chairs = DentalChair::active()->get();
 
         return view('treatment-sessions.edit', compact('treatmentSession', 'treatments', 'appointments', 'chairs'));
     }
 
+    // =========================
+    // UPDATE SESSION
+    // =========================
     public function update(Request $request, TreatmentSession $treatmentSession)
     {
         $request->validate([
@@ -163,50 +167,49 @@ class TreatmentSessionController extends Controller
             'next_session_date' => 'nullable|date|after_or_equal:scheduled_date',
         ]);
 
-        // Check for duplicate session number if changed
-        if ($treatmentSession->session_number != $request->session_number) {
-            $exists = TreatmentSession::where('treatment_id', $treatmentSession->treatment_id)
-                ->where('session_number', $request->session_number)
-                ->where('id', '!=', $treatmentSession->id)
-                ->exists();
-
-            if ($exists) {
-                return back()->with('error', 'Session number already exists for this treatment.')->withInput();
-            }
+        // Prevent duplicate session number if changed
+        if (
+            $treatmentSession->session_number != $request->session_number &&
+            TreatmentSession::where('treatment_id', $treatmentSession->treatment_id)
+            ->where('session_number', $request->session_number)
+            ->where('id', '!=', $treatmentSession->id)
+            ->exists()
+        ) {
+            return back()->with('error', 'Session number already exists for this treatment.')->withInput();
         }
 
         $oldStatus = $treatmentSession->status;
         $oldAppointmentId = $treatmentSession->appointment_id;
 
-        $treatmentSession->update([
-            'session_number' => $request->session_number,
-            'session_title' => $request->session_title,
-            'appointment_id' => $request->appointment_id,
-            'scheduled_date' => $request->scheduled_date,
-            'actual_date' => $request->actual_date,
-            'chair_id' => $request->chair_id,
-            'status' => $request->status,
-            'procedure_details' => $request->procedure_details,
-            'materials_used' => $request->materials_used,
-            'doctor_notes' => $request->doctor_notes,
-            'assistant_notes' => $request->assistant_notes,
-            'duration_planned' => $request->duration_planned,
-            'duration_actual' => $request->duration_actual,
-            'cost_for_session' => $request->cost_for_session,
-            'next_session_date' => $request->next_session_date,
-            'next_session_notes' => $request->next_session_notes,
-            'updated_by' => auth()->id(),
-        ]);
+        $treatmentSession->update(array_merge(
+            $request->only([
+                'session_number',
+                'session_title',
+                'appointment_id',
+                'scheduled_date',
+                'actual_date',
+                'chair_id',
+                'status',
+                'procedure_details',
+                'materials_used',
+                'doctor_notes',
+                'assistant_notes',
+                'duration_planned',
+                'duration_actual',
+                'cost_for_session',
+                'next_session_date',
+                'next_session_notes'
+            ]),
+            ['updated_by' => auth()->id()]
+        ));
 
-        // Handle appointment status changes
+        // Sync appointment statuses
         if ($request->appointment_id) {
             $appointment = Appointment::find($request->appointment_id);
             if ($appointment && in_array($request->status, ['in_progress', 'completed'])) {
                 $appointment->update(['status' => $request->status === 'completed' ? 'completed' : 'in_progress']);
             }
         }
-
-        // Update old appointment if changed
         if ($oldAppointmentId && $oldAppointmentId != $request->appointment_id) {
             $oldAppointment = Appointment::find($oldAppointmentId);
             if ($oldAppointment && $oldAppointment->status === 'in_progress') {
@@ -214,107 +217,75 @@ class TreatmentSessionController extends Controller
             }
         }
 
-        // Update treatment completed sessions if session completed
+        // Update treatment if session completed
         if ($oldStatus !== 'completed' && $request->status === 'completed') {
             $treatmentSession->treatment->addSession();
         }
 
-        return redirect()
-            ->route('treatment-sessions.show', $treatmentSession)
+        return redirect()->route('treatment-sessions.show', $treatmentSession)
             ->with('success', 'Treatment session updated successfully.');
     }
 
+    // =========================
+    // DELETE SESSION
+    // =========================
     public function destroy(TreatmentSession $treatmentSession)
     {
         if ($treatmentSession->status === 'completed') {
             return back()->with('error', 'Cannot delete completed session.');
         }
 
-        // Update appointment if linked
+        // Reset appointment if needed
         if ($treatmentSession->appointment_id && $treatmentSession->appointment->status === 'in_progress') {
             $treatmentSession->appointment->update(['status' => 'scheduled']);
         }
 
         $treatmentSession->delete();
 
-        return redirect()
-            ->route('treatments.show', $treatmentSession->treatment_id)
+        return redirect()->route('treatments.show', $treatmentSession->treatment_id)
             ->with('success', 'Treatment session deleted successfully.');
     }
 
+    // =========================
+    // ACTION METHODS
+    // =========================
     public function start(TreatmentSession $treatmentSession)
     {
-        if ($treatmentSession->start()) {
-            return back()->with('success', 'Session started successfully.');
-        }
-
-        return back()->with('error', 'Cannot start session. It may already be started or completed.');
+        $treatmentSession->start();
+        return back()->with('success', 'Session started successfully.');
     }
 
     public function complete(TreatmentSession $treatmentSession)
     {
         $request = request();
-        $request->validate([
-            'duration_actual' => 'nullable|integer|min:1',
-            'doctor_notes' => 'nullable|string',
-            'materials_used' => 'nullable|string',
-        ]);
-
-        if ($request->filled('duration_actual')) {
-            $treatmentSession->update(['duration_actual' => $request->duration_actual]);
-        }
-
-        if ($request->filled('doctor_notes')) {
-            $treatmentSession->update(['doctor_notes' => $request->doctor_notes]);
-        }
-
-        if ($request->filled('materials_used')) {
-            $treatmentSession->update(['materials_used' => $request->materials_used]);
-        }
-
-        if ($treatmentSession->complete()) {
-            return back()->with('success', 'Session completed successfully.');
-        }
-
-        return back()->with('error', 'Cannot complete session. It may already be completed or cancelled.');
+        $treatmentSession->update($request->only(['duration_actual', 'doctor_notes', 'materials_used']));
+        $treatmentSession->complete();
+        return back()->with('success', 'Session completed successfully.');
     }
 
     public function cancel(TreatmentSession $treatmentSession)
     {
-        if ($treatmentSession->cancel()) {
-            return back()->with('success', 'Session cancelled successfully.');
-        }
-
-        return back()->with('error', 'Cannot cancel session. It may already be completed.');
+        $treatmentSession->cancel();
+        return back()->with('success', 'Session cancelled successfully.');
     }
 
     public function postpone(Request $request, TreatmentSession $treatmentSession)
     {
-        $request->validate([
-            'new_date' => 'required|date',
-            'notes' => 'nullable|string',
-        ]);
-
-        if ($treatmentSession->postpone($request->new_date, $request->notes)) {
-            return back()->with('success', 'Session postponed successfully.');
-        }
-
-        return back()->with('error', 'Cannot postpone session. It may not be scheduled.');
+        $request->validate(['new_date' => 'required|date', 'notes' => 'nullable|string']);
+        $treatmentSession->postpone($request->new_date, $request->notes);
+        return back()->with('success', 'Session postponed successfully.');
     }
 
     public function reschedule(Request $request, TreatmentSession $treatmentSession)
     {
-        $request->validate([
-            'new_date' => 'required|date',
-        ]);
-
-        if ($treatmentSession->reschedule($request->new_date)) {
-            return back()->with('success', 'Session rescheduled successfully.');
-        }
-
-        return back()->with('error', 'Cannot reschedule session.');
+        $request->validate(['new_date' => 'required|date']);
+        $treatmentSession->reschedule($request->new_date);
+        return back()->with('success', 'Session rescheduled successfully.');
     }
 
+    // =========================
+    // GET SESSIONS FOR A TREATMENT
+    // =========================
     public function treatmentSessions(Treatment $treatment)
     {
         $sessions = TreatmentSession::where('treatment_id', $treatment->id)
@@ -324,6 +295,9 @@ class TreatmentSessionController extends Controller
         return view('treatment-sessions.treatment-sessions', compact('treatment', 'sessions'));
     }
 
+    // =========================
+    // TODAY'S SESSIONS
+    // =========================
     public function today()
     {
         $todaySessions = TreatmentSession::with(['treatment.patient', 'chair', 'appointment'])
@@ -342,12 +316,12 @@ class TreatmentSessionController extends Controller
         return view('treatment-sessions.today', compact('todaySessions', 'stats'));
     }
 
+    // =========================
+    // QUICK CREATE VIA AJAX
+    // =========================
     public function quickCreate(Request $request, Treatment $treatment)
     {
-        $request->validate([
-            'session_title' => 'required|string|max:100',
-            'scheduled_date' => 'required|date',
-        ]);
+        $request->validate(['session_title' => 'required|string|max:100', 'scheduled_date' => 'required|date']);
 
         $sessionNumber = $treatment->sessions()->max('session_number') + 1;
 
@@ -368,7 +342,7 @@ class TreatmentSessionController extends Controller
                 'id' => $session->id,
                 'number' => $session->session_number,
                 'title' => $session->session_title,
-                'date' => $session->scheduled_date->format('d/m/Y'),
+                'date' => Carbon::parse($session->scheduled_date)->format('d/m/Y'),
             ]
         ]);
     }

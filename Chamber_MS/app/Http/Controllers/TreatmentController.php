@@ -2,19 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Treatment;
+use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Doctor;
-use App\Models\Appointment;
+use App\Models\DentalChair;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class TreatmentController extends Controller
+class AppointmentController extends Controller
 {
+    // =========================
+    // LIST APPOINTMENTS
+    // =========================
     public function index(Request $request)
     {
-        $query = Treatment::with(['patient', 'doctor.user']);
+        $query = Appointment::with(['patient', 'doctor.user', 'chair']);
 
+        // Filters
         if ($request->filled('search')) {
             $query->search($request->search);
         }
@@ -23,280 +27,328 @@ class TreatmentController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->filled('patient_id')) {
-            $query->where('patient_id', $request->patient_id);
-        }
-
         if ($request->filled('doctor_id')) {
             $query->where('doctor_id', $request->doctor_id);
         }
 
-        if ($request->filled('treatment_type')) {
-            $query->where('treatment_type', $request->treatment_type);
+        if ($request->filled('date')) {
+            $query->whereDate('appointment_date', $request->date);
+        } else {
+            $query->whereDate('appointment_date', '>=', today());
         }
 
-        $treatments = $query->orderBy('created_at', 'desc')->paginate(20);
-        $patients = Patient::active()->get();
-        $doctors = Doctor::with('user')->active()->get();
+        if ($request->filled('type')) {
+            $query->where('appointment_type', $request->type);
+        }
 
-        return view('treatments.index', compact('treatments', 'patients', 'doctors'));
+        $appointments = $query->orderBy('appointment_date', 'desc')
+            ->orderBy('appointment_time')
+            ->paginate(20);
+
+        $doctors = Doctor::with('user')->active()->get();
+        $patients = Patient::active()->get();
+
+        return view('appointments.index', compact('appointments', 'doctors', 'patients'));
     }
 
+    // =========================
+    // CREATE APPOINTMENT FORM
+    // =========================
     public function create()
     {
         $patients = Patient::active()->get();
         $doctors = Doctor::with('user')->active()->get();
-        $appointments = Appointment::whereIn('status', ['completed', 'in_progress'])
-            ->whereDoesntHave('treatment')
-            ->get();
+        $chairs = DentalChair::active()->available()->get();
 
-        return view('treatments.create', compact('patients', 'doctors', 'appointments'));
+        return view('appointments.create', compact('patients', 'doctors', 'chairs'));
     }
 
+    // =========================
+    // STORE NEW APPOINTMENT
+    // =========================
     public function store(Request $request)
     {
         $request->validate([
-            'patient_id' => 'required|exists:patients,id',
-            'doctor_id' => 'required|exists:doctors,id',
-            'appointment_id' => 'nullable|exists:appointments,id',
-            'treatment_type' => 'required|in:single_visit,multi_visit',
-            'estimated_sessions' => 'required|integer|min:1',
-            'treatment_date' => 'required|date',
-            'diagnosis' => 'required|string',
-            'treatment_plan' => 'nullable|string',
-            'total_estimated_cost' => 'nullable|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0',
-            'status' => 'required|in:planned,in_progress,completed,cancelled,on_hold',
+            'patient_id'       => 'required|exists:patients,id',
+            'doctor_id'        => 'required|exists:doctors,id',
+            'chair_id'         => 'nullable|exists:dental_chairs,id',
+            'appointment_type' => 'required|in:consultation,treatment,followup,emergency,checkup',
+            'appointment_date' => 'required|date',
+            'appointment_time' => 'required|date_format:H:i',
+            'expected_duration' => 'required|integer|min:5|max:240',
+            'priority'         => 'required|in:normal,urgent,high',
+            'chief_complaint'  => 'nullable|string',
+            'notes'            => 'nullable|string',
         ]);
 
-        $treatment = Treatment::create([
-            'treatment_code' => Treatment::generateTreatmentCode(),
-            'patient_id' => $request->patient_id,
-            'doctor_id' => $request->doctor_id,
-            'appointment_id' => $request->appointment_id,
-            'initial_appointment_id' => $request->appointment_id,
-            'treatment_type' => $request->treatment_type,
-            'estimated_sessions' => $request->estimated_sessions,
-            'treatment_date' => $request->treatment_date,
-            'diagnosis' => $request->diagnosis,
-            'treatment_plan' => $request->treatment_plan,
-            'total_estimated_cost' => $request->total_estimated_cost,
-            'discount' => $request->discount ?? 0,
-            'status' => $request->status,
-            'created_by' => auth()->id(),
-            'updated_by' => auth()->id(),
-        ]);
+        // =========================
+        // CHECK FOR CONFLICTS
+        // =========================
+        $conflict = Appointment::where('doctor_id', $request->doctor_id)
+            ->where('appointment_date', $request->appointment_date)
+            ->where('appointment_time', $request->appointment_time)
+            ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
+            ->exists();
 
-        // Update appointment if provided
-        if ($request->appointment_id) {
-            $appointment = Appointment::find($request->appointment_id);
-            if ($appointment) {
-                $appointment->update(['status' => 'completed']);
+        if ($conflict) {
+            return back()->with('error', 'Doctor is not available at this time.')->withInput();
+        }
+
+        if ($request->chair_id) {
+            $chairConflict = Appointment::where('chair_id', $request->chair_id)
+                ->where('appointment_date', $request->appointment_date)
+                ->where('appointment_time', $request->appointment_time)
+                ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
+                ->exists();
+
+            if ($chairConflict) {
+                return back()->with('error', 'Dental chair is not available at this time.')->withInput();
             }
         }
 
-        return redirect()
-            ->route('treatments.show', $treatment)
-            ->with('success', 'Treatment created successfully.');
-    }
-
-    public function show(Treatment $treatment)
-    {
-        $treatment->load([
-            'patient',
-            'doctor.user',
-            'appointment',
-            'procedures',
-            'sessions',
-            'prescriptions',
-            'invoices'
+        // =========================
+        // CREATE APPOINTMENT
+        // =========================
+        Appointment::create([
+            'appointment_code' => Appointment::generateAppointmentCode(),
+            'patient_id'       => $request->patient_id,
+            'doctor_id'        => $request->doctor_id,
+            'chair_id'         => $request->chair_id,
+            'appointment_type' => $request->appointment_type,
+            'appointment_date' => $request->appointment_date,
+            'appointment_time' => $request->appointment_time,
+            'expected_duration' => $request->expected_duration,
+            'priority'         => $request->priority,
+            'chief_complaint'  => $request->chief_complaint,
+            'notes'            => $request->notes,
+            'created_by'       => auth()->id(),
+            'updated_by'       => auth()->id(),
         ]);
 
-        return view('treatments.show', compact('treatment'));
+        return redirect()->route('appointments.index')
+            ->with('success', 'Appointment created successfully.');
     }
 
-    public function edit(Treatment $treatment)
+    // =========================
+    // SHOW APPOINTMENT DETAILS
+    // =========================
+    public function show(Appointment $appointment)
+    {
+        $appointment->load(['patient', 'doctor.user', 'chair', 'creator', 'updater']);
+        return view('appointments.show', compact('appointment'));
+    }
+
+    // =========================
+    // EDIT APPOINTMENT
+    // =========================
+    public function edit(Appointment $appointment)
     {
         $patients = Patient::active()->get();
         $doctors = Doctor::with('user')->active()->get();
-        $appointments = Appointment::whereIn('status', ['completed', 'in_progress'])
-            ->where(function ($query) use ($treatment) {
-                $query->whereDoesntHave('treatment')
-                    ->orWhere('id', $treatment->appointment_id);
-            })
-            ->get();
+        $chairs = DentalChair::active()->get();
 
-        return view('treatments.edit', compact('treatment', 'patients', 'doctors', 'appointments'));
+        return view('appointments.edit', compact('appointment', 'patients', 'doctors', 'chairs'));
     }
 
-    public function update(Request $request, Treatment $treatment)
+    // =========================
+    // UPDATE APPOINTMENT
+    // =========================
+    public function update(Request $request, Appointment $appointment)
     {
         $request->validate([
-            'patient_id' => 'required|exists:patients,id',
+            'patient_id'       => 'required|exists:patients,id',
+            'doctor_id'        => 'required|exists:doctors,id',
+            'chair_id'         => 'nullable|exists:dental_chairs,id',
+            'appointment_type' => 'required|in:consultation,treatment,followup,emergency,checkup',
+            'appointment_date' => 'required|date',
+            'appointment_time' => 'required|date_format:H:i',
+            'expected_duration' => 'required|integer|min:5|max:240',
+            'priority'         => 'required|in:normal,urgent,high',
+            'status'           => 'required|in:scheduled,checked_in,in_progress,completed,cancelled,no_show',
+            'chief_complaint'  => 'nullable|string',
+            'notes'            => 'nullable|string',
+            'reason_cancellation' => 'nullable|required_if:status,cancelled|string',
+        ]);
+
+        $updateData = $request->only([
+            'patient_id',
+            'doctor_id',
+            'chair_id',
+            'appointment_type',
+            'appointment_date',
+            'appointment_time',
+            'expected_duration',
+            'priority',
+            'status',
+            'chief_complaint',
+            'notes'
+        ]) + ['updated_by' => auth()->id()];
+
+        // Update timestamps based on status
+        if ($request->status == 'checked_in' && !$appointment->checked_in_time) {
+            $updateData['checked_in_time'] = now();
+        }
+
+        if ($request->status == 'in_progress' && !$appointment->started_time) {
+            $updateData['started_time'] = now();
+        }
+
+        if ($request->status == 'completed' && !$appointment->completed_time) {
+            $updateData['completed_time'] = now();
+        }
+
+        if ($request->status == 'cancelled') {
+            $updateData['reason_cancellation'] = $request->reason_cancellation;
+        }
+
+        $appointment->update($updateData);
+
+        return redirect()->route('appointments.index')
+            ->with('success', 'Appointment updated successfully.');
+    }
+
+    // =========================
+    // DELETE APPOINTMENT
+    // =========================
+    public function destroy(Appointment $appointment)
+    {
+        if (!in_array($appointment->status, ['scheduled', 'cancelled'])) {
+            return back()->with('error', 'Cannot delete appointment that has started or completed.');
+        }
+
+        $appointment->delete();
+
+        return redirect()->route('appointments.index')
+            ->with('success', 'Appointment deleted successfully.');
+    }
+
+    // =========================
+    // CHECK-IN / START / COMPLETE / CANCEL
+    // =========================
+    public function checkIn(Appointment $appointment)
+    {
+        if ($appointment->status != 'scheduled') {
+            return back()->with('error', 'Only scheduled appointments can be checked in.');
+        }
+
+        $appointment->checkIn();
+        return back()->with('success', 'Patient checked in successfully.');
+    }
+
+    public function start(Appointment $appointment)
+    {
+        if ($appointment->status != 'checked_in') {
+            return back()->with('error', 'Only checked-in appointments can be started.');
+        }
+
+        $appointment->start();
+        return back()->with('success', 'Appointment started successfully.');
+    }
+
+    public function complete(Appointment $appointment)
+    {
+        if (!in_array($appointment->status, ['checked_in', 'in_progress'])) {
+            return back()->with('error', 'Only checked-in or in-progress appointments can be completed.');
+        }
+
+        $appointment->complete();
+        return back()->with('success', 'Appointment completed successfully.');
+    }
+
+    public function cancel(Request $request, Appointment $appointment)
+    {
+        $request->validate(['reason' => 'required|string']);
+
+        if (!in_array($appointment->status, ['scheduled', 'checked_in'])) {
+            return back()->with('error', 'Only scheduled or checked-in appointments can be cancelled.');
+        }
+
+        $appointment->cancel($request->reason);
+        return back()->with('success', 'Appointment cancelled successfully.');
+    }
+
+    // =========================
+    // TODAY'S APPOINTMENTS & STATS
+    // =========================
+    public function today()
+    {
+        $todayAppointments = Appointment::with(['patient', 'doctor.user', 'chair'])
+            ->today()
+            ->orderBy('appointment_time')
+            ->get()
+            ->groupBy('status');
+
+        $stats = [
+            'scheduled'   => $todayAppointments->get('scheduled', collect())->count(),
+            'checked_in'  => $todayAppointments->get('checked_in', collect())->count(),
+            'in_progress' => $todayAppointments->get('in_progress', collect())->count(),
+            'completed'   => $todayAppointments->get('completed', collect())->count(),
+            'total'       => $todayAppointments->flatten()->count(),
+        ];
+
+        return view('appointments.today', compact('todayAppointments', 'stats'));
+    }
+
+    // =========================
+    // CALENDAR VIEW
+    // =========================
+    public function calendar(Request $request)
+    {
+        $doctors = Doctor::with('user')->active()->get();
+        $selectedDoctor = $request->get('doctor_id');
+        $selectedDate = $request->get('date', date('Y-m-d'));
+
+        $query = Appointment::with(['patient', 'doctor.user', 'chair'])
+            ->whereDate('appointment_date', $selectedDate);
+
+        if ($selectedDoctor) {
+            $query->where('doctor_id', $selectedDoctor);
+        }
+
+        $appointments = $query->orderBy('appointment_time')->get();
+
+        // Generate 30-min time slots from 9:00 to 17:30
+        $timeSlots = [];
+        for ($hour = 9; $hour <= 17; $hour++) {
+            for ($minute = 0; $minute < 60; $minute += 30) {
+                if ($hour == 17 && $minute == 30) break;
+                $time = sprintf('%02d:%02d:00', $hour, $minute);
+                $timeSlots[$time] = $appointments->where('appointment_time', $time)->values();
+            }
+        }
+
+        return view('appointments.calendar', compact('timeSlots', 'doctors', 'selectedDoctor', 'selectedDate'));
+    }
+
+    // =========================
+    // AVAILABLE TIME SLOTS
+    // =========================
+    public function getAvailableSlots(Request $request)
+    {
+        $request->validate([
             'doctor_id' => 'required|exists:doctors,id',
-            'appointment_id' => 'nullable|exists:appointments,id',
-            'treatment_type' => 'required|in:single_visit,multi_visit',
-            'estimated_sessions' => 'required|integer|min:1',
-            'completed_sessions' => 'required|integer|min:0|max:' . $request->estimated_sessions,
-            'treatment_date' => 'required|date',
-            'start_date' => 'nullable|date',
-            'expected_end_date' => 'nullable|date|after_or_equal:start_date',
-            'actual_end_date' => 'nullable|date|after_or_equal:start_date',
-            'diagnosis' => 'required|string',
-            'treatment_plan' => 'nullable|string',
-            'total_estimated_cost' => 'nullable|numeric|min:0',
-            'total_actual_cost' => 'nullable|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0',
-            'status' => 'required|in:planned,in_progress,completed,cancelled,on_hold',
-            'followup_date' => 'nullable|date',
-            'followup_notes' => 'nullable|string',
+            'date'      => 'required|date',
         ]);
 
-        $treatment->update([
-            'patient_id' => $request->patient_id,
-            'doctor_id' => $request->doctor_id,
-            'appointment_id' => $request->appointment_id,
-            'treatment_type' => $request->treatment_type,
-            'estimated_sessions' => $request->estimated_sessions,
-            'completed_sessions' => $request->completed_sessions,
-            'treatment_date' => $request->treatment_date,
-            'start_date' => $request->start_date,
-            'expected_end_date' => $request->expected_end_date,
-            'actual_end_date' => $request->actual_end_date,
-            'diagnosis' => $request->diagnosis,
-            'treatment_plan' => $request->treatment_plan,
-            'total_estimated_cost' => $request->total_estimated_cost,
-            'total_actual_cost' => $request->total_actual_cost,
-            'discount' => $request->discount ?? 0,
-            'status' => $request->status,
-            'followup_date' => $request->followup_date,
-            'followup_notes' => $request->followup_notes,
-            'updated_by' => auth()->id(),
-        ]);
+        $doctorId = $request->doctor_id;
+        $date = $request->date;
 
-        return redirect()
-            ->route('treatments.show', $treatment)
-            ->with('success', 'Treatment updated successfully.');
-    }
+        $existingAppointments = Appointment::where('doctor_id', $doctorId)
+            ->whereDate('appointment_date', $date)
+            ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
+            ->pluck('appointment_time')
+            ->toArray();
 
-    public function destroy(Treatment $treatment)
-    {
-        if ($treatment->procedures()->exists()) {
-            return back()->with('error', 'Cannot delete treatment with procedures.');
+        $workingHours = [];
+        for ($hour = 9; $hour <= 17; $hour++) {
+            for ($minute = 0; $minute < 60; $minute += 30) {
+                if ($hour == 17 && $minute == 30) break;
+                $workingHours[] = sprintf('%02d:%02d:00', $hour, $minute);
+            }
         }
 
-        if ($treatment->invoices()->exists()) {
-            return back()->with('error', 'Cannot delete treatment with invoices.');
-        }
+        $availableSlots = array_values(array_diff($workingHours, $existingAppointments));
 
-        $treatment->delete();
-
-        return redirect()
-            ->route('treatments.index')
-            ->with('success', 'Treatment deleted successfully.');
-    }
-
-    public function start(Treatment $treatment)
-    {
-        if ($treatment->status != 'planned') {
-            return back()->with('error', 'Only planned treatments can be started.');
-        }
-
-        $treatment->start();
-
-        return back()->with('success', 'Treatment started successfully.');
-    }
-
-    public function complete(Treatment $treatment)
-    {
-        if (!in_array($treatment->status, ['planned', 'in_progress'])) {
-            return back()->with('error', 'Only planned or in-progress treatments can be completed.');
-        }
-
-        $treatment->complete();
-
-        return back()->with('success', 'Treatment completed successfully.');
-    }
-
-    public function cancel(Treatment $treatment)
-    {
-        if (!in_array($treatment->status, ['planned', 'in_progress'])) {
-            return back()->with('error', 'Only planned or in-progress treatments can be cancelled.');
-        }
-
-        $treatment->cancel();
-
-        return back()->with('success', 'Treatment cancelled successfully.');
-    }
-
-    public function hold(Treatment $treatment)
-    {
-        if (!in_array($treatment->status, ['planned', 'in_progress'])) {
-            return back()->with('error', 'Only planned or in-progress treatments can be put on hold.');
-        }
-
-        $treatment->putOnHold();
-
-        return back()->with('success', 'Treatment put on hold.');
-    }
-
-    public function resume(Treatment $treatment)
-    {
-        if ($treatment->status != 'on_hold') {
-            return back()->with('error', 'Only treatments on hold can be resumed.');
-        }
-
-        $treatment->resume();
-
-        return back()->with('success', 'Treatment resumed.');
-    }
-
-    public function addSession(Treatment $treatment)
-    {
-        if (!$treatment->canAddSession()) {
-            return back()->with('error', 'Cannot add more sessions. Treatment is complete or cancelled.');
-        }
-
-        $treatment->addSession();
-
-        return back()->with('success', 'Session added successfully.');
-    }
-
-    public function patientTreatments($patientId)
-    {
-        $patient = Patient::findOrFail($patientId);
-        $treatments = Treatment::where('patient_id', $patientId)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('treatments.patient-treatments', compact('patient', 'treatments'));
-    }
-
-    public function quickCreate(Request $request)
-    {
-        $request->validate([
-            'patient_id' => 'required|exists:patients,id',
-            'diagnosis' => 'required|string',
-        ]);
-
-        $treatment = Treatment::create([
-            'treatment_code' => Treatment::generateTreatmentCode(),
-            'patient_id' => $request->patient_id,
-            'doctor_id' => auth()->user()->doctor->id ?? 1,
-            'treatment_date' => now(),
-            'diagnosis' => $request->diagnosis,
-            'status' => 'planned',
-            'created_by' => auth()->id(),
-            'updated_by' => auth()->id(),
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'treatment' => [
-                'id' => $treatment->id,
-                'code' => $treatment->treatment_code,
-                'patient' => $treatment->patient->full_name,
-            ]
-        ]);
+        return response()->json(['slots' => $availableSlots]);
     }
 }

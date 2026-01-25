@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -9,6 +10,9 @@ class Prescription extends Model
 {
     use HasFactory;
 
+    // =========================
+    // FILLABLE & CASTS
+    // =========================
     protected $fillable = [
         'prescription_code',
         'treatment_id',
@@ -26,7 +30,9 @@ class Prescription extends Model
         'updated_at' => 'datetime',
     ];
 
-    // Relationships
+    // =========================
+    // RELATIONSHIPS
+    // =========================
     public function treatment()
     {
         return $this->belongsTo(Treatment::class);
@@ -42,17 +48,13 @@ class Prescription extends Model
         return $this->hasMany(PrescriptionItem::class);
     }
 
-    // Scopes
+    // =========================
+    // SCOPES
+    // =========================
     public function scopeSearch($query, $search)
     {
-        return $query->where(function ($q) use ($search) {
-            $q->where('prescription_code', 'like', "%{$search}%")
-                ->orWhereHas('treatment', function ($treatmentQuery) use ($search) {
-                    $treatmentQuery->whereHas('patient', function ($patientQuery) use ($search) {
-                        $patientQuery->where('full_name', 'like', "%{$search}%");
-                    });
-                });
-        });
+        return $query->where('prescription_code', 'like', "%{$search}%")
+            ->orWhereHas('treatment.patient', fn($q) => $q->where('full_name', 'like', "%{$search}%"));
     }
 
     public function scopeByStatus($query, $status)
@@ -68,10 +70,7 @@ class Prescription extends Model
     public function scopeExpired($query)
     {
         return $query->where('status', 'expired')
-            ->orWhere(function ($q) {
-                $q->where('status', 'active')
-                    ->whereDate('expiry_date', '<', now());
-            });
+            ->orWhere(fn($q) => $q->where('status', 'active')->whereDate('expiry_date', '<', now()));
     }
 
     public function scopeToday($query)
@@ -79,7 +78,9 @@ class Prescription extends Model
         return $query->whereDate('prescription_date', today());
     }
 
-    // Helper Methods
+    // =========================
+    // STATUS HELPERS
+    // =========================
     public static function statuses()
     {
         return [
@@ -97,24 +98,31 @@ class Prescription extends Model
 
     public function getStatusColorAttribute()
     {
+        // Tailwind-friendly badge colors
         $colors = [
-            'active' => 'success',
-            'expired' => 'warning',
-            'cancelled' => 'danger',
-            'filled' => 'info',
+            'active' => 'green',
+            'expired' => 'yellow',
+            'cancelled' => 'red',
+            'filled' => 'blue',
         ];
 
-        return $colors[$this->status] ?? 'secondary';
+        return $colors[$this->status] ?? 'gray';
     }
 
     public function getStatusBadgeAttribute()
     {
-        return '<span class="badge bg-' . $this->status_color . '">' . $this->status_text . '</span>';
+        // Tailwind badge: bg-{color}-500 text-white px-2 py-1 rounded
+        return '<span class="bg-' . $this->status_color . '-500 text-white px-2 py-1 rounded">'
+            . $this->status_text . '</span>';
     }
 
+    // =========================
+    // EXPIRY & VALIDITY
+    // =========================
     public function getExpiryDateAttribute()
     {
-        return $this->prescription_date->addDays($this->validity_days);
+        return Carbon::parse($this->prescription_date)
+            ->addDays($this->validity_days);
     }
 
     public function getIsExpiredAttribute()
@@ -122,14 +130,17 @@ class Prescription extends Model
         return $this->expiry_date < today() || $this->status === 'expired';
     }
 
+    // =========================
+    // ACCESSOR HELPERS
+    // =========================
     public function getPatientNameAttribute()
     {
-        return $this->treatment->patient->full_name ?? 'N/A';
+        return $this->treatment->patient->full_name;
     }
 
     public function getDoctorNameAttribute()
     {
-        return $this->treatment->doctor->user->full_name ?? 'N/A';
+        return $this->treatment->doctor->user->full_name;
     }
 
     public function getTotalItemsAttribute()
@@ -142,6 +153,9 @@ class Prescription extends Model
         return $this->items()->where('status', 'pending')->count();
     }
 
+    // =========================
+    // STATUS ACTIONS
+    // =========================
     public function expire()
     {
         if ($this->status === 'active' && $this->is_expired) {
@@ -169,6 +183,9 @@ class Prescription extends Model
         return false;
     }
 
+    // =========================
+    // CODE GENERATION
+    // =========================
     public static function generatePrescriptionCode()
     {
         $last = self::orderByDesc('prescription_code')->first();
@@ -176,12 +193,12 @@ class Prescription extends Model
         return 'RX' . str_pad($next, 3, '0', STR_PAD_LEFT);
     }
 
+    // =========================
+    // SUMMARY OF PRESCRIPTION ITEMS
+    // =========================
     public function getPrescriptionSummary()
     {
-        $summary = [];
-        foreach ($this->items as $item) {
-            $summary[] = $item->medicine->brand_name . ' - ' . $item->dosage . ' ' . $item->frequency;
-        }
-        return implode(', ', $summary);
+        return $this->items->map(fn($item) => "{$item->medicine->brand_name} - {$item->dosage} {$item->frequency}")
+            ->implode(', ');
     }
 }

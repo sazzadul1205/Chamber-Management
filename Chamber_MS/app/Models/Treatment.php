@@ -222,12 +222,16 @@ class Treatment extends Model
 
     public function getFormattedEstimatedCostAttribute()
     {
-        return '৳ ' . number_format($this->total_estimated_cost, 2);
+        return $this->total_estimated_cost !== null
+            ? '৳ ' . number_format((float)$this->total_estimated_cost, 2)
+            : 'N/A';
     }
 
     public function getFormattedActualCostAttribute()
     {
-        return '৳ ' . number_format($this->total_actual_cost, 2);
+        return $this->total_actual_cost !== null
+            ? '৳ ' . number_format((float)$this->total_actual_cost, 2)
+            : 'N/A';
     }
 
     public function getRemainingSessionsAttribute()
