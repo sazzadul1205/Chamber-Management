@@ -9,6 +9,7 @@ class PaymentInstallment extends Model
 {
     use HasFactory;
 
+    // Mass assignable fields
     protected $fillable = [
         'invoice_id',
         'installment_number',
@@ -24,6 +25,7 @@ class PaymentInstallment extends Model
         'created_by'
     ];
 
+    // Casts for proper data types
     protected $casts = [
         'due_date' => 'date',
         'amount_due' => 'decimal:2',
@@ -33,7 +35,9 @@ class PaymentInstallment extends Model
         'reminder_sent_date' => 'date'
     ];
 
-    // Relationships
+    /*================================
+     | Relationships
+     *================================*/
     public function invoice()
     {
         return $this->belongsTo(Invoice::class);
@@ -54,27 +58,70 @@ class PaymentInstallment extends Model
         return $this->hasMany(PaymentAllocation::class, 'installment_id');
     }
 
+    /*================================
+     | Accessors
+     *================================*/
+
+    // Remaining balance for this installment
     public function getRemainingBalanceAttribute()
     {
         return $this->amount_due - $this->amount_paid;
     }
 
-    // Scopes
+    // Badge for status (Tailwind-friendly)
+    public function getStatusBadgeAttribute()
+    {
+        $badges = [
+            'pending' => 'badge bg-gray-400',
+            'partial' => 'badge bg-yellow-400',
+            'paid' => 'badge bg-green-500',
+            'overdue' => 'badge bg-red-500',
+            'cancelled' => 'badge bg-gray-700'
+        ];
+
+        return '<span class="' . ($badges[$this->status] ?? 'badge bg-gray-400') . '">' .
+            ucfirst($this->status) . '</span>';
+    }
+
+    // Check if overdue
+    public function getIsOverdueAttribute()
+    {
+        return $this->due_date < now() && in_array($this->status, ['pending', 'partial']);
+    }
+
+    // Days overdue
+    public function getDaysOverdueAttribute()
+    {
+        return $this->is_overdue ? now()->diffInDays($this->due_date) : 0;
+    }
+
+    // Payment progress in percentage
+    public function getPaymentProgressAttribute()
+    {
+        return $this->amount_due == 0 ? 0 : ($this->amount_paid / $this->amount_due) * 100;
+    }
+
+    // Total due including late fees
+    public function getTotalDueWithLateFeeAttribute()
+    {
+        return $this->amount_due + $this->late_fee_amount;
+    }
+
+    /*================================
+     | Scopes
+     *================================*/
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
     }
-
     public function scopePartial($query)
     {
         return $query->where('status', 'partial');
     }
-
     public function scopePaid($query)
     {
         return $query->where('status', 'paid');
     }
-
     public function scopeOverdue($query)
     {
         return $query->where('status', 'overdue');
@@ -93,68 +140,15 @@ class PaymentInstallment extends Model
             ->where('due_date', '<', now());
     }
 
-    // Accessors
-    public function getStatusBadgeAttribute()
-    {
-        $badges = [
-            'pending' => 'badge bg-secondary',
-            'partial' => 'badge bg-warning',
-            'paid' => 'badge bg-success',
-            'overdue' => 'badge bg-danger',
-            'cancelled' => 'badge bg-dark'
-        ];
+    /*================================
+     | Methods
+     *================================*/
 
-        $labels = [
-            'pending' => 'Pending',
-            'partial' => 'Partial',
-            'paid' => 'Paid',
-            'overdue' => 'Overdue',
-            'cancelled' => 'Cancelled'
-        ];
-
-        return '<span class="' . ($badges[$this->status] ?? 'badge bg-secondary') . '">' .
-            ($labels[$this->status] ?? ucfirst($this->status)) . '</span>';
-    }
-
-    public function getBalanceAttribute()
-    {
-        return $this->amount_due - $this->amount_paid;
-    }
-
-    public function getIsOverdueAttribute()
-    {
-        return $this->due_date < now() && in_array($this->status, ['pending', 'partial']);
-    }
-
-    public function getDaysOverdueAttribute()
-    {
-        if (!$this->is_overdue) {
-            return 0;
-        }
-
-        return now()->diffInDays($this->due_date);
-    }
-
-    public function getPaymentProgressAttribute()
-    {
-        if ($this->amount_due == 0) {
-            return 0;
-        }
-
-        return ($this->amount_paid / $this->amount_due) * 100;
-    }
-
-    public function getTotalDueWithLateFeeAttribute()
-    {
-        return $this->amount_due + $this->late_fee_amount;
-    }
-
-    // Methods
+    // Add a payment to this installment
     public function addPayment($amount)
     {
         $this->amount_paid += $amount;
 
-        // Update status
         if ($this->amount_paid >= $this->amount_due) {
             $this->status = 'paid';
         } elseif ($this->amount_paid > 0) {
@@ -163,15 +157,15 @@ class PaymentInstallment extends Model
 
         $this->save();
 
-        // Update invoice paid amount
+        // Sync with invoice
         $this->invoice->addPayment($amount);
     }
 
+    // Deduct a payment (refund)
     public function deductPayment($amount)
     {
         $this->amount_paid = max(0, $this->amount_paid - $amount);
 
-        // Update status
         if ($this->amount_paid == 0) {
             $this->status = 'pending';
         } elseif ($this->amount_paid < $this->amount_due) {
@@ -180,35 +174,32 @@ class PaymentInstallment extends Model
 
         $this->save();
 
-        // Update invoice paid amount
+        // Sync with invoice
         $this->invoice->deductPayment($amount);
     }
 
+    // Check if installment is overdue and update status
     public function checkAndUpdateStatus()
     {
-        // Check if overdue
         if ($this->due_date < now() && in_array($this->status, ['pending', 'partial'])) {
             $this->status = 'overdue';
             $this->save();
             return true;
         }
-
         return false;
     }
 
+    // Apply a late fee to this installment
     public function applyLateFee($feeAmount, $reason = 'Late payment fee')
     {
         $this->late_fee_applied = true;
         $this->late_fee_amount = $feeAmount;
         $this->notes = ($this->notes ? $this->notes . "\n" : '') .
-            date('Y-m-d') . ': ' . $reason . ' - ৳' . number_format($feeAmount, 2);
+            date('Y-m-d') . ": {$reason} - ৳" . number_format($feeAmount, 2);
         $this->save();
-
-        // Update invoice total (you might want to create a separate transaction for this)
-        // $this->invoice->total_amount += $feeAmount;
-        // $this->invoice->save();
     }
 
+    // Static helper to mark overdue installments
     public static function checkOverdueInstallments()
     {
         $overdue = self::overdueItems()->get();

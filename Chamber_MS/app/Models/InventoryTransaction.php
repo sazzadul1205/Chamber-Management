@@ -9,32 +9,41 @@ class InventoryTransaction extends Model
 {
     use HasFactory;
 
+    /**
+     * Mass-assignable fields
+     */
     protected $fillable = [
-        'transaction_code',
-        'item_id',
-        'transaction_type',
-        'quantity',
-        'unit_price',
-        'total_amount',
-        'reference_id',
-        'reference_type',
-        'reference_no',
-        'notes',
-        'transaction_date',
-        'created_by'
+        'transaction_code',   // Auto-generated reference code (TRN0001)
+        'item_id',            // Inventory item reference
+        'transaction_type',   // purchase | adjustment | consumption | return | transfer_in | transfer_out
+        'quantity',           // Always positive integer
+        'unit_price',         // Cost per unit (if applicable)
+        'total_amount',       // quantity * unit_price
+        'reference_id',       // Polymorphic reference ID
+        'reference_type',     // Polymorphic reference model
+        'reference_no',       // External reference number
+        'notes',              // Human-readable explanation
+        'transaction_date',   // When it happened
+        'created_by',         // User ID
     ];
 
+    /**
+     * Attribute casting
+     */
     protected $casts = [
-        'quantity' => 'integer',
-        'unit_price' => 'decimal:2',
-        'total_amount' => 'decimal:2',
-        'transaction_date' => 'datetime'
+        'quantity'         => 'integer',
+        'unit_price'       => 'decimal:2',
+        'total_amount'     => 'decimal:2',
+        'transaction_date' => 'datetime',
     ];
 
-    // Relationships
+    /* =====================================================
+     |  RELATIONSHIPS
+     ===================================================== */
+
     public function item()
     {
-        return $this->belongsTo(InventoryItem::class, 'item_id');
+        return $this->belongsTo(InventoryItem::class);
     }
 
     public function createdBy()
@@ -42,7 +51,10 @@ class InventoryTransaction extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // Scopes
+    /* =====================================================
+     |  SCOPES — KEEP QUERIES CLEAN
+     ===================================================== */
+
     public function scopePurchases($query)
     {
         return $query->where('transaction_type', 'purchase');
@@ -68,96 +80,108 @@ class InventoryTransaction extends Model
         return $query->where('item_id', $itemId);
     }
 
-    public function scopeBetweenDates($query, $startDate, $endDate)
+    public function scopeBetweenDates($query, $from, $to)
     {
-        return $query->whereBetween('transaction_date', [$startDate, $endDate]);
+        return $query->whereBetween('transaction_date', [$from, $to]);
     }
 
-    // Accessors
+    /* =====================================================
+     |  ACCESSORS — UI FRIENDLY
+     ===================================================== */
+
+    /**
+     * Transaction type badge (Bootstrap-compatible)
+     * Tailwind version should be handled in Blade
+     */
     public function getTransactionTypeBadgeAttribute()
     {
-        $badges = [
-            'purchase' => 'badge bg-success',
-            'adjustment' => 'badge bg-info',
-            'consumption' => 'badge bg-warning',
-            'return' => 'badge bg-danger',
-            'transfer_in' => 'badge bg-primary',
-            'transfer_out' => 'badge bg-secondary'
+        $map = [
+            'purchase'     => ['bg-success', 'Purchase'],
+            'adjustment'   => ['bg-info', 'Adjustment'],
+            'consumption'  => ['bg-warning', 'Consumption'],
+            'return'       => ['bg-danger', 'Return'],
+            'transfer_in'  => ['bg-primary', 'Transfer In'],
+            'transfer_out' => ['bg-secondary', 'Transfer Out'],
         ];
 
-        $labels = [
-            'purchase' => 'Purchase',
-            'adjustment' => 'Adjustment',
-            'consumption' => 'Consumption',
-            'return' => 'Return',
-            'transfer_in' => 'Transfer In',
-            'transfer_out' => 'Transfer Out'
-        ];
+        [$class, $label] = $map[$this->transaction_type] ?? ['bg-secondary', ucfirst($this->transaction_type)];
 
-        return '<span class="' . ($badges[$this->transaction_type] ?? 'badge bg-secondary') . '">' .
-            ($labels[$this->transaction_type] ?? ucfirst($this->transaction_type)) . '</span>';
+        return "<span class=\"badge {$class}\">{$label}</span>";
     }
 
+    /**
+     * Quantity with +/- sign based on transaction direction
+     */
     public function getQuantityWithSignAttribute()
     {
-        $sign = '';
-        switch ($this->transaction_type) {
-            case 'purchase':
-            case 'transfer_in':
-            case 'return':
-                $sign = '+';
-                break;
-            case 'consumption':
-            case 'transfer_out':
-                $sign = '-';
-                break;
-        }
-
-        return $sign . $this->quantity;
+        return match ($this->transaction_type) {
+            'purchase', 'transfer_in', 'return'     => '+' . $this->quantity,
+            'consumption', 'transfer_out'           => '-' . $this->quantity,
+            default                                   => (string) $this->quantity,
+        };
     }
 
+    /**
+     * Quantity + unit (e.g. +5 pcs)
+     */
     public function getQuantityFormattedAttribute()
     {
         return $this->quantity_with_sign . ' ' . ($this->item->unit ?? 'pcs');
     }
 
+    /* =====================================================
+     |  HELPERS
+     ===================================================== */
+
+    /**
+     * Generate sequential transaction code
+     */
     public static function generateTransactionCode()
     {
-        $latest = self::latest()->first();
-        $number = $latest ? intval(substr($latest->transaction_code, 3)) + 1 : 1;
-        return 'TRN' . str_pad($number, 4, '0', STR_PAD_LEFT);
+        $last = self::latest()->value('transaction_code');
+        $next = $last ? ((int) substr($last, 3)) + 1 : 1;
+
+        return 'TRN' . str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 
-    // Methods
-    public function updateStock()
+    /* =====================================================
+     |  STOCK SYNCHRONIZATION
+     ===================================================== */
+
+    /**
+     * Apply this transaction to inventory stock
+     *
+     * NOTE:
+     * - Adjustments DO NOT auto-change stock
+     * - Stock must exist before transaction
+     */
+    public function applyToStock()
     {
         $stock = InventoryStock::where('item_id', $this->item_id)->first();
 
-        if ($stock) {
-            switch ($this->transaction_type) {
-                case 'purchase':
-                case 'transfer_in':
-                case 'return':
-                    $stock->current_stock += $this->quantity;
-                    break;
-                case 'consumption':
-                case 'transfer_out':
-                    $stock->current_stock = max(0, $stock->current_stock - $this->quantity);
-                    break;
-                case 'adjustment':
-                    // For adjustments, we don't auto-update stock
-                    // Stock is updated manually in adjustment form
-                    break;
-            }
-
-            // Update last purchase date for purchases
-            if ($this->transaction_type === 'purchase') {
-                $stock->last_purchase_date = $this->transaction_date;
-            }
-
-            $stock->last_updated = now();
-            $stock->updated_by = $this->created_by;
-            $stock->save();
+        if (!$stock) {
+            return;
         }
+
+        match ($this->transaction_type) {
+            'purchase', 'transfer_in', 'return'
+            => $stock->increment('current_stock', $this->quantity),
+
+            'consumption', 'transfer_out'
+            => $stock->decrement('current_stock', $this->quantity),
+
+            'adjustment'
+            => null, // handled manually
+        };
+
+        // Update purchase metadata
+        if ($this->transaction_type === 'purchase') {
+            $stock->last_purchase_date = $this->transaction_date;
+        }
+
+        $stock->update([
+            'last_updated' => now(),
+            'updated_by'   => $this->created_by,
+        ]);
     }
 }

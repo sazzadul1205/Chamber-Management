@@ -10,284 +10,304 @@ use Illuminate\Support\Facades\DB;
 
 class InventoryTransactionController extends Controller
 {
+    /* =====================================================
+     |  LISTING & FILTERING
+     ===================================================== */
+
+    /**
+     * Display all inventory transactions with filters
+     */
     public function index(Request $request)
     {
-        $query = InventoryTransaction::with(['item', 'createdBy'])->latest();
+        $transactions = InventoryTransaction::with(['item', 'createdBy'])
+            ->latest()
+            ->when(
+                $request->item_id,
+                fn($q) =>
+                $q->where('item_id', $request->item_id)
+            )
+            ->when(
+                $request->transaction_type,
+                fn($q) =>
+                $q->where('transaction_type', $request->transaction_type)
+            )
+            ->when(
+                $request->start_date,
+                fn($q) =>
+                $q->whereDate('transaction_date', '>=', $request->start_date)
+            )
+            ->when(
+                $request->end_date,
+                fn($q) =>
+                $q->whereDate('transaction_date', '<=', $request->end_date)
+            )
+            ->when($request->search, function ($q) use ($request) {
+                $q->where(function ($sub) use ($request) {
+                    $sub->where('transaction_code', 'like', "%{$request->search}%")
+                        ->orWhere('reference_no', 'like', "%{$request->search}%")
+                        ->orWhere('notes', 'like', "%{$request->search}%")
+                        ->orWhereHas(
+                            'item',
+                            fn($i) =>
+                            $i->where('name', 'like', "%{$request->search}%")
+                                ->orWhere('item_code', 'like', "%{$request->search}%")
+                        );
+                });
+            })
+            ->paginate(20);
 
-        // Apply filters
-        if ($request->filled('item_id')) {
-            $query->where('item_id', $request->item_id);
-        }
+        $items = InventoryItem::active()->orderBy('name')->get();
 
-        if ($request->filled('transaction_type')) {
-            $query->where('transaction_type', $request->transaction_type);
-        }
-
-        if ($request->filled('start_date')) {
-            $query->whereDate('transaction_date', '>=', $request->start_date);
-        }
-
-        if ($request->filled('end_date')) {
-            $query->whereDate('transaction_date', '<=', $request->end_date);
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('transaction_code', 'like', "%{$search}%")
-                    ->orWhere('reference_no', 'like', "%{$search}%")
-                    ->orWhere('notes', 'like', "%{$search}%")
-                    ->orWhereHas('item', function ($q2) use ($search) {
-                        $q2->where('name', 'like', "%{$search}%")
-                            ->orWhere('item_code', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        $transactions = $query->paginate(20);
-
-        $items = InventoryItem::where('status', 'active')->orderBy('name')->get();
-        $transactionTypes = [
-            'purchase' => 'Purchase',
-            'adjustment' => 'Adjustment',
-            'consumption' => 'Consumption',
-            'return' => 'Return',
-            'transfer_in' => 'Transfer In',
-            'transfer_out' => 'Transfer Out'
-        ];
-
-        return view('inventory_transactions.index', compact('transactions', 'items', 'transactionTypes'));
+        return view('inventory_transactions.index', [
+            'transactions' => $transactions,
+            'items'        => $items,
+            'types'        => $this->transactionTypes(),
+        ]);
     }
 
+    /* =====================================================
+     |  CREATE & STORE
+     ===================================================== */
+
+    /**
+     * Show create form
+     */
     public function create()
     {
-        $items = InventoryItem::where('status', 'active')->orderBy('name')->get();
-        $transactionTypes = [
-            'purchase' => 'Purchase',
-            'adjustment' => 'Adjustment',
-            'consumption' => 'Consumption',
-            'return' => 'Return',
-            'transfer_in' => 'Transfer In',
-            'transfer_out' => 'Transfer Out'
-        ];
-
-        return view('inventory_transactions.create', compact('items', 'transactionTypes'));
+        return view('inventory_transactions.create', [
+            'items' => InventoryItem::active()->orderBy('name')->get(),
+            'types' => $this->transactionTypes(),
+        ]);
     }
 
+    /**
+     * Persist a new transaction and apply stock movement
+     */
     public function store(Request $request)
     {
-        $request->validate([
-            'item_id' => 'required|exists:inventory_items,id',
-            'transaction_type' => 'required|in:purchase,adjustment,consumption,return,transfer_in,transfer_out',
-            'quantity' => 'required|integer|min:1',
-            'unit_price' => 'nullable|numeric|min:0',
-            'reference_no' => 'nullable|string|max:100',
-            'notes' => 'nullable|string|max:500',
-            'transaction_date' => 'required|date'
-        ]);
+        $data = $this->validatedData($request);
 
-        // Calculate total amount
-        $totalAmount = $request->unit_price ? $request->unit_price * $request->quantity : null;
+        DB::transaction(function () use ($data, &$transaction) {
 
-        $transaction = InventoryTransaction::create([
-            'transaction_code' => InventoryTransaction::generateTransactionCode(),
-            'item_id' => $request->item_id,
-            'transaction_type' => $request->transaction_type,
-            'quantity' => $request->quantity,
-            'unit_price' => $request->unit_price,
-            'total_amount' => $totalAmount,
-            'reference_no' => $request->reference_no,
-            'notes' => $request->notes,
-            'transaction_date' => $request->transaction_date,
-            'created_by' => 1 // Default admin user
-        ]);
+            // Create transaction record
+            $transaction = InventoryTransaction::create([
+                ...$data,
+                'transaction_code' => InventoryTransaction::generateTransactionCode(),
+                'total_amount'     => $data['unit_price']
+                    ? $data['unit_price'] * $data['quantity']
+                    : null,
+                'created_by'       => auth()->id(),
+            ]);
 
-        // Update stock based on transaction type
-        $transaction->updateStock();
+            // Apply stock movement (NO SAFETY NETS)
+            $transaction->applyToStock();
+        });
 
-        return redirect()->route('inventory_transactions.show', $transaction->id)
+        return redirect()
+            ->route('inventory_transactions.show', $transaction)
             ->with('success', 'Transaction recorded successfully.');
     }
 
-    public function show($id)
+    /* =====================================================
+     |  VIEW DETAILS
+     ===================================================== */
+
+    /**
+     * Show single transaction details
+     */
+    public function show(InventoryTransaction $inventoryTransaction)
     {
-        $transaction = InventoryTransaction::with(['item', 'createdBy'])->findOrFail($id);
+        $inventoryTransaction->load(['item', 'createdBy']);
 
-        // Get item's current stock
-        $currentStock = InventoryStock::where('item_id', $transaction->item_id)->first();
-
-        // Get recent transactions for this item
-        $itemTransactions = InventoryTransaction::where('item_id', $transaction->item_id)
-            ->where('id', '!=', $id)
-            ->latest()
-            ->limit(10)
-            ->get();
-
-        return view('inventory_transactions.show', compact('transaction', 'currentStock', 'itemTransactions'));
+        return view('inventory_transactions.show', [
+            'transaction'       => $inventoryTransaction,
+            'currentStock'      => InventoryStock::where('item_id', $inventoryTransaction->item_id)->firstOrFail(),
+            'itemTransactions'  => InventoryTransaction::where('item_id', $inventoryTransaction->item_id)
+                ->whereKeyNot($inventoryTransaction->id)
+                ->latest()
+                ->limit(10)
+                ->get(),
+        ]);
     }
 
-    public function edit($id)
-    {
-        $transaction = InventoryTransaction::findOrFail($id);
-        $items = InventoryItem::where('status', 'active')->orderBy('name')->get();
-        $transactionTypes = [
-            'purchase' => 'Purchase',
-            'adjustment' => 'Adjustment',
-            'consumption' => 'Consumption',
-            'return' => 'Return',
-            'transfer_in' => 'Transfer In',
-            'transfer_out' => 'Transfer Out'
-        ];
+    /* =====================================================
+     |  EDIT & UPDATE
+     ===================================================== */
 
-        return view('inventory_transactions.edit', compact('transaction', 'items', 'transactionTypes'));
+    /**
+     * Show edit form
+     */
+    public function edit(InventoryTransaction $inventoryTransaction)
+    {
+        return view('inventory_transactions.edit', [
+            'transaction' => $inventoryTransaction,
+            'items'       => InventoryItem::active()->orderBy('name')->get(),
+            'types'       => $this->transactionTypes(),
+        ]);
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Update transaction and re-apply stock movement
+     */
+    public function update(Request $request, InventoryTransaction $inventoryTransaction)
     {
-        $transaction = InventoryTransaction::findOrFail($id);
+        $data = $this->validatedData($request);
 
-        $request->validate([
-            'item_id' => 'required|exists:inventory_items,id',
-            'transaction_type' => 'required|in:purchase,adjustment,consumption,return,transfer_in,transfer_out',
-            'quantity' => 'required|integer|min:1',
-            'unit_price' => 'nullable|numeric|min:0',
-            'reference_no' => 'nullable|string|max:100',
-            'notes' => 'nullable|string|max:500',
-            'transaction_date' => 'required|date'
-        ]);
+        DB::transaction(function () use ($inventoryTransaction, $data) {
 
-        // Revert old stock impact
-        $this->revertStockImpact($transaction);
+            // Revert previous stock effect
+            $this->revertStockImpact($inventoryTransaction);
 
-        // Calculate total amount
-        $totalAmount = $request->unit_price ? $request->unit_price * $request->quantity : null;
+            // Update transaction
+            $inventoryTransaction->update([
+                ...$data,
+                'total_amount' => $data['unit_price']
+                    ? $data['unit_price'] * $data['quantity']
+                    : null,
+            ]);
 
-        $transaction->update([
-            'item_id' => $request->item_id,
-            'transaction_type' => $request->transaction_type,
-            'quantity' => $request->quantity,
-            'unit_price' => $request->unit_price,
-            'total_amount' => $totalAmount,
-            'reference_no' => $request->reference_no,
-            'notes' => $request->notes,
-            'transaction_date' => $request->transaction_date
-        ]);
+            // Apply new stock effect
+            $inventoryTransaction->applyToStock();
+        });
 
-        // Apply new stock impact
-        $transaction->updateStock();
-
-        return redirect()->route('inventory_transactions.show', $transaction->id)
+        return redirect()
+            ->route('inventory_transactions.show', $inventoryTransaction)
             ->with('success', 'Transaction updated successfully.');
     }
 
-    public function destroy($id)
+    /* =====================================================
+     |  DELETE
+     ===================================================== */
+
+    /**
+     * Delete transaction and rollback stock
+     */
+    public function destroy(InventoryTransaction $inventoryTransaction)
     {
-        $transaction = InventoryTransaction::findOrFail($id);
+        DB::transaction(function () use ($inventoryTransaction) {
+            $this->revertStockImpact($inventoryTransaction);
+            $inventoryTransaction->delete();
+        });
 
-        // Revert stock impact before deleting
-        $this->revertStockImpact($transaction);
-
-        $transaction->delete();
-
-        return redirect()->route('inventory_transactions.index')
+        return redirect()
+            ->route('inventory_transactions.index')
             ->with('success', 'Transaction deleted successfully.');
     }
 
+    /* =====================================================
+     |  REPORTS
+     ===================================================== */
+
     public function purchaseReport(Request $request)
     {
-        $query = InventoryTransaction::with(['item', 'createdBy'])
-            ->where('transaction_type', 'purchase')
-            ->latest();
-
-        if ($request->filled('start_date')) {
-            $query->whereDate('transaction_date', '>=', $request->start_date);
-        }
-
-        if ($request->filled('end_date')) {
-            $query->whereDate('transaction_date', '<=', $request->end_date);
-        }
-
-        if ($request->filled('item_id')) {
-            $query->where('item_id', $request->item_id);
-        }
-
-        $purchases = $query->paginate(20);
-
-        // Summary
-        $summary = [
-            'total_purchases' => $purchases->total(),
-            'total_quantity' => $purchases->sum('quantity'),
-            'total_amount' => $purchases->sum('total_amount')
-        ];
-
-        $items = InventoryItem::where('status', 'active')->orderBy('name')->get();
-
-        return view('inventory_transactions.reports.purchase', compact('purchases', 'summary', 'items'));
+        return $this->transactionReport('purchase', $request);
     }
 
     public function consumptionReport(Request $request)
     {
+        return $this->transactionReport('consumption', $request);
+    }
+
+    /* =====================================================
+     |  STOCK MOVEMENT
+     ===================================================== */
+
+    public function stockMovement(InventoryItem $item)
+    {
+        return view('inventory_transactions.movement', [
+            'item'         => $item->load('stock'),
+            'transactions' => InventoryTransaction::where('item_id', $item->id)
+                ->with('createdBy')
+                ->latest()
+                ->paginate(20),
+        ]);
+    }
+
+    /* =====================================================
+     |  INTERNAL HELPERS
+     ===================================================== */
+
+    /**
+     * Centralized validation rules
+     */
+    private function validatedData(Request $request): array
+    {
+        return $request->validate([
+            'item_id'           => 'required|exists:inventory_items,id',
+            'transaction_type'  => 'required|in:purchase,adjustment,consumption,return,transfer_in,transfer_out',
+            'quantity'          => 'required|integer|min:1',
+            'unit_price'        => 'nullable|numeric|min:0',
+            'reference_no'      => 'nullable|string|max:100',
+            'notes'             => 'nullable|string|max:500',
+            'transaction_date'  => 'required|date',
+        ]);
+    }
+
+    /**
+     * Reverse stock effect of a transaction
+     * NO guards, NO max(), NO silent failure
+     */
+    private function revertStockImpact(InventoryTransaction $transaction): void
+    {
+        $stock = InventoryStock::where('item_id', $transaction->item_id)->firstOrFail();
+
+        match ($transaction->transaction_type) {
+            'purchase', 'transfer_in', 'return'
+            => $stock->decrement('current_stock', $transaction->quantity),
+
+            'consumption', 'transfer_out'
+            => $stock->increment('current_stock', $transaction->quantity),
+
+            default => null,
+        };
+
+        $stock->update([
+            'last_updated' => now(),
+            'updated_by'   => auth()->id(),
+        ]);
+    }
+
+    /**
+     * Central transaction types list
+     */
+    private function transactionTypes(): array
+    {
+        return [
+            'purchase'     => 'Purchase',
+            'adjustment'   => 'Adjustment',
+            'consumption'  => 'Consumption',
+            'return'       => 'Return',
+            'transfer_in'  => 'Transfer In',
+            'transfer_out' => 'Transfer Out',
+        ];
+    }
+
+    /**
+     * Shared logic for reports
+     */
+    private function transactionReport(string $type, Request $request)
+    {
         $query = InventoryTransaction::with(['item', 'createdBy'])
-            ->where('transaction_type', 'consumption')
-            ->latest();
+            ->where('transaction_type', $type)
+            ->latest()
+            ->when($request->start_date, fn($q) => $q->whereDate('transaction_date', '>=', $request->start_date))
+            ->when($request->end_date, fn($q) => $q->whereDate('transaction_date', '<=', $request->end_date))
+            ->when($request->item_id, fn($q) => $q->where('item_id', $request->item_id));
 
-        if ($request->filled('start_date')) {
-            $query->whereDate('transaction_date', '>=', $request->start_date);
-        }
-
-        if ($request->filled('end_date')) {
-            $query->whereDate('transaction_date', '<=', $request->end_date);
-        }
-
-        if ($request->filled('item_id')) {
-            $query->where('item_id', $request->item_id);
-        }
-
-        $consumptions = $query->paginate(20);
-
-        // Summary
+        // Calculate summary
         $summary = [
-            'total_consumptions' => $consumptions->total(),
-            'total_quantity' => $consumptions->sum('quantity')
+            'total_records' => $query->count(),
+            'total_quantity' => $query->sum('quantity'),
+            'total_amount' => $query->sum('total_amount'),
         ];
 
-        $items = InventoryItem::where('status', 'active')->orderBy('name')->get();
+        // Then paginate
+        $transactions = $query->paginate(20);
 
-        return view('inventory_transactions.reports.consumption', compact('consumptions', 'summary', 'items'));
-    }
-
-    public function stockMovement($itemId)
-    {
-        $item = InventoryItem::with('stock')->findOrFail($itemId);
-        $transactions = InventoryTransaction::where('item_id', $itemId)
-            ->with('createdBy')
-            ->latest()
-            ->paginate(20);
-
-        return view('inventory_transactions.movement', compact('item', 'transactions'));
-    }
-
-    // Helper method to revert stock impact
-    private function revertStockImpact($transaction)
-    {
-        $stock = InventoryStock::where('item_id', $transaction->item_id)->first();
-
-        if ($stock) {
-            switch ($transaction->transaction_type) {
-                case 'purchase':
-                case 'transfer_in':
-                case 'return':
-                    $stock->current_stock = max(0, $stock->current_stock - $transaction->quantity);
-                    break;
-                case 'consumption':
-                case 'transfer_out':
-                    $stock->current_stock += $transaction->quantity;
-                    break;
-            }
-
-            $stock->last_updated = now();
-            $stock->updated_by = 1; // Default admin
-            $stock->save();
-        }
+        return view("inventory_transactions.reports.$type", [
+            'transactions' => $transactions,
+            'summary' => $summary,
+            'items' => InventoryItem::active()->orderBy('name')->get(),
+        ]);
     }
 }

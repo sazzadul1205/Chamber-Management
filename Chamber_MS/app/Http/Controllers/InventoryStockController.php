@@ -9,119 +9,135 @@ use Illuminate\Support\Facades\DB;
 
 class InventoryStockController extends Controller
 {
+    /**
+     * Stock listing with filters & summary
+     */
     public function index(Request $request)
     {
         $query = InventoryStock::with(['item', 'updatedBy']);
 
-        // Apply filters
+        // --------------------------------------------------
+        // FILTERS
+        // --------------------------------------------------
+
+        // Filter by item category
         if ($request->filled('category')) {
-            $query->whereHas('item', function ($q) use ($request) {
-                $q->where('category', $request->category);
-            });
+            $query->whereHas(
+                'item',
+                fn($q) =>
+                $q->where('category', $request->category)
+            );
         }
 
+        // Filter by stock / expiry status
         if ($request->filled('status')) {
-            switch ($request->status) {
-                case 'low_stock':
-                    $query->whereHas('item', function ($q) {
-                        $q->whereRaw('inventory_stock.current_stock <= inventory_items.reorder_level');
-                    });
-                    break;
-                case 'out_of_stock':
-                    $query->where('current_stock', '<=', 0);
-                    break;
-                case 'in_stock':
-                    $query->where('current_stock', '>', 0);
-                    break;
-                case 'expiring_soon':
-                    $query->whereNotNull('expiry_date')
-                        ->where('expiry_date', '<=', now()->addDays(30))
-                        ->where('expiry_date', '>', now());
-                    break;
-                case 'expired':
-                    $query->whereNotNull('expiry_date')
-                        ->where('expiry_date', '<', now());
-                    break;
-            }
+            match ($request->status) {
+                'low_stock'     => $query->lowStock()->where('current_stock', '>', 0),
+                'out_of_stock'  => $query->outOfStock(),
+                'in_stock'      => $query->inStock(),
+                'expiring_soon' => $query->expiringSoon(30),
+                'expired'       => $query->expired(),
+                default         => null,
+            };
         }
 
+        // Search by item name or code
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('item', function ($q) use ($search) {
+            $query->whereHas(
+                'item',
+                fn($q) =>
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('item_code', 'like', "%{$search}%");
-            });
+                    ->orWhere('item_code', 'like', "%{$search}%")
+            );
         }
 
-        $stocks = $query->orderBy('current_stock', 'asc')->paginate(20);
+        // --------------------------------------------------
+        // DATA
+        // --------------------------------------------------
 
-        // Summary statistics
+        $stocks = $query
+            ->orderBy('current_stock', 'asc')
+            ->paginate(20);
+
+        // Dashboard summary
         $summary = [
-            'total_items' => InventoryStock::count(),
-            'in_stock' => InventoryStock::where('current_stock', '>', 0)->count(),
-            'low_stock' => DB::table('inventory_stock')
-                ->join('inventory_items', 'inventory_stock.item_id', '=', 'inventory_items.id')
-                ->whereRaw('inventory_stock.current_stock <= inventory_items.reorder_level')
-                ->where('inventory_stock.current_stock', '>', 0)
-                ->count(),
-            'out_of_stock' => InventoryStock::where('current_stock', '<=', 0)->count(),
-            'total_value' => InventoryStock::sum(DB::raw('current_stock * unit_cost'))
+            'total_items'  => InventoryStock::count(),
+            'in_stock'     => InventoryStock::inStock()->count(),
+            'low_stock'    => InventoryStock::lowStock()->where('current_stock', '>', 0)->count(),
+            'out_of_stock' => InventoryStock::outOfStock()->count(),
+            'total_value'  => InventoryStock::sum(DB::raw('current_stock * unit_cost')),
         ];
 
-        // Get categories for filter
+        // Categories for filter dropdown
         $categories = InventoryItem::distinct()->pluck('category');
 
-        return view('inventory_stock.index', compact('stocks', 'summary', 'categories'));
+        return view('inventory_stock.index', compact(
+            'stocks',
+            'summary',
+            'categories'
+        ));
     }
 
+    /**
+     * Create stock record
+     */
     public function create()
     {
+        // Only items without existing stock
         $items = InventoryItem::where('status', 'active')
-            ->whereDoesntHave('stock') // Items without stock record
+            ->whereDoesntHave('stock')
             ->orderBy('name')
             ->get();
 
         return view('inventory_stock.create', compact('items'));
     }
 
+    /**
+     * Store initial stock
+     */
     public function store(Request $request)
     {
         $request->validate([
-            'item_id' => 'required|exists:inventory_items,id|unique:inventory_stock,item_id',
-            'opening_stock' => 'required|integer|min:0',
-            'unit_cost' => 'nullable|numeric|min:0',
-            'selling_price' => 'nullable|numeric|min:0',
-            'expiry_date' => 'nullable|date|after:today',
-            'location' => 'nullable|string|max:50'
+            'item_id'        => 'required|exists:inventory_items,id|unique:inventory_stock,item_id',
+            'opening_stock'  => 'required|integer|min:0',
+            'unit_cost'      => 'nullable|numeric|min:0',
+            'selling_price'  => 'nullable|numeric|min:0',
+            'expiry_date'    => 'nullable|date|after:today',
+            'location'       => 'nullable|string|max:50',
         ]);
 
         $stock = InventoryStock::create([
-            'item_id' => $request->item_id,
-            'opening_stock' => $request->opening_stock,
-            'current_stock' => $request->opening_stock,
-            'unit_cost' => $request->unit_cost,
-            'selling_price' => $request->selling_price,
+            'item_id'           => $request->item_id,
+            'opening_stock'     => $request->opening_stock,
+            'current_stock'     => $request->opening_stock,
+            'unit_cost'         => $request->unit_cost,
+            'selling_price'     => $request->selling_price,
             'last_purchase_date' => now(),
-            'expiry_date' => $request->expiry_date,
-            'location' => $request->location,
-            'last_updated' => now(),
-            'updated_by' => 1 // Default admin user
+            'expiry_date'       => $request->expiry_date,
+            'location'          => $request->location,
+            'last_updated'      => now(),
+            'updated_by'        => 1, // static admin for now
         ]);
 
-        return redirect()->route('inventory_stock.show', $stock->id)
+        return redirect()
+            ->route('inventory_stock.show', $stock)
             ->with('success', 'Stock record created successfully.');
     }
 
+    /**
+     * View stock details
+     */
     public function show($id)
     {
         $stock = InventoryStock::with(['item', 'updatedBy'])->findOrFail($id);
 
-        // Get stock movement history (you'll need to create inventory_transactions table later)
-        // $transactions = $stock->item->transactions()->latest()->limit(10)->get();
-
         return view('inventory_stock.show', compact('stock'));
     }
 
+    /**
+     * Edit stock
+     */
     public function edit($id)
     {
         $stock = InventoryStock::with('item')->findOrFail($id);
@@ -129,114 +145,112 @@ class InventoryStockController extends Controller
         return view('inventory_stock.edit', compact('stock'));
     }
 
+    /**
+     * Update stock details
+     */
     public function update(Request $request, $id)
     {
         $stock = InventoryStock::findOrFail($id);
 
         $request->validate([
             'current_stock' => 'required|integer|min:0',
-            'unit_cost' => 'nullable|numeric|min:0',
+            'unit_cost'     => 'nullable|numeric|min:0',
             'selling_price' => 'nullable|numeric|min:0',
-            'expiry_date' => 'nullable|date',
-            'location' => 'nullable|string|max:50'
+            'expiry_date'   => 'nullable|date',
+            'location'      => 'nullable|string|max:50',
         ]);
 
         $stock->update([
             'current_stock' => $request->current_stock,
-            'unit_cost' => $request->unit_cost,
+            'unit_cost'     => $request->unit_cost,
             'selling_price' => $request->selling_price,
-            'expiry_date' => $request->expiry_date,
-            'location' => $request->location,
-            'last_updated' => now(),
-            'updated_by' => 1 // Default admin user
+            'expiry_date'   => $request->expiry_date,
+            'location'      => $request->location,
+            'last_updated'  => now(),
+            'updated_by'    => 1,
         ]);
 
-        return redirect()->route('inventory_stock.show', $stock->id)
+        return redirect()
+            ->route('inventory_stock.show', $stock)
             ->with('success', 'Stock updated successfully.');
     }
 
+    /**
+     * Delete stock record
+     */
     public function destroy($id)
     {
-        $stock = InventoryStock::findOrFail($id);
-        $stock->delete();
+        InventoryStock::findOrFail($id)->delete();
 
-        return redirect()->route('inventory_stock.index')
+        return redirect()
+            ->route('inventory_stock.index')
             ->with('success', 'Stock record deleted successfully.');
     }
 
+    /**
+     * Adjust stock quantity manually
+     */
     public function adjustStock(Request $request, $id)
     {
         $request->validate([
             'adjustment_type' => 'required|in:add,remove,set',
-            'quantity' => 'required|integer|min:1',
-            'reason' => 'required|string|max:255',
-            'reference_no' => 'nullable|string|max:50'
+            'quantity'        => 'required|integer|min:1',
+            'reason'          => 'required|string|max:255',
+            'reference_no'    => 'nullable|string|max:50',
         ]);
 
-        $stock = InventoryStock::findOrFail($id);
-        $oldStock = $stock->current_stock;
+        $stock    = InventoryStock::findOrFail($id);
+        $previous = $stock->current_stock;
 
-        switch ($request->adjustment_type) {
-            case 'add':
-                $newStock = $oldStock + $request->quantity;
-                break;
-            case 'remove':
-                $newStock = max(0, $oldStock - $request->quantity);
-                break;
-            case 'set':
-                $newStock = $request->quantity;
-                break;
-        }
+        $newStock = match ($request->adjustment_type) {
+            'add'    => $previous + $request->quantity,
+            'remove' => max(0, $previous - $request->quantity),
+            'set'    => $request->quantity,
+        };
 
         $stock->update([
             'current_stock' => $newStock,
-            'last_updated' => now(),
-            'updated_by' => 1
+            'last_updated'  => now(),
+            'updated_by'    => 1,
         ]);
 
-        // Log the transaction (you'll create inventory_transactions table in next package)
-        // InventoryTransaction::create([
-        //     'item_id' => $stock->item_id,
-        //     'transaction_type' => 'adjustment',
-        //     'quantity' => $request->quantity,
-        //     'reference_no' => $request->reference_no,
-        //     'notes' => $request->reason,
-        //     'transaction_date' => now(),
-        //     'created_by' => 1
-        // ]);
-
-        return redirect()->route('inventory_stock.show', $stock->id)
-            ->with('success', "Stock adjusted from {$oldStock} to {$newStock}.");
+        return redirect()
+            ->route('inventory_stock.show', $stock)
+            ->with('success', "Stock adjusted from {$previous} to {$newStock}.");
     }
 
+    /**
+     * Low stock report
+     */
     public function lowStockReport()
     {
         $lowStocks = InventoryStock::with('item')
-            ->whereHas('item', function ($q) {
-                $q->whereRaw('inventory_stock.current_stock <= inventory_items.reorder_level');
-            })
+            ->lowStock()
             ->where('current_stock', '>', 0)
-            ->orderBy('current_stock', 'asc')
+            ->orderBy('current_stock')
             ->get();
 
         return view('inventory_stock.reports.low_stock', compact('lowStocks'));
     }
 
+    /**
+     * Expiry report
+     */
     public function expiryReport()
     {
         $expiringSoon = InventoryStock::with('item')
-            ->whereNotNull('expiry_date')
-            ->where('expiry_date', '<=', now()->addDays(30))
-            ->where('expiry_date', '>', now())
-            ->orderBy('expiry_date', 'asc')
+            ->expiringSoon(30)
+            ->orderBy('expiry_date')
             ->get();
 
         $expired = InventoryStock::with('item')
-            ->whereNotNull('expiry_date')
-            ->where('expiry_date', '<', now())
-            ->orderBy('expiry_date', 'asc')
+            ->expired()
+            ->orderBy('expiry_date')
             ->get();
 
-        return view('inventory_stock.reports.expiry', compact('expiringSoon', 'expired'));
+        return view('inventory_stock.reports.expiry', compact(
+            'expiringSoon',
+            'expired'
+        ));
     }
 }

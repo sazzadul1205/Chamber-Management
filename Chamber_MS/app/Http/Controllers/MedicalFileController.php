@@ -10,145 +10,184 @@ use Illuminate\Support\Facades\Storage;
 
 class MedicalFileController extends Controller
 {
+    // ==================================================
+    // LIST ALL MEDICAL FILES
+    // ==================================================
     public function index()
     {
-        $medicalFiles = MedicalFile::with(['patient', 'treatment', 'uploadedBy'])
-            ->orderBy('created_at', 'desc')
+        $medicalFiles = MedicalFile::with([
+            'patient',
+            'treatment',
+            'uploadedBy'
+        ])
+            ->latest()
             ->paginate(20);
 
         return view('medical_files.index', compact('medicalFiles'));
     }
 
+    // ==================================================
+    // SHOW CREATE FORM
+    // ==================================================
     public function create(Request $request)
     {
-        $patients = Patient::where('status', 'active')->orderBy('full_name')->get();
-        $treatments = Treatment::where('status', '!=', 'cancelled')
-            ->orderBy('created_at', 'desc')
+        $patients = Patient::where('status', 'active')
+            ->orderBy('full_name')
             ->get();
 
-        // If patient_id is provided, filter treatments
-        if ($request->has('patient_id')) {
-            $patientId = $request->patient_id;
-            $treatments = Treatment::where('patient_id', $patientId)
-                ->where('status', '!=', 'cancelled')
-                ->orderBy('created_at', 'desc')
-                ->get();
+        $treatmentsQuery = Treatment::where('status', '!=', 'cancelled')
+            ->latest();
+
+        if ($request->filled('patient_id')) {
+            $treatmentsQuery->where('patient_id', $request->patient_id);
         }
+
+        $treatments = $treatmentsQuery->get();
 
         return view('medical_files.create', compact('patients', 'treatments'));
     }
 
+    // ==================================================
+    // STORE MEDICAL FILE
+    // ==================================================
     public function store(Request $request)
     {
-        $request->validate([
-            'patient_id' => 'required|exists:patients,id',
-            'treatment_id' => 'nullable|exists:treatments,id',
-            'file_type' => 'required|in:xray,photo,document,prescription,report,other',
-            'description' => 'nullable|string|max:500',
-            'medical_file' => 'required|file|max:10240', // 10MB max
-            'is_confidential' => 'boolean'
+        $validated = $request->validate([
+            'patient_id'     => 'required|exists:patients,id',
+            'treatment_id'   => 'nullable|exists:treatments,id',
+            'file_type'      => 'required|in:xray,photo,document,prescription,report,other',
+            'description'    => 'nullable|string|max:500',
+            'medical_file'   => 'required|file|max:10240', // 10MB
         ]);
 
-        // Handle file upload
+        // File upload
         $file = $request->file('medical_file');
-        $originalName = $file->getClientOriginalName();
-        $path = $file->store('medical_files/' . date('Y/m'), 'public');
-        $size = $file->getSize();
+
+        $path = $file->store(
+            'medical_files/' . now()->format('Y/m'),
+            'public'
+        );
 
         $medicalFile = MedicalFile::create([
-            'file_code' => MedicalFile::generateFileCode(),
-            'patient_id' => $request->patient_id,
-            'treatment_id' => $request->treatment_id,
-            'file_type' => $request->file_type,
-            'file_name' => $originalName,
-            'file_path' => $path,
-            'file_size' => $size,
-            'description' => $request->description,
-            'uploaded_at' => now(),
-            'uploaded_by' => 1, // Default admin user ID
-            'is_confidential' => false // Always false - no confidentiality needed
+            'file_code'       => MedicalFile::generateFileCode(),
+            'patient_id'      => $validated['patient_id'],
+            'treatment_id'    => $validated['treatment_id'],
+            'file_type'       => $validated['file_type'],
+            'file_name'       => $file->getClientOriginalName(),
+            'file_path'       => $path,
+            'file_size'       => $file->getSize(),
+            'description'     => $validated['description'],
+            'uploaded_at'     => now(),
+            'uploaded_by'     => auth()->id(),
+            'is_confidential' => false,
         ]);
 
-        return redirect()->route('medical_files.show', $medicalFile->id)
+        return redirect()
+            ->route('medical_files.show', $medicalFile)
             ->with('success', 'Medical file uploaded successfully.');
     }
 
+    // ==================================================
+    // SHOW SINGLE MEDICAL FILE
+    // ==================================================
     public function show($id)
     {
-        $medicalFile = MedicalFile::with(['patient', 'treatment', 'uploadedBy'])->findOrFail($id);
+        $medicalFile = MedicalFile::with([
+            'patient',
+            'treatment',
+            'uploadedBy'
+        ])
+            ->findOrFail($id);
 
         return view('medical_files.show', compact('medicalFile'));
     }
 
+    // ==================================================
+    // SHOW EDIT FORM
+    // ==================================================
     public function edit($id)
     {
         $medicalFile = MedicalFile::findOrFail($id);
-        $patients = Patient::where('status', 'active')->orderBy('full_name')->get();
-        $treatments = Treatment::where('patient_id', $medicalFile->patient_id)
-            ->where('status', '!=', 'cancelled')
-            ->orderBy('created_at', 'desc')
+
+        $patients = Patient::where('status', 'active')
+            ->orderBy('full_name')
             ->get();
 
-        return view('medical_files.edit', compact('medicalFile', 'patients', 'treatments'));
+        $treatments = Treatment::where('patient_id', $medicalFile->patient_id)
+            ->where('status', '!=', 'cancelled')
+            ->latest()
+            ->get();
+
+        return view('medical_files.edit', compact(
+            'medicalFile',
+            'patients',
+            'treatments'
+        ));
     }
 
+    // ==================================================
+    // UPDATE MEDICAL FILE (NO FILE CHANGE)
+    // ==================================================
     public function update(Request $request, $id)
     {
         $medicalFile = MedicalFile::findOrFail($id);
 
-        $request->validate([
-            'patient_id' => 'required|exists:patients,id',
+        $validated = $request->validate([
+            'patient_id'   => 'required|exists:patients,id',
             'treatment_id' => 'nullable|exists:treatments,id',
-            'file_type' => 'required|in:xray,photo,document,prescription,report,other',
-            'description' => 'nullable|string|max:500'
+            'file_type'    => 'required|in:xray,photo,document,prescription,report,other',
+            'description'  => 'nullable|string|max:500',
         ]);
 
         $medicalFile->update([
-            'patient_id' => $request->patient_id,
-            'treatment_id' => $request->treatment_id,
-            'file_type' => $request->file_type,
-            'description' => $request->description,
-            'is_confidential' => false // Always false
+            'patient_id'      => $validated['patient_id'],
+            'treatment_id'    => $validated['treatment_id'],
+            'file_type'       => $validated['file_type'],
+            'description'     => $validated['description'],
+            'is_confidential' => false,
         ]);
 
-        return redirect()->route('medical_files.show', $medicalFile->id)
+        return redirect()
+            ->route('medical_files.show', $medicalFile)
             ->with('success', 'Medical file updated successfully.');
     }
 
+    // ==================================================
+    // DELETE MEDICAL FILE
+    // ==================================================
     public function destroy($id)
     {
         $medicalFile = MedicalFile::findOrFail($id);
 
-        // Delete physical file
         Storage::disk('public')->delete($medicalFile->file_path);
-
-        // Delete database record
         $medicalFile->delete();
 
-        return redirect()->route('medical_files.index')
+        return redirect()
+            ->route('medical_files.index')
             ->with('success', 'Medical file deleted successfully.');
     }
 
+    // ==================================================
+    // DOWNLOAD FILE
+    // ==================================================
     public function download($id)
     {
         $medicalFile = MedicalFile::findOrFail($id);
 
-        $path = storage_path('app/public/' . $medicalFile->file_path);
-
-        if (!file_exists($path)) {
-            return redirect()->back()->with('error', 'File not found on server.');
-        }
-
-        return response()->download($path, $medicalFile->file_name);
+        return response()->download(
+            storage_path('app/public/' . $medicalFile->file_path),
+            $medicalFile->file_name
+        );
     }
 
+    // ==================================================
+    // AJAX: FILES BY PATIENT
+    // ==================================================
     public function getFilesByPatient($patientId)
     {
-        $files = MedicalFile::where('patient_id', $patientId)
+        return MedicalFile::where('patient_id', $patientId)
             ->with('treatment')
-            ->orderBy('created_at', 'desc')
+            ->latest()
             ->get();
-
-        return response()->json($files);
     }
 }

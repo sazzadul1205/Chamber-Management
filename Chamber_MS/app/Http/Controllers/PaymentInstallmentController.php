@@ -8,25 +8,26 @@ use Illuminate\Http\Request;
 
 class PaymentInstallmentController extends Controller
 {
+    /*=========================================
+     | List Installments for an Invoice
+     *=========================================*/
     public function index($invoiceId)
     {
         $invoice = Invoice::with(['installments', 'patient'])->findOrFail($invoiceId);
-
         return view('payment_installments.index', compact('invoice'));
     }
 
+    /*=========================================
+     | Show form to create a new installment
+     *=========================================*/
     public function create($invoiceId)
     {
         $invoice = Invoice::with('patient')->findOrFail($invoiceId);
 
-        if ($invoice->payment_plan != 'installment') {
+        // Only draft invoices with installment plan can have installments
+        if ($invoice->payment_plan != 'installment' || $invoice->status != 'draft') {
             return redirect()->route('invoices.show', $invoice->id)
-                ->with('error', 'This invoice does not have installment payment plan.');
-        }
-
-        if ($invoice->status != 'draft') {
-            return redirect()->route('invoices.show', $invoice->id)
-                ->with('error', 'Cannot add installments to a non-draft invoice.');
+                ->with('error', 'Cannot add installments to this invoice.');
         }
 
         $nextInstallmentNumber = $invoice->installments()->max('installment_number') + 1;
@@ -34,18 +35,16 @@ class PaymentInstallmentController extends Controller
         return view('payment_installments.create', compact('invoice', 'nextInstallmentNumber'));
     }
 
+    /*=========================================
+     | Store new installment
+     *=========================================*/
     public function store(Request $request, $invoiceId)
     {
         $invoice = Invoice::findOrFail($invoiceId);
 
-        if ($invoice->payment_plan != 'installment') {
+        if ($invoice->payment_plan != 'installment' || $invoice->status != 'draft') {
             return redirect()->route('invoices.show', $invoice->id)
-                ->with('error', 'This invoice does not have installment payment plan.');
-        }
-
-        if ($invoice->status != 'draft') {
-            return redirect()->route('invoices.show', $invoice->id)
-                ->with('error', 'Cannot add installments to a non-draft invoice.');
+                ->with('error', 'Cannot add installments to this invoice.');
         }
 
         $request->validate([
@@ -56,18 +55,17 @@ class PaymentInstallmentController extends Controller
             'notes' => 'nullable|string|max:500'
         ]);
 
-        // Check if installment number already exists
+        // Prevent duplicate installment numbers
         $existing = $invoice->installments()
             ->where('installment_number', $request->installment_number)
             ->first();
 
         if ($existing) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Installment number already exists for this invoice.');
+            return redirect()->back()->withInput()
+                ->with('error', 'Installment number already exists.');
         }
 
-        $installment = PaymentInstallment::create([
+        PaymentInstallment::create([
             'invoice_id' => $invoice->id,
             'installment_number' => $request->installment_number,
             'description' => $request->description,
@@ -75,13 +73,16 @@ class PaymentInstallmentController extends Controller
             'amount_due' => $request->amount_due,
             'amount_paid' => 0,
             'status' => 'pending',
-            'created_by' => 1 // Default admin user
+            'created_by' => 1
         ]);
 
         return redirect()->route('payment_installments.index', $invoice->id)
             ->with('success', 'Installment added successfully.');
     }
 
+    /*=========================================
+     | Show single installment
+     *=========================================*/
     public function show($invoiceId, $id)
     {
         $invoice = Invoice::findOrFail($invoiceId);
@@ -90,6 +91,9 @@ class PaymentInstallmentController extends Controller
         return view('payment_installments.show', compact('invoice', 'installment'));
     }
 
+    /*=========================================
+     | Edit installment
+     *=========================================*/
     public function edit($invoiceId, $id)
     {
         $invoice = Invoice::findOrFail($invoiceId);
@@ -103,6 +107,9 @@ class PaymentInstallmentController extends Controller
         return view('payment_installments.edit', compact('invoice', 'installment'));
     }
 
+    /*=========================================
+     | Update installment
+     *=========================================*/
     public function update(Request $request, $invoiceId, $id)
     {
         $invoice = Invoice::findOrFail($invoiceId);
@@ -121,16 +128,15 @@ class PaymentInstallmentController extends Controller
             'notes' => 'nullable|string|max:500'
         ]);
 
-        // Check if installment number already exists (excluding current)
+        // Prevent duplicate numbers
         $existing = $invoice->installments()
             ->where('installment_number', $request->installment_number)
             ->where('id', '!=', $id)
             ->first();
 
         if ($existing) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Installment number already exists for this invoice.');
+            return redirect()->back()->withInput()
+                ->with('error', 'Installment number already exists.');
         }
 
         $installment->update([
@@ -145,6 +151,9 @@ class PaymentInstallmentController extends Controller
             ->with('success', 'Installment updated successfully.');
     }
 
+    /*=========================================
+     | Delete installment
+     *=========================================*/
     public function destroy($invoiceId, $id)
     {
         $invoice = Invoice::findOrFail($invoiceId);
@@ -157,7 +166,7 @@ class PaymentInstallmentController extends Controller
 
         if ($installment->amount_paid > 0) {
             return redirect()->route('payment_installments.index', $invoice->id)
-                ->with('error', 'Cannot delete installment with payments. Refund payments first.');
+                ->with('error', 'Cannot delete installment with payments.');
         }
 
         $installment->delete();
@@ -166,6 +175,9 @@ class PaymentInstallmentController extends Controller
             ->with('success', 'Installment deleted successfully.');
     }
 
+    /*=========================================
+     | Record payment against installment
+     *=========================================*/
     public function addPayment(Request $request, $invoiceId, $id)
     {
         $invoice = Invoice::findOrFail($invoiceId);
@@ -179,11 +191,10 @@ class PaymentInstallmentController extends Controller
             'notes' => 'nullable|string|max:255'
         ]);
 
-        // Add payment to installment
+        // Update installment and invoice
         $installment->addPayment($request->amount);
 
-        // Create payment record (we'll create Payment model in next package)
-        // For now, just record in notes
+        // Store payment info in notes temporarily
         $installment->notes = ($installment->notes ? $installment->notes . "\n" : '') .
             date('Y-m-d H:i') . ': Payment of ৳' . number_format($request->amount, 2) .
             ' via ' . $request->payment_method .
@@ -195,6 +206,9 @@ class PaymentInstallmentController extends Controller
             ->with('success', 'Payment recorded successfully.');
     }
 
+    /*=========================================
+     | Apply late fee to installment
+     *=========================================*/
     public function applyLateFee(Request $request, $invoiceId, $id)
     {
         $invoice = Invoice::findOrFail($invoiceId);
@@ -211,6 +225,9 @@ class PaymentInstallmentController extends Controller
             ->with('success', 'Late fee applied successfully.');
     }
 
+    /*=========================================
+     | Overdue installments report
+     *=========================================*/
     public function overdueReport()
     {
         $overdueInstallments = PaymentInstallment::with(['invoice.patient'])
@@ -224,18 +241,23 @@ class PaymentInstallmentController extends Controller
         return view('payment_installments.reports.overdue', compact('overdueInstallments', 'totalOverdue'));
     }
 
+    /*=========================================
+     | Due soon installments report
+     *=========================================*/
     public function dueSoonReport()
     {
         $dueSoonInstallments = PaymentInstallment::with(['invoice.patient'])
             ->whereIn('status', ['pending', 'partial'])
-            ->where('due_date', '<=', now()->addDays(7))
-            ->where('due_date', '>', now())
+            ->whereBetween('due_date', [now(), now()->addDays(7)])
             ->orderBy('due_date', 'asc')
             ->get();
 
         return view('payment_installments.reports.due_soon', compact('dueSoonInstallments'));
     }
 
+    /*=========================================
+     | Update status (e.g., mark overdue)
+     *=========================================*/
     public function updateStatus($invoiceId, $id)
     {
         $invoice = Invoice::findOrFail($invoiceId);

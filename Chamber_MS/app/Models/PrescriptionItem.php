@@ -9,6 +9,9 @@ class PrescriptionItem extends Model
 {
     use HasFactory;
 
+    /**
+     * Mass-assignable attributes
+     */
     protected $fillable = [
         'prescription_id',
         'medicine_id',
@@ -21,13 +24,19 @@ class PrescriptionItem extends Model
         'status',
     ];
 
+    /**
+     * Attribute casting
+     */
     protected $casts = [
         'quantity' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
-    // Relationships
+    // ==================================================
+    // RELATIONSHIPS
+    // ==================================================
+
     public function prescription()
     {
         return $this->belongsTo(Prescription::class);
@@ -38,7 +47,10 @@ class PrescriptionItem extends Model
         return $this->belongsTo(Medicine::class);
     }
 
-    // Scopes
+    // ==================================================
+    // QUERY SCOPES
+    // ==================================================
+
     public function scopeByPrescription($query, $prescriptionId)
     {
         return $query->where('prescription_id', $prescriptionId);
@@ -59,47 +71,60 @@ class PrescriptionItem extends Model
         return $query->where('status', 'dispensed');
     }
 
-    // Helper Methods
+    // ==================================================
+    // STATIC CONFIG (ROUTES & STATUSES)
+    // ==================================================
+
     public static function routes()
     {
         return [
-            'oral' => 'Oral',
-            'topical' => 'Topical',
-            'injection' => 'Injection',
-            'inhalation' => 'Inhalation',
+            'oral'        => 'Oral',
+            'topical'     => 'Topical',
+            'injection'   => 'Injection',
+            'inhalation'  => 'Inhalation',
         ];
     }
 
     public static function statuses()
     {
         return [
-            'pending' => 'Pending',
+            'pending'   => 'Pending',
             'dispensed' => 'Dispensed',
             'cancelled' => 'Cancelled',
         ];
     }
 
+    // ==================================================
+    // ACCESSORS (DISPLAY HELPERS)
+    // ==================================================
+
     public function getRouteTextAttribute()
     {
-        return self::routes()[$this->route] ?? $this->route;
+        return self::routes()[$this->route];
     }
 
     public function getStatusTextAttribute()
     {
-        return self::statuses()[$this->status] ?? $this->status;
+        return self::statuses()[$this->status];
     }
 
+    /**
+     * Bootstrap / semantic status color
+     * (Map to Tailwind in Blade)
+     */
     public function getStatusColorAttribute()
     {
-        $colors = [
-            'pending' => 'warning',
+        return [
+            'pending'   => 'warning',
             'dispensed' => 'success',
             'cancelled' => 'danger',
-        ];
-
-        return $colors[$this->status] ?? 'secondary';
+        ][$this->status];
     }
 
+    /**
+     * Raw HTML badge (legacy / Bootstrap)
+     * ⚠️ Prefer Tailwind badge in Blade
+     */
     public function getStatusBadgeAttribute()
     {
         return '<span class="badge bg-' . $this->status_color . '">' . $this->status_text . '</span>';
@@ -107,7 +132,7 @@ class PrescriptionItem extends Model
 
     public function getDosageInfoAttribute()
     {
-        return $this->dosage . ' ' . $this->frequency . ' for ' . $this->duration;
+        return "{$this->dosage} {$this->frequency} for {$this->duration}";
     }
 
     public function getInstructionsTextAttribute()
@@ -115,28 +140,32 @@ class PrescriptionItem extends Model
         return $this->instructions ?: 'Take as directed';
     }
 
-    public function dispense()
-    {
-        if ($this->status === 'pending') {
-            $this->update(['status' => 'dispensed']);
-            return true;
-        }
-        return false;
-    }
-
-    public function cancel()
-    {
-        if ($this->status === 'pending') {
-            $this->update(['status' => 'cancelled']);
-            return true;
-        }
-        return false;
-    }
-
     public function getMedicineInfoAttribute()
     {
-        return $this->medicine ?
-            "{$this->medicine->brand_name} ({$this->medicine->generic_name}) - {$this->medicine->strength}" :
-            'N/A';
+        return "{$this->medicine->brand_name} ({$this->medicine->generic_name}) - {$this->medicine->strength}";
+    }
+
+    // ==================================================
+    // STATE ACTIONS
+    // ==================================================
+
+    public function dispense(): bool
+    {
+        if ($this->status !== 'pending') {
+            return false;
+        }
+
+        $this->update(['status' => 'dispensed']);
+        return true;
+    }
+
+    public function cancel(): bool
+    {
+        if ($this->status !== 'pending') {
+            return false;
+        }
+
+        $this->update(['status' => 'cancelled']);
+        return true;
     }
 }

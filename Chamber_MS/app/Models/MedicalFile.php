@@ -9,6 +9,9 @@ class MedicalFile extends Model
 {
     use HasFactory;
 
+    /**
+     * Mass assignable attributes
+     */
     protected $fillable = [
         'file_code',
         'treatment_id',
@@ -20,16 +23,22 @@ class MedicalFile extends Model
         'description',
         'uploaded_at',
         'uploaded_by',
-        'is_confidential'
+        'is_confidential',
     ];
 
+    /**
+     * Attribute casting
+     */
     protected $casts = [
-        'uploaded_at' => 'datetime',
+        'uploaded_at'     => 'datetime',
         'is_confidential' => 'boolean',
-        'file_size' => 'integer'
+        'file_size'       => 'integer',
     ];
 
-    // Relationships
+    // ==================================================
+    // RELATIONSHIPS
+    // ==================================================
+
     public function treatment()
     {
         return $this->belongsTo(Treatment::class);
@@ -45,40 +54,77 @@ class MedicalFile extends Model
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
-    // Generate file code
-    public static function generateFileCode()
+    // ==================================================
+    // FILE CODE GENERATION
+    // ==================================================
+
+    /**
+     * Generate sequential medical file code (MF0001)
+     */
+    public static function generateFileCode(): string
     {
-        $latest = self::latest()->first();
-        $number = $latest ? intval(substr($latest->file_code, 2)) + 1 : 1;
-        return 'MF' . str_pad($number, 4, '0', STR_PAD_LEFT);
+        $lastNumber = self::query()
+            ->selectRaw("MAX(CAST(SUBSTRING(file_code, 3) AS UNSIGNED)) as max_code")
+            ->value('max_code');
+
+        $next = ($lastNumber ?? 0) + 1;
+
+        return 'MF' . str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 
-    // Get file type badge
-    public function getFileTypeBadgeAttribute()
+    // ==================================================
+    // FILE TYPE DEFINITIONS
+    // ==================================================
+
+    /**
+     * Central file type config
+     */
+    public static function fileTypes(): array
     {
-        $badges = [
-            'xray' => 'badge bg-info',
-            'photo' => 'badge bg-primary',
-            'document' => 'badge bg-secondary',
-            'prescription' => 'badge bg-success',
-            'report' => 'badge bg-warning',
-            'other' => 'badge bg-dark'
+        return [
+            'xray'         => ['label' => 'X-Ray',        'color' => 'sky'],
+            'photo'        => ['label' => 'Photo',        'color' => 'blue'],
+            'document'     => ['label' => 'Document',     'color' => 'gray'],
+            'prescription' => ['label' => 'Prescription', 'color' => 'green'],
+            'report'       => ['label' => 'Report',       'color' => 'amber'],
+            'other'        => ['label' => 'Other',        'color' => 'zinc'],
         ];
-        return '<span class="' . ($badges[$this->file_type] ?? 'badge bg-secondary') . '">' . ucfirst($this->file_type) . '</span>';
     }
 
-    // Get file size in human readable format
-    public function getFileSizeFormattedAttribute()
+    // ==================================================
+    // ACCESSORS
+    // ==================================================
+
+    /**
+     * File type label (UI-safe)
+     */
+    public function getFileTypeLabelAttribute(): string
+    {
+        return self::fileTypes()[$this->file_type]['label']
+            ?? ucfirst($this->file_type);
+    }
+
+    /**
+     * Tailwind color keyword (no HTML here)
+     */
+    public function getFileTypeColorAttribute(): string
+    {
+        return self::fileTypes()[$this->file_type]['color']
+            ?? 'gray';
+    }
+
+    /**
+     * Human-readable file size
+     */
+    public function getFileSizeFormattedAttribute(): string
     {
         $bytes = $this->file_size;
-        if ($bytes >= 1073741824) {
-            return number_format($bytes / 1073741824, 2) . ' GB';
-        } elseif ($bytes >= 1048576) {
-            return number_format($bytes / 1048576, 2) . ' MB';
-        } elseif ($bytes >= 1024) {
-            return number_format($bytes / 1024, 2) . ' KB';
-        } else {
-            return $bytes . ' bytes';
-        }
+
+        return match (true) {
+            $bytes >= 1073741824 => number_format($bytes / 1073741824, 2) . ' GB',
+            $bytes >= 1048576    => number_format($bytes / 1048576, 2) . ' MB',
+            $bytes >= 1024       => number_format($bytes / 1024, 2) . ' KB',
+            default              => $bytes . ' bytes',
+        };
     }
 }
