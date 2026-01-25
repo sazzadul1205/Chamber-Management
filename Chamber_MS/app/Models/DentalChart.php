@@ -9,18 +9,24 @@ class DentalChart extends Model
 {
     use HasFactory;
 
+    // =========================
+    // MASS ASSIGNABLE ATTRIBUTES
+    // =========================
     protected $fillable = [
-        'patient_id',
-        'chart_date',
-        'tooth_number',
-        'surface',
-        'condition',
-        'procedure_done',
-        'next_checkup',
-        'remarks',
-        'updated_by',
+        'patient_id',       // Patient reference
+        'chart_date',       // Date of chart entry
+        'tooth_number',     // Tooth number (e.g., 11, 12)
+        'surface',          // Tooth surface
+        'condition',        // Tooth condition
+        'procedure_done',   // Procedure performed
+        'next_checkup',     // Next checkup date
+        'remarks',          // Any notes
+        'updated_by',       // User ID who last updated
     ];
 
+    // =========================
+    // ATTRIBUTE CASTS
+    // =========================
     protected $casts = [
         'chart_date' => 'date',
         'next_checkup' => 'date',
@@ -28,22 +34,30 @@ class DentalChart extends Model
         'updated_at' => 'datetime',
     ];
 
-    // Relationships
+    // =========================
+    // RELATIONSHIPS
+    // =========================
+
+    /** Patient associated with this chart */
     public function patient()
     {
         return $this->belongsTo(Patient::class);
     }
 
+    /** User who last updated this chart */
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    // Tooth numbers for adults (Permanent teeth)
-    public static function adultTeeth()
+    // =========================
+    // TOOTH DATA
+    // =========================
+
+    /** Permanent teeth (adult) */
+    public static function adultTeeth(): array
     {
         return [
-            // Upper Right Quadrant
             '18',
             '17',
             '16',
@@ -52,7 +66,6 @@ class DentalChart extends Model
             '13',
             '12',
             '11',
-            // Upper Left Quadrant
             '21',
             '22',
             '23',
@@ -61,7 +74,6 @@ class DentalChart extends Model
             '26',
             '27',
             '28',
-            // Lower Left Quadrant
             '38',
             '37',
             '36',
@@ -70,7 +82,6 @@ class DentalChart extends Model
             '33',
             '32',
             '31',
-            // Lower Right Quadrant
             '48',
             '47',
             '46',
@@ -82,29 +93,25 @@ class DentalChart extends Model
         ];
     }
 
-    // Tooth numbers for children (Primary teeth)
-    public static function childTeeth()
+    /** Primary teeth (children) */
+    public static function childTeeth(): array
     {
         return [
-            // Upper Right Quadrant
             '55',
             '54',
             '53',
             '52',
             '51',
-            // Upper Left Quadrant
             '61',
             '62',
             '63',
             '64',
             '65',
-            // Lower Left Quadrant
             '71',
             '72',
             '73',
             '74',
             '75',
-            // Lower Right Quadrant
             '85',
             '84',
             '83',
@@ -113,8 +120,8 @@ class DentalChart extends Model
         ];
     }
 
-    // Tooth surfaces
-    public static function surfaces()
+    /** Tooth surfaces */
+    public static function surfaces(): array
     {
         return [
             'occlusal' => 'Occlusal',
@@ -128,8 +135,8 @@ class DentalChart extends Model
         ];
     }
 
-    // Common conditions
-    public static function conditions()
+    /** Tooth conditions */
+    public static function conditions(): array
     {
         return [
             'healthy' => 'Healthy',
@@ -149,8 +156,8 @@ class DentalChart extends Model
         ];
     }
 
-    // Common procedures
-    public static function procedures()
+    /** Procedures performed */
+    public static function procedures(): array
     {
         return [
             'filling' => 'Filling',
@@ -168,7 +175,10 @@ class DentalChart extends Model
         ];
     }
 
-    // Scopes
+    // =========================
+    // SCOPES
+    // =========================
+
     public function scopeForPatient($query, $patientId)
     {
         return $query->where('patient_id', $patientId);
@@ -184,21 +194,26 @@ class DentalChart extends Model
         return $query->where('chart_date', '>=', now()->subDays($days));
     }
 
-    // Helper Methods
-    public function getConditionTextAttribute()
+    // =========================
+    // ACCESSORS
+    // =========================
+
+    /** Get readable condition */
+    public function getConditionTextAttribute(): string
     {
         return self::conditions()[$this->condition] ?? $this->condition;
     }
 
-    public function getSurfaceTextAttribute()
+    /** Get readable surface */
+    public function getSurfaceTextAttribute(): string
     {
         return self::surfaces()[$this->surface] ?? $this->surface;
     }
 
-    public function getToothNameAttribute()
+    /** Get full tooth name */
+    public function getToothNameAttribute(): string
     {
-        $toothNames = [
-            // Permanent teeth
+        $names = [
             '11' => 'Right Maxillary Central Incisor',
             '12' => 'Right Maxillary Lateral Incisor',
             '13' => 'Right Maxillary Canine',
@@ -233,29 +248,32 @@ class DentalChart extends Model
             '48' => 'Right Mandibular Third Molar',
         ];
 
-        return $toothNames[$this->tooth_number] ?? "Tooth {$this->tooth_number}";
+        return $names[$this->tooth_number] ?? "Tooth {$this->tooth_number}";
     }
 
-    public function getConditionColorAttribute()
+    /** Tailwind badge color for condition */
+    public function getConditionColorAttribute(): string
     {
         $colors = [
-            'healthy' => 'success',
-            'caries' => 'danger',
-            'filling' => 'info',
-            'crown' => 'primary',
-            'missing' => 'dark',
-            'extracted' => 'secondary',
-            'root_canal' => 'warning',
-            'fractured' => 'danger',
-            'discolored' => 'warning',
+            'healthy' => 'green',
+            'caries' => 'red',
+            'filling' => 'blue',
+            'crown' => 'purple',
+            'missing' => 'gray',
+            'extracted' => 'gray',
+            'root_canal' => 'yellow',
+            'fractured' => 'red',
+            'discolored' => 'yellow',
         ];
 
-        return $colors[$this->condition] ?? 'secondary';
+        return $colors[$this->condition] ?? 'gray';
     }
 
-    public function getConditionBadgeAttribute()
+    /** Tailwind badge HTML for Blade */
+    public function getConditionBadgeAttribute(): string
     {
         $color = $this->condition_color;
-        return '<span class="badge bg-' . $color . '">' . $this->condition_text . '</span>';
+        $text = $this->condition_text;
+        return "<span class='px-2 py-1 rounded-full text-white bg-{$color}-500 text-xs'>{$text}</span>";
     }
 }

@@ -10,6 +10,9 @@ class Patient extends Model
 {
     use HasFactory, SoftDeletes;
 
+    // =========================
+    // MASS ASSIGNABLE FIELDS
+    // =========================
     protected $fillable = [
         'patient_code',
         'full_name',
@@ -27,6 +30,9 @@ class Patient extends Model
         'updated_by',
     ];
 
+    // =========================
+    // ATTRIBUTE CASTS
+    // =========================
     protected $casts = [
         'date_of_birth' => 'date',
         'created_at' => 'datetime',
@@ -34,59 +40,63 @@ class Patient extends Model
         'deleted_at' => 'datetime',
     ];
 
-    // Relationships
+    // =========================
+    // RELATIONSHIPS
+    // =========================
+
+    // User who created this patient
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    // User who last updated this patient
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    // Referring patient
     public function referrer()
     {
         return $this->belongsTo(Patient::class, 'referred_by');
     }
 
+    // Patients referred by this patient
     public function referrals()
     {
         return $this->hasMany(Patient::class, 'referred_by');
     }
 
-
+    // Financial and clinical relations
     public function receipts()
     {
         return $this->hasMany(Receipt::class);
     }
-
     public function appointments()
     {
         return $this->hasMany(Appointment::class);
     }
-
     public function treatments()
     {
         return $this->hasMany(Treatment::class);
     }
-
     public function dentalCharts()
     {
         return $this->hasMany(DentalChart::class);
     }
-
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
     }
-
     public function payments()
     {
         return $this->hasMany(Payment::class);
     }
 
-    // Scopes
+    // =========================
+    // SCOPES
+    // =========================
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
@@ -107,7 +117,11 @@ class Patient extends Model
         return $query->whereDate('created_at', today());
     }
 
-    // Helper Methods
+    // =========================
+    // HELPER METHODS
+    // =========================
+
+    // Age calculation
     public function getAgeAttribute()
     {
         return $this->date_of_birth ? $this->date_of_birth->age : null;
@@ -115,12 +129,10 @@ class Patient extends Model
 
     public function getAgeTextAttribute()
     {
-        if (!$this->date_of_birth) return 'N/A';
-
-        $age = $this->age;
-        return $age . ' years';
+        return $this->age ? $this->age . ' years' : 'N/A';
     }
 
+    // Human-readable gender
     public function getGenderTextAttribute()
     {
         return match ($this->gender) {
@@ -131,27 +143,31 @@ class Patient extends Model
         };
     }
 
+    // Tailwind-ready status badge
     public function getStatusBadgeAttribute()
     {
         return match ($this->status) {
-            'active' => '<span class="badge bg-success">Active</span>',
-            'inactive' => '<span class="badge bg-secondary">Inactive</span>',
-            'deceased' => '<span class="badge bg-dark">Deceased</span>',
-            default => '<span class="badge bg-secondary">N/A</span>'
+            'active' => '<span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-green-500 rounded">Active</span>',
+            'inactive' => '<span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-gray-400 rounded">Inactive</span>',
+            'deceased' => '<span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-black rounded">Deceased</span>',
+            default => '<span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-gray-300 rounded">N/A</span>',
         };
     }
 
+    // Total completed visits
     public function getTotalVisitsAttribute()
     {
         return $this->appointments()->where('status', 'completed')->count();
     }
 
+    // Total unpaid invoice balance
     public function getTotalPendingAmountAttribute()
     {
         return $this->invoices()->where('status', '!=', 'paid')->sum('balance_amount');
     }
 
-    public static function generatePatientCode()
+    // Generate unique patient code
+    public static function generatePatientCode(): string
     {
         $last = self::orderByDesc('patient_code')->first();
         $next = $last ? ((int) substr($last->patient_code, 3)) + 1 : 1;

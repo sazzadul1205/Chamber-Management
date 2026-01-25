@@ -9,10 +9,14 @@ use Illuminate\Support\Facades\DB;
 
 class PatientFamilyController extends Controller
 {
+    // =========================
+    // LIST ALL FAMILIES
+    // =========================
     public function index(Request $request)
     {
         $query = PatientFamily::with(['head', 'members.patient']);
 
+        // Search by family code or name
         if ($request->filled('search')) {
             $query->where('family_code', 'like', "%{$request->search}%")
                 ->orWhere('family_name', 'like', "%{$request->search}%");
@@ -23,12 +27,18 @@ class PatientFamilyController extends Controller
         return view('patient-families.index', compact('families'));
     }
 
+    // =========================
+    // SHOW CREATE FORM
+    // =========================
     public function create()
     {
-        $patients = Patient::active()->get();
+        $patients = Patient::active()->get(); // Tailwind-ready: populate select dropdown
         return view('patient-families.create', compact('patients'));
     }
 
+    // =========================
+    // STORE NEW FAMILY
+    // =========================
     public function store(Request $request)
     {
         $request->validate([
@@ -43,7 +53,7 @@ class PatientFamilyController extends Controller
                 'head_patient_id' => $request->head_patient_id,
             ]);
 
-            // Add head as family member
+            // Add head as first family member
             $family->members()->create([
                 'patient_id' => $request->head_patient_id,
                 'relationship' => 'self',
@@ -56,9 +66,14 @@ class PatientFamilyController extends Controller
             ->with('success', 'Family created successfully.');
     }
 
+    // =========================
+    // SHOW SINGLE FAMILY
+    // =========================
     public function show(PatientFamily $patientFamily)
     {
         $patientFamily->load(['head', 'members.patient']);
+
+        // Get patients not in any family (for adding members)
         $availablePatients = Patient::active()
             ->whereDoesntHave('family')
             ->where('id', '!=', $patientFamily->head_patient_id)
@@ -67,12 +82,18 @@ class PatientFamilyController extends Controller
         return view('patient-families.show', compact('patientFamily', 'availablePatients'));
     }
 
+    // =========================
+    // SHOW EDIT FORM
+    // =========================
     public function edit(PatientFamily $patientFamily)
     {
         $patients = Patient::active()->get();
         return view('patient-families.edit', compact('patientFamily', 'patients'));
     }
 
+    // =========================
+    // UPDATE FAMILY
+    // =========================
     public function update(Request $request, PatientFamily $patientFamily)
     {
         $request->validate([
@@ -85,7 +106,7 @@ class PatientFamilyController extends Controller
             'head_patient_id' => $request->head_patient_id,
         ]);
 
-        // Update head member
+        // Update head member in pivot table
         $patientFamily->members()
             ->where('patient_id', $patientFamily->head_patient_id)
             ->update(['is_head' => true]);
@@ -95,6 +116,9 @@ class PatientFamilyController extends Controller
             ->with('success', 'Family updated successfully.');
     }
 
+    // =========================
+    // DELETE FAMILY
+    // =========================
     public function destroy(PatientFamily $patientFamily)
     {
         $patientFamily->delete();
@@ -104,6 +128,9 @@ class PatientFamilyController extends Controller
             ->with('success', 'Family deleted successfully.');
     }
 
+    // =========================
+    // ADD MEMBER TO FAMILY
+    // =========================
     public function addMember(Request $request, PatientFamily $patientFamily)
     {
         $request->validate([
@@ -120,6 +147,9 @@ class PatientFamilyController extends Controller
         return back()->with('success', 'Member added successfully.');
     }
 
+    // =========================
+    // REMOVE MEMBER FROM FAMILY
+    // =========================
     public function removeMember(PatientFamily $patientFamily, Patient $patient)
     {
         if ($patient->id === $patientFamily->head_patient_id) {
@@ -131,24 +161,28 @@ class PatientFamilyController extends Controller
         return back()->with('success', 'Member removed successfully.');
     }
 
+    // =========================
+    // SET FAMILY HEAD
+    // =========================
     public function setHead(PatientFamily $patientFamily, Patient $patient)
     {
-        // Remove head status from current head
-        $patientFamily->members()
-            ->where('is_head', true)
-            ->update(['is_head' => false]);
+        // Reset current head
+        $patientFamily->members()->where('is_head', true)->update(['is_head' => false]);
 
-        // Set new head
+        // Assign new head
         $patientFamily->members()
             ->where('patient_id', $patient->id)
             ->update(['is_head' => true, 'relationship' => 'self']);
 
-        // Update family head reference
+        // Update family reference
         $patientFamily->update(['head_patient_id' => $patient->id]);
 
         return back()->with('success', 'Family head updated successfully.');
     }
 
+    // =========================
+    // AJAX SEARCH FOR FAMILIES
+    // =========================
     public function search(Request $request)
     {
         $query = $request->get('q', '');
@@ -157,14 +191,12 @@ class PatientFamilyController extends Controller
             ->orWhere('family_name', 'like', "%{$query}%")
             ->limit(10)
             ->get()
-            ->map(function ($family) {
-                return [
-                    'id' => $family->id,
-                    'text' => "{$family->family_code} - {$family->family_name}",
-                    'code' => $family->family_code,
-                    'name' => $family->family_name,
-                ];
-            });
+            ->map(fn($family) => [
+                'id' => $family->id,
+                'text' => "{$family->family_code} - {$family->family_name}",
+                'code' => $family->family_code,
+                'name' => $family->family_name,
+            ]);
 
         return response()->json($families);
     }

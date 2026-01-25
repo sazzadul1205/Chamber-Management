@@ -10,6 +10,9 @@ class Appointment extends Model
 {
     use HasFactory, SoftDeletes;
 
+    // =========================
+    // MASS ASSIGNABLE FIELDS
+    // =========================
     protected $fillable = [
         'appointment_code',
         'patient_id',
@@ -33,6 +36,9 @@ class Appointment extends Model
         'updated_by',
     ];
 
+    // =========================
+    // CASTS
+    // =========================
     protected $casts = [
         'appointment_date' => 'date',
         'checked_in_time' => 'datetime',
@@ -43,7 +49,9 @@ class Appointment extends Model
         'deleted_at' => 'datetime',
     ];
 
-    // Relationships
+    // =========================
+    // RELATIONSHIPS
+    // =========================
     public function patient()
     {
         return $this->belongsTo(Patient::class);
@@ -74,21 +82,29 @@ class Appointment extends Model
         return $this->hasOne(Treatment::class);
     }
 
-    // Scopes
+    // =========================
+    // SCOPES
+    // =========================
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
             $q->where('appointment_code', 'like', "%{$search}%")
                 ->orWhere('chief_complaint', 'like', "%{$search}%")
-                ->orWhereHas('patient', function ($patientQuery) use ($search) {
+                ->orWhereHas(
+                    'patient',
+                    fn($patientQuery) =>
                     $patientQuery->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
-                })
-                ->orWhereHas('doctor', function ($doctorQuery) use ($search) {
-                    $doctorQuery->whereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('full_name', 'like', "%{$search}%");
-                    });
-                });
+                        ->orWhere('phone', 'like', "%{$search}%")
+                )
+                ->orWhereHas(
+                    'doctor',
+                    fn($doctorQuery) =>
+                    $doctorQuery->whereHas(
+                        'user',
+                        fn($userQuery) =>
+                        $userQuery->where('full_name', 'like', "%{$search}%")
+                    )
+                );
         });
     }
 
@@ -118,27 +134,29 @@ class Appointment extends Model
         return $query->whereIn('status', ['scheduled', 'checked_in', 'in_progress']);
     }
 
-    // Helper Methods
+    // =========================
+    // HELPER DATA ARRAYS
+    // =========================
     public static function appointmentTypes()
     {
         return [
             'consultation' => 'Consultation',
-            'treatment' => 'Treatment',
-            'followup' => 'Follow-up',
-            'emergency' => 'Emergency',
-            'checkup' => 'Checkup',
+            'treatment'    => 'Treatment',
+            'followup'     => 'Follow-up',
+            'emergency'    => 'Emergency',
+            'checkup'      => 'Checkup',
         ];
     }
 
     public static function statuses()
     {
         return [
-            'scheduled' => 'Scheduled',
-            'checked_in' => 'Checked In',
+            'scheduled'   => 'Scheduled',
+            'checked_in'  => 'Checked In',
             'in_progress' => 'In Progress',
-            'completed' => 'Completed',
-            'cancelled' => 'Cancelled',
-            'no_show' => 'No Show',
+            'completed'   => 'Completed',
+            'cancelled'   => 'Cancelled',
+            'no_show'     => 'No Show',
         ];
     }
 
@@ -147,10 +165,13 @@ class Appointment extends Model
         return [
             'normal' => 'Normal',
             'urgent' => 'Urgent',
-            'high' => 'High',
+            'high'   => 'High',
         ];
     }
 
+    // =========================
+    // ATTRIBUTE ACCESSORS
+    // =========================
     public function getAppointmentTypeTextAttribute()
     {
         return self::appointmentTypes()[$this->appointment_type] ?? $this->appointment_type;
@@ -169,12 +190,12 @@ class Appointment extends Model
     public function getStatusColorAttribute()
     {
         $colors = [
-            'scheduled' => 'info',
-            'checked_in' => 'primary',
+            'scheduled'   => 'info',
+            'checked_in'  => 'primary',
             'in_progress' => 'warning',
-            'completed' => 'success',
-            'cancelled' => 'danger',
-            'no_show' => 'secondary',
+            'completed'   => 'success',
+            'cancelled'   => 'danger',
+            'no_show'     => 'secondary',
         ];
 
         return $colors[$this->status] ?? 'secondary';
@@ -185,7 +206,7 @@ class Appointment extends Model
         $colors = [
             'normal' => 'info',
             'urgent' => 'warning',
-            'high' => 'danger',
+            'high'   => 'danger',
         ];
 
         return $colors[$this->priority] ?? 'info';
@@ -193,6 +214,7 @@ class Appointment extends Model
 
     public function getStatusBadgeAttribute()
     {
+        // Tailwind or Bootstrap badge can be used in views
         return '<span class="badge bg-' . $this->status_color . '">' . $this->status_text . '</span>';
     }
 
@@ -217,6 +239,9 @@ class Appointment extends Model
         return $this->expected_duration . ' minutes';
     }
 
+    // =========================
+    // STATUS CHECK HELPERS
+    // =========================
     public function isUpcoming()
     {
         return in_array($this->status, ['scheduled', 'checked_in']) &&
@@ -229,6 +254,9 @@ class Appointment extends Model
             in_array($this->status, ['completed', 'cancelled', 'no_show']);
     }
 
+    // =========================
+    // APPOINTMENT CODE GENERATION
+    // =========================
     public static function generateAppointmentCode()
     {
         $last = self::orderByDesc('appointment_code')->first();
@@ -236,6 +264,9 @@ class Appointment extends Model
         return 'APT' . str_pad($next, 3, '0', STR_PAD_LEFT);
     }
 
+    // =========================
+    // STATUS MANAGEMENT METHODS
+    // =========================
     public function checkIn()
     {
         $this->update([

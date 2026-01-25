@@ -8,30 +8,44 @@ use Illuminate\Http\Request;
 
 class DoctorController extends Controller
 {
+    // =========================
+    // LIST DOCTORS
+    // =========================
     public function index(Request $request)
     {
         $query = Doctor::with('user');
 
+        // Search by doctor code, name, or specialization
         if ($request->filled('search')) {
-            $query->search($request->search);
+            $query->where(function ($q) use ($request) {
+                $q->where('doctor_code', 'like', "%{$request->search}%")
+                    ->orWhereHas('user', fn($uq) => $uq->where('full_name', 'like', "%{$request->search}%"))
+                    ->orWhere('specialization', 'like', "%{$request->search}%");
+            });
         }
 
-        if ($request->status && $request->status !== 'all') {
+        // Filter by status
+        if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
-        if ($request->specialization && $request->specialization !== 'all') {
+        // Filter by specialization
+        if ($request->filled('specialization') && $request->specialization !== 'all') {
             $query->where('specialization', $request->specialization);
         }
 
-        $doctors = $query->orderBy('created_at', 'desc')->paginate(15);
+        $doctors = $query->orderByDesc('created_at')->paginate(15);
         $specializations = Doctor::distinct()->pluck('specialization')->filter();
 
         return view('backend.doctors.index', compact('doctors', 'specializations'));
     }
 
+    // =========================
+    // CREATE DOCTOR FORM
+    // =========================
     public function create()
     {
+        // Users without a doctor profile and role_id = 3 (assumed doctors)
         $users = User::whereDoesntHave('doctor')
             ->where('role_id', 3)
             ->active()
@@ -40,6 +54,9 @@ class DoctorController extends Controller
         return view('backend.doctors.create', compact('users'));
     }
 
+    // =========================
+    // STORE DOCTOR
+    // =========================
     public function store(Request $request)
     {
         $request->validate([
@@ -52,48 +69,37 @@ class DoctorController extends Controller
             'status' => 'required|in:active,inactive,on_leave',
         ]);
 
-        $doctor = Doctor::create($request->all());
+        Doctor::create($request->all());
 
-        return redirect()
-            ->route('backend.doctors.index')
+        return redirect()->route('backend.doctors.index')
             ->with('success', 'Doctor profile created successfully.');
     }
 
+    // =========================
+    // SHOW DOCTOR DETAILS
+    // =========================
     public function show(Doctor $doctor)
     {
-        // Ensure doctor exists (real model)
-        $doctor = Doctor::with(['user'])->find($doctor->id);
-
-        if (!$doctor) {
-            abort(404, 'Doctor not found.');
-        }
-
-        // Safely load appointments and treatments
-        try {
-            $doctor->load([
-                'appointments.patient' => function ($query) {
-                    // optional: limit or order
-                },
-                'treatments.patient' => function ($query) {
-                    // optional: limit or order
-                },
-            ]);
-        } catch (\Exception $e) {
-            // fallback empty collections if tables don't exist
-            $doctor->appointments = collect();
-            $doctor->treatments = collect();
-        }
+        $doctor->load([
+            'user',
+            'appointments.patient',
+            'treatments.patient',
+        ]);
 
         return view('backend.doctors.show', compact('doctor'));
     }
 
-
-
+    // =========================
+    // EDIT DOCTOR FORM
+    // =========================
     public function edit(Doctor $doctor)
     {
         return view('backend.doctors.edit', compact('doctor'));
     }
 
+    // =========================
+    // UPDATE DOCTOR
+    // =========================
     public function update(Request $request, Doctor $doctor)
     {
         $request->validate([
@@ -107,49 +113,47 @@ class DoctorController extends Controller
 
         $doctor->update($request->all());
 
-        return redirect()
-            ->route('backend.doctors.index')
+        return redirect()->route('backend.doctors.index')
             ->with('success', 'Doctor profile updated successfully.');
     }
 
+    // =========================
+    // DELETE DOCTOR
+    // =========================
     public function destroy(Doctor $doctor)
     {
-        // Check appointments
-        if (class_exists('App\Models\Appointment') && \Schema::hasTable('appointments')) {
-            if ($doctor->appointments()->count() > 0) {
-                return back()->with('error', 'Cannot delete doctor with appointments.');
-            }
+        // Prevent deletion if appointments or treatments exist
+        if ($doctor->appointments()->exists()) {
+            return back()->with('error', 'Cannot delete doctor with appointments.');
         }
 
-        // Check treatments
-        if (class_exists('App\Models\Treatment') && \Schema::hasTable('treatments')) {
-            if ($doctor->treatments()->count() > 0) {
-                return back()->with('error', 'Cannot delete doctor with treatments.');
-            }
+        if ($doctor->treatments()->exists()) {
+            return back()->with('error', 'Cannot delete doctor with treatments.');
         }
 
         $doctor->delete();
 
-        return redirect()
-            ->route('backend.doctors.index')
+        return redirect()->route('backend.doctors.index')
             ->with('success', 'Doctor profile deleted.');
     }
 
-
+    // =========================
+    // DOCTOR SCHEDULE
+    // =========================
     public function schedule(Request $request)
     {
-        $doctors = Doctor::with(['appointments' => function ($query) use ($request) {
-            if ($request->filled('date')) {
-                $query->where('appointment_date', $request->date);
-            }
-        }])->get();
-
         $date = $request->get('date', now()->format('Y-m-d'));
+
+        $doctors = Doctor::with(['appointments' => function ($query) use ($date) {
+            $query->where('appointment_date', $date);
+        }])->get();
 
         return view('backend.doctors.schedule', compact('doctors', 'date'));
     }
 
-
+    // =========================
+    // AVAILABLE DOCTORS API
+    // =========================
     public function getAvailable(Request $request)
     {
         $date = $request->get('date', now()->format('Y-m-d'));
@@ -163,18 +167,19 @@ class DoctorController extends Controller
                     ->whereIn('status', ['scheduled', 'checked_in']);
             })
             ->get()
-            ->map(function ($doctor) {
-                return [
-                    'id' => $doctor->id,
-                    'name' => $doctor->user->full_name,
-                    'specialization' => $doctor->specialization,
-                    'fee' => $doctor->consultation_fee,
-                ];
-            });
+            ->map(fn($doctor) => [
+                'id' => $doctor->id,
+                'name' => $doctor->user->full_name,
+                'specialization' => $doctor->specialization,
+                'fee' => $doctor->consultation_fee,
+            ]);
 
         return response()->json($doctors);
     }
 
+    // =========================
+    // GENERATE UNIQUE DOCTOR CODE
+    // =========================
     public function generateCode()
     {
         $last = Doctor::orderByDesc('doctor_code')->first();
