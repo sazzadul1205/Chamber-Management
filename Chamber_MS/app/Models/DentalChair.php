@@ -57,6 +57,12 @@ class DentalChair extends Model
         });
     }
 
+    public function scopeActive($query)
+    {
+        return $query->whereNotIn('status', ['maintenance', 'out_of_service']);
+    }
+
+
     // =========================
     // RELATIONSHIPS
     // =========================

@@ -20,7 +20,7 @@
         @endif
 
         <!-- Form -->
-        <form action="{{ route('appointments.store') }}" method="POST" id="appointment-form" class="space-y-6">
+        <form action="{{ route('backend.appointments.store') }}" method="POST" id="appointment-form" class="space-y-6">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -136,7 +136,7 @@
             </div>
 
             <!-- Submit -->
-            <x-back-submit-buttons back-url="{{ route('appointments.index') }}" submit-text="Schedule Appointment" />
+            <x-back-submit-buttons back-url="{{ route('backend.appointments.index') }}" submit-text="Schedule Appointment" />
 
         </form>
     </div>
@@ -158,7 +158,7 @@
                 loading.classList.remove('hidden');
                 timeSelect.disabled = true;
 
-                fetch(`{{ route('appointments.available-slots') }}?doctor_id=${doctorId}&date=${date}`)
+                fetch(`{{ route('backend.appointments.available-slots') }}?doctor_id=${doctorId}&date=${date}`)
                     .then(res => res.json())
                     .then(data => {
                         timeSelect.innerHTML = '<option value="">Select Time Slot</option>';

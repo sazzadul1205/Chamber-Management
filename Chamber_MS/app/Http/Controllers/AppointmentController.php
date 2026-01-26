@@ -48,7 +48,7 @@ class AppointmentController extends Controller
         $doctors = Doctor::with('user')->active()->get();
         $patients = Patient::active()->get();
 
-        return view('appointments.index', compact('appointments', 'doctors', 'patients'));
+        return view('backend.appointments.index', compact('appointments', 'doctors', 'patients'));
     }
 
     // =========================
@@ -60,7 +60,7 @@ class AppointmentController extends Controller
         $doctors = Doctor::with('user')->active()->get();
         $chairs = DentalChair::active()->available()->get();
 
-        return view('appointments.create', compact('patients', 'doctors', 'chairs'));
+        return view('backend.appointments.create', compact('patients', 'doctors', 'chairs'));
     }
 
     // =========================
@@ -125,7 +125,7 @@ class AppointmentController extends Controller
             'updated_by'       => auth()->id(),
         ]);
 
-        return redirect()->route('appointments.index')
+        return redirect()->route('backend.appointments.index')
             ->with('success', 'Appointment created successfully.');
     }
 
@@ -135,7 +135,7 @@ class AppointmentController extends Controller
     public function show(Appointment $appointment)
     {
         $appointment->load(['patient', 'doctor.user', 'chair', 'creator', 'updater']);
-        return view('appointments.show', compact('appointment'));
+        return view('backend.appointments.show', compact('appointment'));
     }
 
     // =========================
@@ -147,7 +147,7 @@ class AppointmentController extends Controller
         $doctors = Doctor::with('user')->active()->get();
         $chairs = DentalChair::active()->get();
 
-        return view('appointments.edit', compact('appointment', 'patients', 'doctors', 'chairs'));
+        return view('backend.appointments.edit', compact('appointment', 'patients', 'doctors', 'chairs'));
     }
 
     // =========================
@@ -203,7 +203,7 @@ class AppointmentController extends Controller
 
         $appointment->update($updateData);
 
-        return redirect()->route('appointments.index')
+        return redirect()->route('backend.appointments.index')
             ->with('success', 'Appointment updated successfully.');
     }
 
@@ -218,7 +218,7 @@ class AppointmentController extends Controller
 
         $appointment->delete();
 
-        return redirect()->route('appointments.index')
+        return redirect()->route('backend.appointments.index')
             ->with('success', 'Appointment deleted successfully.');
     }
 
@@ -286,7 +286,7 @@ class AppointmentController extends Controller
             'total'       => $todayAppointments->flatten()->count(),
         ];
 
-        return view('appointments.today', compact('todayAppointments', 'stats'));
+        return view('backend.appointments.today', compact('todayAppointments', 'stats'));
     }
 
     // =========================
@@ -316,8 +316,7 @@ class AppointmentController extends Controller
                 $timeSlots[$time] = $appointments->where('appointment_time', $time)->values();
             }
         }
-
-        return view('appointments.calendar', compact('timeSlots', 'doctors', 'selectedDoctor', 'selectedDate'));
+        return view('backend.appointments.calendar', compact('timeSlots', 'doctors', 'selectedDoctor', 'selectedDate'));
     }
 
     // =========================
@@ -350,5 +349,75 @@ class AppointmentController extends Controller
         $availableSlots = array_values(array_diff($workingHours, $existingAppointments));
 
         return response()->json(['slots' => $availableSlots]);
+    }
+
+    // =========================
+    // WALK-IN FORM
+    // =========================
+    public function walkInForm()
+    {
+        $patients = Patient::active()->get();
+        $doctors = Doctor::with('user')->active()->get();
+        $chairs = DentalChair::active()->available()->get();
+
+        return view('backend.appointments.walk-in', compact('patients', 'doctors', 'chairs'));
+    }
+
+    // =========================
+    // STORE WALK-IN APPOINTMENT
+    // =========================
+    public function walkInStore(Request $request)
+    {
+        $request->validate([
+            'patient_id'       => 'required|exists:patients,id',
+            'doctor_id'        => 'required|exists:doctors,id',
+            'chair_id'         => 'nullable|exists:dental_chairs,id',
+            'appointment_type' => 'required|in:consultation,treatment,followup,emergency,checkup',
+            'expected_duration' => 'required|integer|min:5|max:240',
+            'priority'         => 'required|in:normal,urgent,high',
+            'chief_complaint'  => 'nullable|string',
+            'notes'            => 'nullable|string',
+        ]);
+
+        $now = now();
+
+        // Auto-assign appointment for current date/time
+        $appointment = Appointment::create([
+            'appointment_code'  => Appointment::generateAppointmentCode(),
+            'patient_id'        => $request->patient_id,
+            'doctor_id'         => $request->doctor_id,
+            'chair_id'          => $request->chair_id,
+            'appointment_type'  => $request->appointment_type,
+            'appointment_date'  => $now->toDateString(),
+            'appointment_time'  => $now->format('H:i:s'),
+            'expected_duration' => $request->expected_duration,
+            'priority'          => $request->priority,
+            'chief_complaint'   => $request->chief_complaint,
+            'notes'             => $request->notes,
+            'status'            => 'checked_in', // walk-ins start as checked-in
+            'checked_in_time'   => $now,
+            'created_by'        => auth()->id(),
+            'updated_by'        => auth()->id(),
+        ]);
+
+        return redirect()->route('backend.appointments.index')
+            ->with('success', 'Walk-in appointment registered and checked-in successfully.');
+    }
+
+    // =========================
+    // QUEUE DISPLAY (TV)
+    // =========================
+    public function queue(Request $request)
+    {
+        $date = $request->get('date', today()->toDateString());
+
+        $appointments = Appointment::with(['patient', 'doctor.user', 'chair'])
+            ->whereDate('appointment_date', $date)
+            ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
+            ->orderBy('appointment_time')
+            ->get()
+            ->groupBy('status'); // grouped by status for easy display
+
+        return view('backend.appointments.queue', compact('appointments', 'date'));
     }
 }

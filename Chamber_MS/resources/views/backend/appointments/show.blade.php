@@ -8,13 +8,13 @@
             <h2 class="text-2xl font-semibold">Appointment Details</h2>
 
             <div class="flex gap-2">
-                <a href="{{ route('appointments.edit', $appointment) }}"
+                <a href="{{ route('backend.appointments.edit', $appointment) }}"
                     class="flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-white rounded-md text-sm font-medium transition">
                     @include('partials.sidebar-icon', ['name' => 'B_Edit', 'class' => 'w-4 h-4'])
                     Edit
                 </a>
 
-                <a href="{{ route('appointments.calendar') }}"
+                <a href="{{ route('backend.appointments.calendar') }}"
                     class="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition">
                     @include('partials.sidebar-icon', ['name' => 'B_Calendar', 'class' => 'w-4 h-4'])
                     Calendar

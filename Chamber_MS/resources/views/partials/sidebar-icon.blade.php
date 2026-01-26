@@ -98,6 +98,18 @@
         @include('components.icons.Add-Appointment')
     @break
 
+    @case('Today')
+        @include('components.icons.Today')
+    @break
+
+    @case('Queue')
+        @include('components.icons.Queue')
+    @break
+
+    @case('TV')
+        @include('components.icons.TV')
+    @break
+
     {{-- ==============================
          BUTTON / ACTION ICONS
     ============================== --}}

@@ -7,12 +7,12 @@
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-semibold">Appointment Calendar</h2>
             <div class="flex gap-2">
-                <a href="{{ route('appointments.index') }}"
+                <a href="{{ route('backend.appointments.index') }}"
                     class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-medium transition">
                     @include('partials.sidebar-icon', ['name' => 'B_List', 'class' => 'w-4 h-4'])
                     List View
                 </a>
-                <a href="{{ route('appointments.create') }}"
+                <a href="{{ route('backend.appointments.create') }}"
                     class="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition">
                     @include('partials.sidebar-icon', ['name' => 'B_Plus', 'class' => 'w-4 h-4'])
                     New Appointment
@@ -98,7 +98,7 @@
                                                     <div class="flex items-center gap-1">
                                                         {!! $appointment->status_badge !!}
                                                         {!! $appointment->priority_badge !!}
-                                                        <a href="{{ route('appointments.show', $appointment) }}"
+                                                        <a href="{{ route('backend.appointments.show', $appointment) }}"
                                                             class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition">
                                                             View
                                                         </a>

@@ -8,13 +8,13 @@
             <h2 class="text-2xl font-semibold mb-3 md:mb-0">Appointments</h2>
 
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('appointments.today') }}"
+                <a href="{{ route('backend.appointments.today') }}"
                     class="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-md text-sm font-medium transition">
                     @include('partials.sidebar-icon', ['name' => 'calendar', 'class' => 'w-4 h-4'])
                     Today
                 </a>
 
-                <a href="{{ route('appointments.create') }}"
+                <a href="{{ route('backend.appointments.create') }}"
                     class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition">
                     @include('partials.sidebar-icon', ['name' => 'B_Add', 'class' => 'w-4 h-4'])
                     New Appointment
@@ -120,18 +120,18 @@
 
                             <td class="px-3 py-2 text-center">
                                 <div class="flex justify-center gap-1">
-                                    <a href="{{ route('appointments.show', $appointment) }}"
+                                    <a href="{{ route('backend.appointments.show', $appointment) }}"
                                         class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs">
                                         @include('partials.sidebar-icon', ['name' => 'B_View', 'class' => 'w-4 h-4'])
                                     </a>
 
-                                    <a href="{{ route('appointments.edit', $appointment) }}"
+                                    <a href="{{ route('backend.appointments.edit', $appointment) }}"
                                         class="px-2 py-1 bg-yellow-400 hover:bg-yellow-500 text-white rounded text-xs">
                                         @include('partials.sidebar-icon', ['name' => 'B_Edit', 'class' => 'w-4 h-4'])
                                     </a>
 
                                     @if($appointment->status === 'scheduled')
-                                        <form method="POST" action="{{ route('appointments.check-in', $appointment) }}">
+                                        <form method="POST" action="{{ route('backend.appointments.check-in', $appointment) }}">
                                             @csrf
                                             <button class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs">
                                                 Check-In
@@ -140,7 +140,7 @@
                                     @endif
 
                                     @if($appointment->status === 'checked_in')
-                                        <form method="POST" action="{{ route('appointments.start', $appointment) }}">
+                                        <form method="POST" action="{{ route('backend.appointments.start', $appointment) }}">
                                             @csrf
                                             <button class="px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded text-xs">
                                                 Start
@@ -149,7 +149,7 @@
                                     @endif
 
                                     @if(in_array($appointment->status, ['checked_in', 'in_progress']))
-                                        <form method="POST" action="{{ route('appointments.complete', $appointment) }}">
+                                        <form method="POST" action="{{ route('backend.appointments.complete', $appointment) }}">
                                             @csrf
                                             <button class="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs">
                                                 Complete

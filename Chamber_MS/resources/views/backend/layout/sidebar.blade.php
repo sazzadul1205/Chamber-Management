@@ -63,7 +63,7 @@
                 [
                     'label' => 'Schedule Appointment',
                     'route' => 'backend.appointments.create',
-                    'icon' => 'B_Add',
+                    'icon' => 'Add-Circle',
                 ],
                 [
                     'label' => 'Appointment List',
@@ -72,19 +72,28 @@
                 ],
                 [
                     'label' => 'Reschedule Appointment',
+                    'route' => '', // TODO: Add route
+                    'icon' => 'Schedule',
                 ],
                 [
                     'label' => 'Cancel Appointment',
+                    'route' => '', // TODO: Add route
+                    'icon' => 'B_Delete',
                 ],
                 [
                     'label' => 'Walk-in Appointment',
-                    'route' => 'backend.appointments.today', 
+                    'route' => 'backend.appointments.walk-in', // Proper walk-in route
+                    'icon' => 'User-Plus',
                 ],
                 [
                     'label' => 'Appointment Reminders',
+                    'route' => '', // TODO: Add route
+                    'icon' => 'bell',
                 ],
                 [
                     'label' => 'Queue Display (TV)',
+                    'route' => 'backend.appointments.queue', // Add route in web.php
+                    'icon' => 'TV',
                 ],
             ],
         ],
@@ -350,7 +359,7 @@
                             @endphp
                             <a href="{{ $href }}"
                                 class="flex items-center gap-3 px-3 py-2 rounded transition
-                                                                                                              {{ $active ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
+                                                                                                                                                                                                              {{ $active ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
                                 @include('partials.sidebar-icon', ['name' => $sub['icon'] ?? 'default'])
                                 <span>{{ $sub['label'] }}</span>
                             </a>
@@ -365,7 +374,7 @@
                 @endphp
                 <a href="{{ $href }}"
                     class="flex items-center gap-3 px-3 py-2 rounded transition font-semibold
-                                                                          {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}">
+                                                                                                                                          {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}">
                     @include('partials.sidebar-icon', ['name' => $item['icon'] ?? 'default'])
                     <span>{{ $item['label'] }}</span>
                 </a>

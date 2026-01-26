@@ -155,14 +155,21 @@ Route::middleware(['auth'])->group(function () {
     // -----------------------------
     // Appointments
     // -----------------------------
-    Route::resource('appointments', AppointmentController::class)->names('backend.appointments');
     Route::get('appointments/calendar', [AppointmentController::class, 'calendar'])->name('backend.appointments.calendar');
+    Route::resource('appointments', AppointmentController::class)->names('backend.appointments');
     Route::get('appointments/today', [AppointmentController::class, 'today'])->name('backend.appointments.today');
     Route::get('appointments/api/available-slots', [AppointmentController::class, 'getAvailableSlots'])->name('backend.appointments.available-slots');
     Route::post('appointments/{appointment}/check-in', [AppointmentController::class, 'checkIn'])->name('backend.appointments.check-in');
     Route::post('appointments/{appointment}/start', [AppointmentController::class, 'start'])->name('backend.appointments.start');
     Route::post('appointments/{appointment}/complete', [AppointmentController::class, 'complete'])->name('backend.appointments.complete');
     Route::post('appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('backend.appointments.cancel');
+
+    // Queue Display (TV)
+    Route::get('appointments/queue', [AppointmentController::class, 'queue'])->name('backend.appointments.queue');
+
+    // Walk-in Appointment
+    Route::get('appointments/walk-in', [AppointmentController::class, 'walkInForm'])->name('backend.appointments.walk-in');
+    Route::post('appointments/walk-in', [AppointmentController::class, 'walkInStore'])->name('backend.appointments.walk-in.store');
 
     // -----------------------------
     // Treatments & Procedures & Sessions
