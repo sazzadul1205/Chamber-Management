@@ -19,9 +19,6 @@ return new class extends Migration
             $table->timestamps();
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
 
-            // Add constraint to ensure allocation is to either installment or session (or both)
-            $table->check('installment_id IS NOT NULL OR treatment_session_id IS NOT NULL');
-
             // Indexes for performance
             $table->index(['payment_id', 'installment_id']);
             $table->index(['payment_id', 'treatment_session_id']);

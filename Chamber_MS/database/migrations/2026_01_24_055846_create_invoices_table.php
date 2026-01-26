@@ -24,7 +24,7 @@ return new class extends Migration
             $table->decimal('discount_percent', 5, 2)->default(0);
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->decimal('paid_amount', 10, 2)->default(0);
-            $table->decimal('balance_amount', 10, 2)->default(0)->virtualAs('total_amount - paid_amount');
+            $table->decimal('balance_amount', 10, 2)->virtualAs('total_amount - paid_amount');
             $table->string('payment_terms', 100)->nullable();
             $table->enum('status', ['draft', 'sent', 'partial', 'paid', 'cancelled', 'overdue'])->default('draft');
             $table->text('notes')->nullable();
