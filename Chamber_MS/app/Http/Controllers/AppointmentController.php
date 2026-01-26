@@ -69,64 +69,63 @@ class AppointmentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'patient_id'       => 'required|exists:patients,id',
-            'doctor_id'        => 'required|exists:doctors,id',
-            'chair_id'         => 'nullable|exists:dental_chairs,id',
-            'appointment_type' => 'required|in:consultation,treatment,followup,emergency,checkup',
-            'appointment_date' => 'required|date',
-            'appointment_time' => 'required|date_format:H:i',
+            'patient_id'        => 'required|exists:patients,id',
+            'doctor_id'         => 'required|exists:doctors,id',
+            'chair_id'          => 'nullable|exists:dental_chairs,id',
+            'appointment_type'  => 'required|in:consultation,treatment,followup,emergency,checkup',
+            'appointment_date'  => 'required|date',
+            'appointment_time'  => 'required|date_format:H:i',
             'expected_duration' => 'required|integer|min:5|max:240',
-            'priority'         => 'required|in:normal,urgent,high',
-            'chief_complaint'  => 'nullable|string',
-            'notes'            => 'nullable|string',
+            'priority'          => 'required|in:normal,urgent,high',
+            'chief_complaint'   => 'nullable|string',
+            'notes'             => 'nullable|string',
         ]);
 
-        // =========================
-        // CHECK FOR CONFLICTS
-        // =========================
-        $conflict = Appointment::where('doctor_id', $request->doctor_id)
+        // -------------------------------
+        // CHECK DAILY LIMIT (FIFO-STYLE)
+        // -------------------------------
+        $dailyLimitReached = Appointment::where('doctor_id', $request->doctor_id)
             ->where('appointment_date', $request->appointment_date)
-            ->where('appointment_time', $request->appointment_time)
             ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
-            ->exists();
+            ->count() >= 100; // adjust daily cap
 
-        if ($conflict) {
-            return back()->with('error', 'Doctor is not available at this time.')->withInput();
+        if ($dailyLimitReached) {
+            return back()->with('error', 'Doctor has reached daily patient limit.')->withInput();
         }
 
-        if ($request->chair_id) {
-            $chairConflict = Appointment::where('chair_id', $request->chair_id)
-                ->where('appointment_date', $request->appointment_date)
-                ->where('appointment_time', $request->appointment_time)
-                ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
-                ->exists();
+        // -------------------------------
+        // CALCULATE QUEUE NUMBER
+        // -------------------------------
+        $queueNumber = Appointment::where('doctor_id', $request->doctor_id)
+            ->where('appointment_date', $request->appointment_date)
+            ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
+            ->max('queue_no');
 
-            if ($chairConflict) {
-                return back()->with('error', 'Dental chair is not available at this time.')->withInput();
-            }
-        }
+        $queueNumber = $queueNumber ? $queueNumber + 1 : 1;
 
-        // =========================
+        // -------------------------------
         // CREATE APPOINTMENT
-        // =========================
+        // -------------------------------
         Appointment::create([
-            'appointment_code' => Appointment::generateAppointmentCode(),
-            'patient_id'       => $request->patient_id,
-            'doctor_id'        => $request->doctor_id,
-            'chair_id'         => $request->chair_id,
-            'appointment_type' => $request->appointment_type,
-            'appointment_date' => $request->appointment_date,
-            'appointment_time' => $request->appointment_time,
-            'expected_duration' => $request->expected_duration,
-            'priority'         => $request->priority,
-            'chief_complaint'  => $request->chief_complaint,
-            'notes'            => $request->notes,
-            'created_by'       => auth()->id(),
-            'updated_by'       => auth()->id(),
+            'appointment_code'   => Appointment::generateAppointmentCode(),
+            'patient_id'         => $request->patient_id,
+            'doctor_id'          => $request->doctor_id,
+            'chair_id'           => $request->chair_id, // optional
+            'appointment_type'   => $request->appointment_type,
+            'appointment_date'   => $request->appointment_date,
+            'appointment_time'   => $request->appointment_time, // approximate arrival
+            'expected_duration'  => $request->expected_duration,
+            'priority'           => $request->priority,
+            'queue_no'       => $queueNumber,
+            'status'             => 'scheduled',
+            'chief_complaint'    => $request->chief_complaint,
+            'notes'              => $request->notes,
+            'created_by'         => auth()->id(),
+            'updated_by'         => auth()->id(),
         ]);
 
         return redirect()->route('backend.appointments.index')
-            ->with('success', 'Appointment created successfully.');
+            ->with('success', "Appointment created successfully. Queue number: {$queueNumber}");
     }
 
     // =========================
@@ -227,13 +226,15 @@ class AppointmentController extends Controller
     // =========================
     public function checkIn(Appointment $appointment)
     {
-        if ($appointment->status != 'scheduled') {
+        if ($appointment->status !== 'scheduled') {
             return back()->with('error', 'Only scheduled appointments can be checked in.');
         }
 
         $appointment->checkIn();
-        return back()->with('success', 'Patient checked in successfully.');
+
+        return back()->with('success', 'Patient added to queue');
     }
+
 
     public function start(Appointment $appointment)
     {
@@ -290,34 +291,51 @@ class AppointmentController extends Controller
     }
 
     // =========================
-    // CALENDAR VIEW
+    // CALENDAR / QUEUE VIEW
     // =========================
     public function calendar(Request $request)
     {
         $doctors = Doctor::with('user')->active()->get();
-        $selectedDoctor = $request->get('doctor_id');
-        $selectedDate = $request->get('date', date('Y-m-d'));
 
-        $query = Appointment::with(['patient', 'doctor.user', 'chair'])
-            ->whereDate('appointment_date', $selectedDate);
+        $selectedDoctor = $request->doctor_id;
+        $selectedDate   = $request->date ?? now()->toDateString();
+
+        $appointmentsQuery = Appointment::with([
+            'patient',
+            'doctor.user',
+            'chair'
+        ])
+            ->whereDate('appointment_date', $selectedDate)
+            ->orderBy('queue_no')        // FIFO first
+            ->orderBy('created_at');     // safety fallback
 
         if ($selectedDoctor) {
-            $query->where('doctor_id', $selectedDoctor);
+            $appointmentsQuery->where('doctor_id', $selectedDoctor);
         }
 
-        $appointments = $query->orderBy('appointment_time')->get();
+        $appointments = $appointmentsQuery->get();
 
-        // Generate 30-min time slots from 9:00 to 17:30
+        // Optional reference slots (NOT strict scheduling)
         $timeSlots = [];
         for ($hour = 9; $hour <= 17; $hour++) {
-            for ($minute = 0; $minute < 60; $minute += 30) {
-                if ($hour == 17 && $minute == 30) break;
+            foreach ([0, 30] as $minute) {
+                if ($hour === 17 && $minute === 30) break;
                 $time = sprintf('%02d:%02d:00', $hour, $minute);
-                $timeSlots[$time] = $appointments->where('appointment_time', $time)->values();
+                $timeSlots[$time] = $appointments
+                    ->where('appointment_time', $time)
+                    ->values();
             }
         }
-        return view('backend.appointments.calendar', compact('timeSlots', 'doctors', 'selectedDoctor', 'selectedDate'));
+
+        return view('backend.appointments.calendar', compact(
+            'appointments',
+            'timeSlots',
+            'doctors',
+            'selectedDoctor',
+            'selectedDate'
+        ));
     }
+
 
     // =========================
     // AVAILABLE TIME SLOTS
@@ -382,23 +400,26 @@ class AppointmentController extends Controller
         $now = now();
 
         // Auto-assign appointment for current date/time
-        $appointment = Appointment::create([
+        Appointment::create([
             'appointment_code'  => Appointment::generateAppointmentCode(),
             'patient_id'        => $request->patient_id,
             'doctor_id'         => $request->doctor_id,
             'chair_id'          => $request->chair_id,
             'appointment_type'  => $request->appointment_type,
-            'appointment_date'  => $now->toDateString(),
-            'appointment_time'  => $now->format('H:i:s'),
+            'schedule_type'     => 'walkin',
+            'appointment_date'  => today(),
+            'appointment_time'  => now()->format('H:i:s'),
             'expected_duration' => $request->expected_duration,
             'priority'          => $request->priority,
+            'status'            => 'checked_in',
+            'checked_in_time'   => now(),
+            'queue_no'          => Appointment::nextQueueNumber(),
             'chief_complaint'   => $request->chief_complaint,
             'notes'             => $request->notes,
-            'status'            => 'checked_in', // walk-ins start as checked-in
-            'checked_in_time'   => $now,
             'created_by'        => auth()->id(),
             'updated_by'        => auth()->id(),
         ]);
+
 
         return redirect()->route('backend.appointments.index')
             ->with('success', 'Walk-in appointment registered and checked-in successfully.');
@@ -409,15 +430,74 @@ class AppointmentController extends Controller
     // =========================
     public function queue(Request $request)
     {
-        $date = $request->get('date', today()->toDateString());
+        $date = $request->date ?? now()->format('Y-m-d'); // use requested date or today
 
-        $appointments = Appointment::with(['patient', 'doctor.user', 'chair'])
+        // Fetch appointments for the given date
+        $appointments = Appointment::with(['patient', 'doctor.user'])
             ->whereDate('appointment_date', $date)
-            ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
-            ->orderBy('appointment_time')
+            ->whereIn('status', ['scheduled', 'checked_in', 'in_progress']) // include scheduled
+            ->orderByRaw("
+            CASE priority
+                WHEN 'high' THEN 1
+                WHEN 'urgent' THEN 2
+                ELSE 3
+            END
+        ")
+            ->orderBy('queue_no')
             ->get()
-            ->groupBy('status'); // grouped by status for easy display
+            ->groupBy('status'); // group by status for Blade columns
 
         return view('backend.appointments.queue', compact('appointments', 'date'));
+    }
+
+
+
+    // =========================
+    // RESCHEDULE APPOINTMENT
+    // =========================
+    public function reschedule(Request $request, Appointment $appointment)
+    {
+        $request->validate([
+            'appointment_date' => 'required|date',
+            'appointment_time' => 'required|date_format:H:i',
+        ]);
+
+        // Optionally: Check if doctor has daily limit
+        $dailyLimitReached = Appointment::where('doctor_id', $appointment->doctor_id)
+            ->where('appointment_date', $request->appointment_date)
+            ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
+            ->count() >= 100;
+
+        if ($dailyLimitReached) {
+            return back()->with('error', 'Doctor has reached daily patient limit on this day.');
+        }
+
+        // Update appointment and reset status to scheduled
+        $appointment->update([
+            'appointment_date' => $request->appointment_date,
+            'appointment_time' => $request->appointment_time,
+            'status' => 'scheduled', // reset status
+            'updated_by' => auth()->id(),
+        ]);
+
+        return redirect()->route('backend.appointments.index')
+            ->with('success', 'Appointment rescheduled successfully and status reset to Scheduled.');
+    }
+
+
+    // =========================
+    // MARK APPOINTMENT AS NO SHOW
+    // =========================
+    public function noShow(Appointment $appointment)
+    {
+        // Only allow marking scheduled or checked-in appointments as no-show
+        if (!in_array($appointment->status, ['scheduled', 'checked_in'])) {
+            return redirect()->back()->with('error', 'Cannot mark this appointment as No Show.');
+        }
+
+        $appointment->status = 'no_show';
+        $appointment->save();
+
+        return redirect()->back()->with('success', 'Appointment marked as No Show.');
     }
 }

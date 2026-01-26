@@ -31,7 +31,7 @@
                     <select name="patient_id" required
                         class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 @error('patient_id') border-red-500 @enderror">
                         <option value="">Select Patient</option>
-                        @foreach($patients as $patient)
+                        @foreach ($patients as $patient)
                             <option value="{{ $patient->id }}" {{ old('patient_id') == $patient->id ? 'selected' : '' }}>
                                 {{ $patient->patient_code }} - {{ $patient->full_name }}
                             </option>
@@ -45,7 +45,7 @@
                     <select name="doctor_id" id="doctor-select" required
                         class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 @error('doctor_id') border-red-500 @enderror">
                         <option value="">Select Doctor</option>
-                        @foreach($doctors as $doctor)
+                        @foreach ($doctors as $doctor)
                             <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>
                                 {{ $doctor->user->full_name }} ({{ $doctor->specialization ?? 'General' }})
                             </option>
@@ -61,15 +61,18 @@
                         class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 @error('appointment_date') border-red-500 @enderror">
                 </div>
 
-                <!-- Appointment Time -->
+                <!-- Expected Arrival Time -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Appointment Time *</label>
-                    <select name="appointment_time" id="time-slot-select" required
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Expected Arrival Time *
+                    </label>
+                    <p class="text-xs text-gray-500 mb-1">
+                        Time is approximate. Patients are served in arrival order.
+                    </p>
+                    <input type="time" name="appointment_time" value="{{ old('appointment_time') }}" required
                         class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 @error('appointment_time') border-red-500 @enderror">
-                        <option value="">Select Time Slot</option>
-                    </select>
-                    <p id="loading-slots" class="text-xs text-gray-500 mt-1 hidden">Loading available slots...</p>
                 </div>
+
 
                 <!-- Dental Chair -->
                 <div>
@@ -77,7 +80,7 @@
                     <select name="chair_id"
                         class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 @error('chair_id') border-red-500 @enderror">
                         <option value="">Select Chair (Optional)</option>
-                        @foreach($chairs as $chair)
+                        @foreach ($chairs as $chair)
                             <option value="{{ $chair->id }}" {{ old('chair_id') == $chair->id ? 'selected' : '' }}>
                                 {{ $chair->chair_code }} - {{ $chair->name }}
                             </option>
@@ -90,7 +93,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Appointment Type *</label>
                     <select name="appointment_type" required
                         class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 @error('appointment_type') border-red-500 @enderror">
-                        @foreach(App\Models\Appointment::appointmentTypes() as $key => $value)
+                        @foreach (App\Models\Appointment::appointmentTypes() as $key => $value)
                             <option value="{{ $key }}" {{ old('appointment_type') == $key ? 'selected' : '' }}>
                                 {{ $value }}
                             </option>
@@ -111,7 +114,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Priority *</label>
                     <select name="priority" required
                         class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 @error('priority') border-red-500 @enderror">
-                        @foreach(App\Models\Appointment::priorities() as $key => $value)
+                        @foreach (App\Models\Appointment::priorities() as $key => $value)
                             <option value="{{ $key }}" {{ old('priority') == $key ? 'selected' : '' }}>
                                 {{ $value }}
                             </option>
@@ -131,62 +134,13 @@
             <!-- Notes -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea name="notes" rows="2"
-                    class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">{{ old('notes') }}</textarea>
+                <textarea name="notes" rows="2" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">{{ old('notes') }}</textarea>
             </div>
 
             <!-- Submit -->
-            <x-back-submit-buttons back-url="{{ route('backend.appointments.index') }}" submit-text="Schedule Appointment" />
+            <x-back-submit-buttons back-url="{{ route('backend.appointments.index') }}"
+                submit-text="Schedule Appointment" />
 
         </form>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-
-            function loadAvailableSlots() {
-                const doctorId = document.getElementById('doctor-select').value;
-                const date = document.getElementById('appointment-date').value;
-                const timeSelect = document.getElementById('time-slot-select');
-                const loading = document.getElementById('loading-slots');
-
-                if (!doctorId || !date) {
-                    timeSelect.innerHTML = '<option value="">Select doctor and date first</option>';
-                    return;
-                }
-
-                loading.classList.remove('hidden');
-                timeSelect.disabled = true;
-
-                fetch(`{{ route('backend.appointments.available-slots') }}?doctor_id=${doctorId}&date=${date}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        timeSelect.innerHTML = '<option value="">Select Time Slot</option>';
-
-                        if (data.slots.length) {
-                            data.slots.forEach(slot => {
-                                const time = moment(slot, 'HH:mm:ss').format('hh:mm A');
-                                timeSelect.innerHTML += `<option value="${slot}">${time}</option>`;
-                            });
-                        } else {
-                            timeSelect.innerHTML += '<option value="">No available slots</option>';
-                        }
-                    })
-                    .catch(() => {
-                        timeSelect.innerHTML = '<option value="">Error loading slots</option>';
-                    })
-                    .finally(() => {
-                        loading.classList.add('hidden');
-                        timeSelect.disabled = false;
-                    });
-            }
-
-            document.getElementById('doctor-select').addEventListener('change', loadAvailableSlots);
-            document.getElementById('appointment-date').addEventListener('change', loadAvailableSlots);
-
-            if (document.getElementById('doctor-select').value && document.getElementById('appointment-date').value) {
-                loadAvailableSlots();
-            }
-        });
-    </script>
 @endsection

@@ -71,21 +71,6 @@
                     'icon' => 'list',
                 ],
                 [
-                    'label' => 'Reschedule Appointment',
-                    'route' => '', // TODO: Add route
-                    'icon' => 'Schedule',
-                ],
-                [
-                    'label' => 'Cancel Appointment',
-                    'route' => '', // TODO: Add route
-                    'icon' => 'B_Delete',
-                ],
-                [
-                    'label' => 'Walk-in Appointment',
-                    'route' => 'backend.appointments.walk-in', // Proper walk-in route
-                    'icon' => 'User-Plus',
-                ],
-                [
                     'label' => 'Appointment Reminders',
                     'route' => '', // TODO: Add route
                     'icon' => 'bell',
@@ -345,8 +330,8 @@
                             @include('partials.sidebar-icon', ['name' => $item['icon'] ?? 'default'])
                             <span>{{ $item['title'] }}</span>
                         </div>
-                        <svg :class="{ 'rotate-180': open }" class="w-4 h-4 transition-transform duration-200" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
+                        <svg :class="{ 'rotate-180': open }" class="w-4 h-4 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>

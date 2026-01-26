@@ -10,7 +10,7 @@
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('backend.appointments.today') }}"
                     class="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-md text-sm font-medium transition">
-                    @include('partials.sidebar-icon', ['name' => 'calendar', 'class' => 'w-4 h-4'])
+                    @include('partials.sidebar-icon', ['name' => 'Today', 'class' => 'w-4 h-4'])
                     Today
                 </a>
 
@@ -33,7 +33,7 @@
             <div class="md:col-span-2">
                 <select name="status" class="w-full border rounded px-3 py-2">
                     <option value="">All Status</option>
-                    @foreach(App\Models\Appointment::statuses() as $key => $label)
+                    @foreach (App\Models\Appointment::statuses() as $key => $label)
                         <option value="{{ $key }}" {{ request('status') === $key ? 'selected' : '' }}>
                             {{ $label }}
                         </option>
@@ -44,7 +44,7 @@
             <div class="md:col-span-3">
                 <select name="doctor_id" class="w-full border rounded px-3 py-2">
                     <option value="">All Doctors</option>
-                    @foreach($doctors as $doctor)
+                    @foreach ($doctors as $doctor)
                         <option value="{{ $doctor->id }}" {{ request('doctor_id') == $doctor->id ? 'selected' : '' }}>
                             {{ $doctor->user->full_name }}
                         </option>
@@ -89,7 +89,7 @@
                             </td>
 
                             <td class="px-3 py-2">
-                                <a href="{{ route('patients.show', $appointment->patient_id) }}"
+                                <a href="{{ route('backend.patients.show', $appointment->patient_id) }}"
                                     class="text-blue-600 hover:underline">
                                     {{ $appointment->patient->full_name }}
                                 </a>
@@ -122,43 +122,147 @@
                                 <div class="flex justify-center gap-1">
                                     <a href="{{ route('backend.appointments.show', $appointment) }}"
                                         class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs">
-                                        @include('partials.sidebar-icon', ['name' => 'B_View', 'class' => 'w-4 h-4'])
+                                        @include('partials.sidebar-icon', [
+                                            'name' => 'B_View',
+                                            'class' => 'w-4 h-4',
+                                        ])
                                     </a>
 
-                                    <a href="{{ route('backend.appointments.edit', $appointment) }}"
-                                        class="px-2 py-1 bg-yellow-400 hover:bg-yellow-500 text-white rounded text-xs">
-                                        @include('partials.sidebar-icon', ['name' => 'B_Edit', 'class' => 'w-4 h-4'])
-                                    </a>
+                                    @if ($appointment->status !== 'completed')
+                                        <!-- Reschedule Button -->
+                                        <button type="button"
+                                            class="px-2 py-1 bg-yellow-400 hover:bg-yellow-500 text-white rounded text-xs"
+                                            data-modal-target="reschedule-modal-{{ $appointment->id }}"
+                                            data-modal-toggle="reschedule-modal-{{ $appointment->id }}"
+                                            title="Reschedule Appointment">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                                stroke="currentColor" class="w-4 h-4">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M8 7H16M8 11H16M8 15H12M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                        </button>
+                                    @endif
 
-                                    @if($appointment->status === 'scheduled')
-                                        <form method="POST" action="{{ route('backend.appointments.check-in', $appointment) }}">
+
+                                    <!-- Check-In -->
+                                    @if ($appointment->status === 'scheduled')
+                                        <form method="POST"
+                                            action="{{ route('backend.appointments.check-in', $appointment) }}">
                                             @csrf
-                                            <button class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs">
-                                                Check-In
+                                            <button type="submit"
+                                                class="w-8 h-8 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs"
+                                                title="Check-In">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                                    stroke="currentColor" class="w-4 h-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M5 13l4 4L19 7" />
+                                                </svg>
                                             </button>
                                         </form>
                                     @endif
 
-                                    @if($appointment->status === 'checked_in')
-                                        <form method="POST" action="{{ route('backend.appointments.start', $appointment) }}">
+                                    <!-- Start -->
+                                    @if ($appointment->status === 'checked_in')
+                                        <form method="POST"
+                                            action="{{ route('backend.appointments.start', $appointment) }}">
                                             @csrf
-                                            <button class="px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded text-xs">
-                                                Start
+                                            <button type="submit"
+                                                class="w-8 h-8 flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white rounded text-xs"
+                                                title="Start Appointment">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                                    stroke="currentColor" class="w-4 h-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M14.752 11.168l-6.518-3.759A1 1 0 007 8.215v7.57a1 1 0 001.234.97l6.518-1.887a1 1 0 00.752-.97v-3.72a1 1 0 00-.752-.97z" />
+                                                </svg>
                                             </button>
                                         </form>
                                     @endif
 
-                                    @if(in_array($appointment->status, ['checked_in', 'in_progress']))
-                                        <form method="POST" action="{{ route('backend.appointments.complete', $appointment) }}">
+                                    <!-- Complete -->
+                                    @if (in_array($appointment->status, ['checked_in', 'in_progress']))
+                                        <form method="POST"
+                                            action="{{ route('backend.appointments.complete', $appointment) }}">
                                             @csrf
-                                            <button class="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs">
-                                                Complete
+                                            <button type="submit"
+                                                class="w-8 h-8 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+                                                title="Complete Appointment">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    {{-- No Show --}}
+                                    @if (in_array($appointment->status, ['scheduled', 'checked_in']))
+                                        <form method="POST"
+                                            action="{{ route('backend.appointments.no-show', $appointment) }}">
+                                            @csrf
+                                            <button type="submit"
+                                                class="w-8 h-8 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white rounded text-xs"
+                                                title="Mark as No Show">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
                                             </button>
                                         </form>
                                     @endif
                                 </div>
+
+
                             </td>
                         </tr>
+
+
+                        <!-- Modal -->
+                        <div id="reschedule-modal-{{ $appointment->id }}"
+                            class="hidden fixed inset-0 z-50 overflow-y-auto">
+                            <div class="flex items-center justify-center min-h-screen px-4">
+                                <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+                                    <h3 class="text-lg font-semibold mb-4">Reschedule Appointment</h3>
+
+                                    <form action="{{ route('backend.appointments.reschedule', $appointment) }}"
+                                        method="POST">
+                                        @csrf
+                                        @method('PUT')
+                                        <div class="mb-3">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">New Date</label>
+                                            <input type="date" name="appointment_date"
+                                                value="{{ $appointment->appointment_date->format('Y-m-d') }}" required
+                                                class="w-full border rounded px-3 py-2">
+                                            @error('appointment_date')
+                                                <p class="text-red-500 text-xs">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">New Time</label>
+                                            <input type="time" name="appointment_time"
+                                                value="{{ date('H:i', strtotime($appointment->appointment_time)) }}"
+                                                required class="w-full border rounded px-3 py-2">
+                                            @error('appointment_time')
+                                                <p class="text-red-500 text-xs">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+
+                                        <div class="flex justify-end gap-2 mt-4">
+                                            <button type="button" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                                                data-modal-hide="reschedule-modal-{{ $appointment->id }}">
+                                                Cancel
+                                            </button>
+                                            <button type="submit"
+                                                class="px-4 py-2 bg-yellow-400 text-white rounded hover:bg-yellow-500">
+                                                Save
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     @empty
                         <tr>
                             <td colspan="8" class="px-4 py-6 text-center text-gray-500">
@@ -173,4 +277,27 @@
         <!-- Pagination -->
         <x-pagination :paginator="$appointments" />
     </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('button[data-modal-toggle]').forEach(btn => {
+                const modalId = btn.getAttribute('data-modal-toggle');
+                const modal = document.getElementById(modalId);
+
+                btn.addEventListener('click', () => {
+                    modal.classList.remove('hidden');
+                });
+            });
+
+            document.querySelectorAll('button[data-modal-hide]').forEach(btn => {
+                const modalId = btn.getAttribute('data-modal-hide');
+                const modal = document.getElementById(modalId);
+
+                btn.addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                });
+            });
+        });
+    </script>
 @endsection

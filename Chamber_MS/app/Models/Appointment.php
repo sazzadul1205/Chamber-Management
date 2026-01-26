@@ -108,6 +108,22 @@ class Appointment extends Model
         });
     }
 
+    public function scopeQueueToday($query)
+    {
+        return $query
+            ->whereDate('appointment_date', today())
+            ->whereIn('status', ['checked_in', 'in_progress'])
+            ->orderByRaw("
+            CASE priority
+                WHEN 'high' THEN 1
+                WHEN 'urgent' THEN 2
+                ELSE 3
+            END
+        ")
+            ->orderBy('queue_no');
+    }
+
+
     public function scopeToday($query)
     {
         return $query->whereDate('appointment_date', today());
@@ -269,12 +285,18 @@ class Appointment extends Model
     // =========================
     public function checkIn()
     {
+        if ($this->checked_in_time) {
+            return;
+        }
+
         $this->update([
             'status' => 'checked_in',
             'checked_in_time' => now(),
+            'queue_no' => self::nextQueueNumber(),
             'updated_by' => auth()->id(),
         ]);
     }
+
 
     public function start()
     {
@@ -301,5 +323,12 @@ class Appointment extends Model
             'reason_cancellation' => $reason,
             'updated_by' => auth()->id(),
         ]);
+    }
+
+    // 
+    public static function nextQueueNumber()
+    {
+        return (int) self::whereDate('appointment_date', today())
+            ->max('queue_no') + 1;
     }
 }

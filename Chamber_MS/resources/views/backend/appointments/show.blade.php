@@ -8,17 +8,63 @@
             <h2 class="text-2xl font-semibold">Appointment Details</h2>
 
             <div class="flex gap-2">
-                <a href="{{ route('backend.appointments.edit', $appointment) }}"
-                    class="flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-white rounded-md text-sm font-medium transition">
-                    @include('partials.sidebar-icon', ['name' => 'B_Edit', 'class' => 'w-4 h-4'])
-                    Edit
-                </a>
+                @if (!in_array($appointment->status, ['completed', 'no_show']))
+                    <button type="button"
+                        class="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-white rounded-md text-sm font-medium"
+                        data-modal-toggle="reschedule-modal">
+                        Reschedule
+                    </button>
 
+                    <!-- Modal -->
+                    <div id="reschedule-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+                        <div class="bg-white rounded shadow-lg w-full max-w-md p-6">
+                            <h3 class="text-lg font-semibold mb-4">Reschedule Appointment</h3>
+
+                            <form action="{{ route('backend.appointments.reschedule', $appointment) }}" method="POST">
+                                @csrf
+                                @method('PUT')
+
+                                <div class="mb-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">New Date</label>
+                                    <input type="date" name="appointment_date"
+                                        value="{{ $appointment->appointment_date->format('Y-m-d') }}" required
+                                        class="w-full border rounded px-3 py-2">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">New Time</label>
+                                    <input type="time" name="appointment_time"
+                                        value="{{ $appointment->appointment_time }}" required
+                                        class="w-full border rounded px-3 py-2">
+                                </div>
+
+                                <div class="flex justify-end gap-2 mt-4">
+                                    <button type="button" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                                        data-modal-hide="reschedule-modal">Cancel</button>
+                                    <button type="submit"
+                                        class="px-4 py-2 bg-yellow-400 text-white rounded hover:bg-yellow-500">
+                                        Save
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                @endif
                 <a href="{{ route('backend.appointments.calendar') }}"
                     class="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition">
-                    @include('partials.sidebar-icon', ['name' => 'B_Calendar', 'class' => 'w-4 h-4'])
+                    @include('partials.sidebar-icon', ['name' => 'Calendar', 'class' => 'w-4 h-4'])
                     Calendar
                 </a>
+
+                <a href="{{ route('backend.appointments.index') }}"
+                    class="flex items-center gap-2 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md text-sm font-medium transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back
+                </a>
+
             </div>
         </div>
 
@@ -44,7 +90,7 @@
                         <tr>
                             <th class="px-4 py-3 text-left text-sm font-medium text-gray-600 w-40">Patient</th>
                             <td class="px-4 py-3">
-                                <a href="{{ route('patients.show', $appointment->patient_id) }}"
+                                <a href="{{ route('backend.patients.show', $appointment->patient_id) }}"
                                     class="text-blue-600 hover:underline">
                                     {{ $appointment->patient->full_name }}
                                 </a>
@@ -103,7 +149,7 @@
         </div>
 
         <!-- Chief Complaint -->
-        @if($appointment->chief_complaint)
+        @if ($appointment->chief_complaint)
             <div class="bg-white rounded shadow">
                 <div class="px-4 py-3 border-b">
                     <h3 class="text-lg font-semibold">Chief Complaint</h3>
@@ -115,7 +161,7 @@
         @endif
 
         <!-- Notes -->
-        @if($appointment->notes)
+        @if ($appointment->notes)
             <div class="bg-white rounded shadow">
                 <div class="px-4 py-3 border-b">
                     <h3 class="text-lg font-semibold">Notes</h3>
@@ -127,7 +173,7 @@
         @endif
 
         <!-- Cancellation Reason -->
-        @if($appointment->reason_cancellation)
+        @if ($appointment->reason_cancellation)
             <div class="bg-red-500 text-white rounded shadow">
                 <div class="px-4 py-3 border-b">
                     <h3 class="text-lg font-semibold">Cancellation Reason</h3>
@@ -155,18 +201,19 @@
                     </div>
 
                     <!-- Checked In -->
-                    @if($appointment->checked_in_time)
+                    @if ($appointment->checked_in_time)
                         <div class="relative mb-6">
                             <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-blue-500"></div>
                             <div class="ml-6">
                                 <h6 class="font-semibold">Checked In</h6>
-                                <p class="text-gray-500 text-sm">{{ $appointment->checked_in_time->format('d/m/Y H:i') }}</p>
+                                <p class="text-gray-500 text-sm">{{ $appointment->checked_in_time->format('d/m/Y H:i') }}
+                                </p>
                             </div>
                         </div>
                     @endif
 
                     <!-- Started -->
-                    @if($appointment->started_time)
+                    @if ($appointment->started_time)
                         <div class="relative mb-6">
                             <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-yellow-400"></div>
                             <div class="ml-6">
@@ -177,12 +224,13 @@
                     @endif
 
                     <!-- Completed -->
-                    @if($appointment->completed_time)
+                    @if ($appointment->completed_time)
                         <div class="relative mb-6">
                             <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-green-500"></div>
                             <div class="ml-6">
                                 <h6 class="font-semibold">Completed</h6>
-                                <p class="text-gray-500 text-sm">{{ $appointment->completed_time->format('d/m/Y H:i') }}</p>
+                                <p class="text-gray-500 text-sm">{{ $appointment->completed_time->format('d/m/Y H:i') }}
+                                </p>
                             </div>
                         </div>
                     @endif

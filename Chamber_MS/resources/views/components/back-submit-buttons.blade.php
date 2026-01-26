@@ -2,7 +2,7 @@
     {{-- Submit Button --}}
     <button type="submit"
         class="inline-flex items-center justify-center gap-2
-               w-40 h-11
+               px-4 h-11
                rounded-lg font-semibold text-sm
                bg-indigo-600 text-white
                hover:bg-indigo-700
@@ -21,7 +21,7 @@
     {{-- Back Button --}}
     <a href="{{ $backUrl }}"
         class="inline-flex items-center justify-center gap-2
-              w-40 h-11
+              px-10 h-11
               rounded-lg font-medium text-sm
               bg-gray-300 text-gray-700
               hover:bg-gray-400 transition">
