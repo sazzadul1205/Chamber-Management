@@ -177,9 +177,15 @@ Route::middleware(['auth'])->group(function () {
     // -----------------------------
     // Treatments & Procedures & Sessions
     // -----------------------------
+
+    // Resource routes first
+    Route::resource('treatments', TreatmentController::class)->names('backend.treatments');
+
+    // Specific custom routes
     Route::post('treatments/quick-create', [TreatmentController::class, 'quickCreate'])->name('backend.treatments.quick-create');
     Route::get('treatments/patient/{patientId}', [TreatmentController::class, 'patientTreatments'])->name('backend.treatments.patient-treatments');
-    Route::resource('treatments', TreatmentController::class)->names('backend.treatments');
+
+    // Actions on a single treatment
     Route::prefix('treatments/{treatment}')->name('backend.treatments.')->group(function () {
         Route::post('start', [TreatmentController::class, 'start'])->name('start');
         Route::post('complete', [TreatmentController::class, 'complete'])->name('complete');
@@ -188,7 +194,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('resume', [TreatmentController::class, 'resume'])->name('resume');
         Route::post('add-session', [TreatmentController::class, 'addSession'])->name('add-session');
     });
-
 
     Route::resource('treatment-procedures', TreatmentProcedureController::class)->names('backend.treatment-procedures');
     Route::get('treatment-procedures/catalog/search', [TreatmentProcedureController::class, 'getCatalogProcedures'])->name('backend.treatment-procedures.catalog.search');
@@ -261,7 +266,7 @@ Route::middleware(['auth'])->group(function () {
     // -----------------------------
     // Invoices
     // -----------------------------
-    Route::resource('invoices', InvoiceController::class)->names('invoices');
+    Route::resource('invoices', InvoiceController::class)->names('backend.invoices');
     Route::get('invoices/{id}/print', [InvoiceController::class, 'print'])->name('invoices.print');
     Route::post('invoices/{id}/send', [InvoiceController::class, 'send'])->name('invoices.send');
     Route::post('invoices/{id}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');

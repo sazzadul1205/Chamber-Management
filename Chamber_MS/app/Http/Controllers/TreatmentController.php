@@ -60,7 +60,7 @@ class TreatmentController extends Controller
 
         // Get appointments that are not completed/cancelled and not linked to treatment
         $query = Appointment::with(['patient', 'doctor.user'])
-            ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
+            ->whereIn('status', ['checked_in', 'in_progress'])
             ->whereDoesntHave('treatment');
 
         // Filter by patient if specified
@@ -111,6 +111,7 @@ class TreatmentController extends Controller
         ]);
 
         // Check if appointment is provided
+        $appointment = null;
         if ($request->appointment_id) {
             $appointment = Appointment::find($request->appointment_id);
 
@@ -157,6 +158,9 @@ class TreatmentController extends Controller
         if ($appointment && $appointment->status != 'in_progress') {
             $appointment->update(['status' => 'in_progress']);
         }
+
+        // REMOVE OR COMMENT THIS LINE:
+        // dd($treatment); // <-- This is causing the issue
 
         return redirect()->route('backend.treatments.show', $treatment)
             ->with('success', 'Treatment created successfully.');
