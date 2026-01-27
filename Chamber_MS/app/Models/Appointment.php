@@ -331,4 +331,28 @@ class Appointment extends Model
         return (int) self::whereDate('appointment_date', today())
             ->max('queue_no') + 1;
     }
+
+
+    public function getDetails($id)
+    {
+        $appointment = Appointment::with(['patient', 'doctor.user'])->find($id);
+
+        if (!$appointment) {
+            return response()->json(['error' => 'Appointment not found'], 404);
+        }
+
+        return response()->json([
+            'id' => $appointment->id,
+            'patient' => [
+                'id' => $appointment->patient->id,
+                'name' => $appointment->patient->full_name,
+            ],
+            'doctor' => [
+                'id' => $appointment->doctor->id,
+                'name' => $appointment->doctor->user->full_name,
+            ],
+            'treatment_date' => $appointment->appointment_date->format('Y-m-d'),
+            'chair_id' => $appointment->chair_id,
+        ]);
+    }
 }

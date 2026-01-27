@@ -164,6 +164,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('backend.appointments.cancel');
     Route::put('appointments/{appointment}/reschedule', [AppointmentController::class, 'reschedule'])->name('backend.appointments.reschedule');
     Route::post('appointments/{appointment}/no-show', [AppointmentController::class, 'noShow'])->name('backend.appointments.no-show');
+    Route::get('appointments/{appointment}/details', [AppointmentController::class, 'getDetails'])->name('backend.appointments.details');
 
     // Queue Display (TV)
     Route::get('appointments/queue', [AppointmentController::class, 'queue'])->name('backend.appointments.queue');
@@ -176,15 +177,18 @@ Route::middleware(['auth'])->group(function () {
     // -----------------------------
     // Treatments & Procedures & Sessions
     // -----------------------------
-    Route::resource('treatments', TreatmentController::class)->names('backend.treatments');
     Route::post('treatments/quick-create', [TreatmentController::class, 'quickCreate'])->name('backend.treatments.quick-create');
     Route::get('treatments/patient/{patientId}', [TreatmentController::class, 'patientTreatments'])->name('backend.treatments.patient-treatments');
-    Route::post('treatments/{treatment}/start', [TreatmentController::class, 'start'])->name('backend.treatments.start');
-    Route::post('treatments/{treatment}/complete', [TreatmentController::class, 'complete'])->name('backend.treatments.complete');
-    Route::post('treatments/{treatment}/cancel', [TreatmentController::class, 'cancel'])->name('backend.treatments.cancel');
-    Route::post('treatments/{treatment}/hold', [TreatmentController::class, 'hold'])->name('backend.treatments.hold');
-    Route::post('treatments/{treatment}/resume', [TreatmentController::class, 'resume'])->name('backend.treatments.resume');
-    Route::post('treatments/{treatment}/add-session', [TreatmentController::class, 'addSession'])->name('backend.treatments.add-session');
+    Route::resource('treatments', TreatmentController::class)->names('backend.treatments');
+    Route::prefix('treatments/{treatment}')->name('backend.treatments.')->group(function () {
+        Route::post('start', [TreatmentController::class, 'start'])->name('start');
+        Route::post('complete', [TreatmentController::class, 'complete'])->name('complete');
+        Route::post('cancel', [TreatmentController::class, 'cancel'])->name('cancel');
+        Route::post('hold', [TreatmentController::class, 'hold'])->name('hold');
+        Route::post('resume', [TreatmentController::class, 'resume'])->name('resume');
+        Route::post('add-session', [TreatmentController::class, 'addSession'])->name('add-session');
+    });
+
 
     Route::resource('treatment-procedures', TreatmentProcedureController::class)->names('backend.treatment-procedures');
     Route::get('treatment-procedures/catalog/search', [TreatmentProcedureController::class, 'getCatalogProcedures'])->name('backend.treatment-procedures.catalog.search');
