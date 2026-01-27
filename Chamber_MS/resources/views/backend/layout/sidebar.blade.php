@@ -3,20 +3,15 @@
         // ===============================
         // AUTH & DASHBOARD
         // ===============================
+
         [
-            'title' => 'Dashboard & Auth',
+            'label' => 'Main Dashboard',
             'icon' => 'dashboard',
-            'items' => [
-                [
-                    'label' => 'Main Dashboard',
-                    'icon' => 'dashboard',
-                    'route' => 'backend.dashboard',
-                ],
-                ['label' => 'Doctor Dashboard', 'icon' => 'dashboard'],
-                ['label' => 'Reception Dashboard', 'icon' => 'dashboard'],
-                ['label' => 'Admin Dashboard', 'icon' => 'dashboard'],
-            ],
+            'route' => 'backend.dashboard',
         ],
+        ['label' => 'Doctor Dashboard', 'icon' => 'dashboard'],
+        ['label' => 'Reception Dashboard', 'icon' => 'dashboard'],
+        ['label' => 'Admin Dashboard', 'icon' => 'dashboard'],
 
         // ===============================
         // PATIENT MANAGEMENT
@@ -115,23 +110,13 @@
             'items' => [
                 [
                     'label' => 'Treatment Plan',
-                    'route' => 'backend.treatments.index', // link to treatments list
+                    'icon' => 'Treatment_Plan',
+                    'route' => 'backend.treatments.index',
                 ],
                 [
                     'label' => 'Treatment Sessions',
-                    'route' => 'backend.treatment-sessions.index', // sessions list
-                ],
-                [
-                    'label' => 'Multi-Visit Tracking',
-                    'route' => 'backend.treatments.index', // maybe filtered by multi_visit type
-                ],
-                [
-                    'label' => 'Treatment Progress',
-                    'route' => 'backend.treatments.index', // can show progress column
-                ],
-                [
-                    'label' => 'Treatment Completion',
-                    'route' => 'backend.treatments.index', // completed treatments filter
+                    'icon' => 'Treatment_Session',
+                    'route' => 'backend.treatment-sessions.index',
                 ],
                 [
                     'label' => 'Procedure Catalog',
@@ -143,13 +128,8 @@
                     'icon' => 'Diagnostic-Code',
                     'route' => 'backend.diagnosis-codes.index',
                 ],
-                [
-                    'label' => 'Treatment History',
-                    'route' => 'backend.treatments.index', // can apply history filter
-                ],
             ],
         ],
-
 
         // ===============================
         // DENTAL CHARTING
@@ -349,8 +329,8 @@
                             @include('partials.sidebar-icon', ['name' => $item['icon'] ?? 'default'])
                             <span>{{ $item['title'] }}</span>
                         </div>
-                        <svg :class="{ 'rotate-180': open }" class="w-4 h-4 transition-transform duration-200" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
+                        <svg :class="{ 'rotate-180': open }" class="w-4 h-4 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>

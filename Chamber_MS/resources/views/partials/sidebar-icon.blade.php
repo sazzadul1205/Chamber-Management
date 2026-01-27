@@ -3,7 +3,6 @@
 @endphp
 
 @switch($icon)
-
     {{-- ==============================
          DASHBOARD ICONS
     ============================== --}}
@@ -152,12 +151,20 @@
         @include('components.icons.Bed')
     @break
 
+    @case('Treatment_Plan')
+        @include('components.icons.Treatment_Plan')
+    @break
+
+    @case('Treatment_Session')
+        @include('components.icons.Treatment_Session')
+    @break
+
     {{-- ==============================
          DEFAULT ICON
     ============================== --}}
+
     @default
         <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
             <circle cx="10" cy="10" r="3" />
         </svg>
-
 @endswitch

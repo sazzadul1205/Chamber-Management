@@ -178,7 +178,7 @@
                         <div>
                             <h3 class="text-sm font-medium text-gray-500">Treatment ID</h3>
                             <p class="mt-1">
-                                <a href="{{ route('treatments.show', $treatmentProcedure->treatment_id) }}" 
+                                <a href="{{ route('backend.treatments.show', $treatmentProcedure->treatment_id) }}" 
                                    class="text-blue-600 hover:text-blue-800 font-medium">
                                     #{{ $treatmentProcedure->treatment_id }}
                                 </a>
@@ -212,7 +212,7 @@
                     <h2 class="text-lg font-medium text-gray-900">Actions</h2>
                 </div>
                 <div class="p-6 space-y-3">
-                    <a href="{{ route('treatments.show', $treatmentProcedure->treatment_id) }}" 
+                    <a href="{{ route('backend.treatments.show', $treatmentProcedure->treatment_id) }}" 
                        class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
