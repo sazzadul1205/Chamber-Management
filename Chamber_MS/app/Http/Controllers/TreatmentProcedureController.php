@@ -33,7 +33,7 @@ class TreatmentProcedureController extends Controller
         $procedures = $query->orderBy('created_at', 'desc')->paginate(20);
         $treatments = Treatment::active()->get();
 
-        return view('treatment-procedures.index', compact('procedures', 'treatments'));
+        return view('backend.treatment-procedures.index', compact('procedures', 'treatments'));
     }
 
     // =========================
@@ -47,7 +47,7 @@ class TreatmentProcedureController extends Controller
         $proceduresCatalog = ProcedureCatalog::active()->get();
 
         return view(
-            'treatment-procedures.create',
+            'backend.treatment-procedures.create',
             compact('treatment', 'treatments', 'commonProcedures', 'proceduresCatalog')
         );
     }
@@ -75,7 +75,7 @@ class TreatmentProcedureController extends Controller
         $procedure->treatment->updateActualCost();
 
         return redirect()
-            ->route('treatment-procedures.show', $procedure)
+            ->route('backend.treatment-procedures.show', $procedure)
             ->with('success', 'Procedure added successfully.');
     }
 
@@ -85,7 +85,7 @@ class TreatmentProcedureController extends Controller
     public function show(TreatmentProcedure $treatmentProcedure)
     {
         $treatmentProcedure->load(['treatment.patient', 'completer']);
-        return view('treatment-procedures.show', compact('treatmentProcedure'));
+        return view('backend.treatment-procedures.show', compact('treatmentProcedure'));
     }
 
     // =========================
@@ -98,7 +98,7 @@ class TreatmentProcedureController extends Controller
         $proceduresCatalog = ProcedureCatalog::active()->get();
 
         return view(
-            'treatment-procedures.edit',
+            'backend.treatment-procedures.edit',
             compact('treatmentProcedure', 'commonProcedures', 'proceduresCatalog')
         );
     }
@@ -129,7 +129,7 @@ class TreatmentProcedureController extends Controller
         }
 
         return redirect()
-            ->route('treatment-procedures.show', $treatmentProcedure)
+            ->route('backend.treatment-procedures.show', $treatmentProcedure)
             ->with('success', 'Procedure updated successfully.');
     }
 
@@ -223,7 +223,7 @@ class TreatmentProcedureController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('treatment-procedures.treatment-procedures', compact('treatment', 'procedures'));
+        return view('backend.treatment-procedures.treatment-procedures', compact('treatment', 'procedures'));
     }
 
     // =========================
@@ -250,6 +250,16 @@ class TreatmentProcedureController extends Controller
                 ];
             });
 
+        return response()->json($procedures);
+    }
+
+    // TreatmentProcedureController.php
+    public function catalogSearch()
+    {
+        $search = request('search', '');
+        if (strlen($search) < 2) return response()->json([]);
+
+        $procedures = ProcedureCatalog::searchCatalog($search);
         return response()->json($procedures);
     }
 }

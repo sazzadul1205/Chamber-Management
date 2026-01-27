@@ -192,19 +192,14 @@ class TreatmentProcedure extends Model
     // =========================
     // COMMON PROCEDURES
     // =========================
+    // In TreatmentProcedure model
     public static function getCommonProcedures()
     {
-        return [
-            ['code' => 'FILL-001', 'name' => 'Composite Filling', 'cost' => 1500, 'duration' => 45],
-            ['code' => 'FILL-002', 'name' => 'Amalgam Filling', 'cost' => 1000, 'duration' => 40],
-            ['code' => 'EXT-001', 'name' => 'Simple Extraction', 'cost' => 800, 'duration' => 30],
-            ['code' => 'EXT-002', 'name' => 'Surgical Extraction', 'cost' => 3000, 'duration' => 60],
-            ['code' => 'RCT-001', 'name' => 'Root Canal Treatment (Anterior)', 'cost' => 4000, 'duration' => 90],
-            ['code' => 'RCT-002', 'name' => 'Root Canal Treatment (Posterior)', 'cost' => 6000, 'duration' => 120],
-            ['code' => 'CROWN-001', 'name' => 'PFM Crown', 'cost' => 5000, 'duration' => 120],
-            ['code' => 'CROWN-002', 'name' => 'Zirconia Crown', 'cost' => 8000, 'duration' => 120],
-            ['code' => 'SCAL-001', 'name' => 'Scaling & Polishing', 'cost' => 1000, 'duration' => 45],
-            ['code' => 'WHIT-001', 'name' => 'Teeth Whitening', 'cost' => 8000, 'duration' => 60],
-        ];
+        return ProcedureCatalog::active()
+            ->select('procedure_code', 'procedure_name', 'standard_cost as cost', 'standard_duration as duration')
+            ->orderBy('procedure_code')
+            ->limit(10)
+            ->get() // This returns a Collection
+            ->toArray(); // Convert to array for consistency
     }
 }

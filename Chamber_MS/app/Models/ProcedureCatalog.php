@@ -134,4 +134,14 @@ class ProcedureCatalog extends Model
             'other'           => 'Other',
         ];
     }
+
+    // API-ready method for searching
+    public static function searchCatalog(string $term)
+    {
+        return self::active()
+            ->where('procedure_name', 'like', "%{$term}%")
+            ->orWhere('procedure_code', 'like', "%{$term}%")
+            ->limit(20)
+            ->get(['procedure_code as code', 'procedure_name as name', 'category', 'standard_cost as cost', 'standard_duration as duration']);
+    }
 }

@@ -74,6 +74,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('procedure-catalog/import', [ProcedureCatalogController::class, 'import'])->name('backend.procedure-catalog.import');
     Route::get('procedure-catalog/autocomplete', [ProcedureCatalogController::class, 'autocomplete'])->name('backend.procedure-catalog.autocomplete');
+    // routes/web.php
+    Route::get('backend/treatment-procedures/catalog-search', [TreatmentProcedureController::class, 'catalogSearch'])
+        ->name('backend.treatment-procedures.get-catalog-procedures');
+
 
     // -----------------------------
     // Diagnosis Codes

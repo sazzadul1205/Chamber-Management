@@ -19,7 +19,7 @@
         <!-- Filters -->
         <form method="GET" class="grid grid-cols-1 md:grid-cols-12 gap-3">
             <div class="md:col-span-3">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search..."
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search patient / code"
                     class="w-full border rounded px-3 py-2">
             </div>
 
@@ -63,7 +63,7 @@
             </div>
         </form>
 
-        <!-- Table -->
+        <!-- Treatments Table -->
         <div class="overflow-x-auto bg-white rounded shadow">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-800 text-white">
@@ -116,30 +116,50 @@
                             </td>
                             <td class="px-3 py-2">
                                 <span class="px-2 py-1 text-xs rounded-full 
-                                                                    @if($treatment->status == 'planned') bg-blue-100 text-blue-800
-                                                                    @elseif($treatment->status == 'in_progress') bg-yellow-100 text-yellow-800
-                                                                    @elseif($treatment->status == 'completed') bg-green-100 text-green-800
-                                                                    @elseif($treatment->status == 'cancelled') bg-red-100 text-red-800
-                                                                    @else bg-gray-100 text-gray-800 @endif">
+                                                        @if($treatment->status == 'planned') bg-blue-100 text-blue-800
+                                                        @elseif($treatment->status == 'in_progress') bg-yellow-100 text-yellow-800
+                                                        @elseif($treatment->status == 'completed') bg-green-100 text-green-800
+                                                        @elseif($treatment->status == 'cancelled') bg-red-100 text-red-800
+                                                        @else bg-gray-100 text-gray-800 @endif">
                                     {{ $treatment->status_text }}
                                 </span>
                             </td>
                             <td class="px-3 py-2 text-sm text-gray-600">
                                 {{ $treatment->treatment_date->format('d/m/Y') }}
                             </td>
-                            <td class="px-3 py-2 text-center flex justify-center gap-2">
-
-                                <!-- Show Button (go to individual page) -->
+                            <td class="px-3 py-2 text-center flex justify-center gap-1">
+                                <!-- Show -->
                                 <a href="{{ route('backend.treatments.show', $treatment) }}"
-                                    class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs">
-                                    Show
+                                    class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs"
+                                    title="View Treatment">
+                                    @include('partials.sidebar-icon', ['name' => 'B_View', 'class' => 'w-4 h-4'])
                                 </a>
+
+                                <!-- Edit -->
+                                <a href="{{ route('backend.treatments.edit', $treatment) }}"
+                                    class="px-2 py-1 bg-yellow-400 hover:bg-yellow-500 text-white rounded text-xs"
+                                    title="Edit Treatment">
+                                    @include('partials.sidebar-icon', ['name' => 'B_Edit', 'class' => 'w-4 h-4'])
+                                </a>
+
+                                <!-- Complete (if not completed) -->
+                                @if($treatment->status != 'completed')
+                                    <form method="POST" action="{{ route('backend.treatments.complete', $treatment) }}">
+                                        @csrf
+                                        <button type="submit"
+                                            class="w-8 h-8 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+                                            title="Mark as Completed">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                                stroke="currentColor" class="w-4 h-4">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </button>
+                                    </form>
+                                @endif
                             </td>
 
                         </tr>
-
-
-
                     @empty
                         <tr>
                             <td colspan="9" class="px-4 py-6 text-center text-gray-500">
@@ -155,38 +175,7 @@
         </div>
 
         <!-- Pagination -->
-        <div class="flex justify-between items-center">
-            <div class="text-sm text-gray-600">
-                Showing {{ $treatments->firstItem() ?? 0 }} to {{ $treatments->lastItem() ?? 0 }} of
-                {{ $treatments->total() }} treatments
-            </div>
-            <div>
-                {{ $treatments->links() }}
-            </div>
-        </div>
+        <x-pagination :paginator="$treatments" />
     </div>
-
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('button[data-modal-toggle]').forEach(btn => {
-                const modalId = btn.getAttribute('data-modal-toggle');
-                const modal = document.getElementById(modalId);
-
-                btn.addEventListener('click', () => {
-                    modal.classList.remove('hidden');
-                });
-            });
-
-            document.querySelectorAll('button[data-modal-hide]').forEach(btn => {
-                const modalId = btn.getAttribute('data-modal-hide');
-                const modal = document.getElementById(modalId);
-
-                btn.addEventListener('click', () => {
-                    modal.classList.add('hidden');
-                });
-            });
-        });
-    </script>
 
 @endsection
