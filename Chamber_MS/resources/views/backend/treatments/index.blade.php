@@ -135,13 +135,6 @@
                                     @include('partials.sidebar-icon', ['name' => 'B_View', 'class' => 'w-4 h-4'])
                                 </a>
 
-                                <!-- Edit -->
-                                <a href="{{ route('backend.treatments.edit', $treatment) }}"
-                                    class="px-2 py-1 bg-yellow-400 hover:bg-yellow-500 text-white rounded text-xs"
-                                    title="Edit Treatment">
-                                    @include('partials.sidebar-icon', ['name' => 'B_Edit', 'class' => 'w-4 h-4'])
-                                </a>
-
                                 <!-- Complete (if not completed) -->
                                 @if($treatment->status != 'completed')
                                     <form method="POST" action="{{ route('backend.treatments.complete', $treatment) }}">
