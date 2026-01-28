@@ -196,9 +196,18 @@ Route::middleware(['auth'])->group(function () {
         Route::post('cancel', [TreatmentController::class, 'cancel'])->name('cancel');
         Route::post('hold', [TreatmentController::class, 'hold'])->name('hold');
         Route::post('resume', [TreatmentController::class, 'resume'])->name('resume');
-        Route::post('add-session', [TreatmentController::class, 'addSession'])->name('add-session');
+
+        // Sessions for this treatment
+        Route::get('sessions', [TreatmentSessionController::class, 'treatmentSessions'])->name('sessions.index');
+
+        // Quick add session to treatment
+        Route::post('sessions/quick-create', [TreatmentSessionController::class, 'quickCreate'])->name('sessions.quick-create');
+
+        // Create session for this specific treatment
+        Route::get('sessions/create', [TreatmentSessionController::class, 'createForTreatment'])->name('sessions.create');
     });
 
+    // Treatment Procedures Routes
     Route::resource('treatment-procedures', TreatmentProcedureController::class)->names('backend.treatment-procedures');
     Route::get('treatment-procedures/catalog/search', [TreatmentProcedureController::class, 'getCatalogProcedures'])->name('backend.treatment-procedures.catalog.search');
     Route::get('treatment-procedures/create/{treatment}', [TreatmentProcedureController::class, 'create'])->name('backend.treatment-procedures.create-for-treatment');
@@ -211,15 +220,21 @@ Route::middleware(['auth'])->group(function () {
     Route::post('treatment-procedures/{treatmentProcedure}/cancel', [TreatmentProcedureController::class, 'cancel'])
         ->name('backend.treatment-procedures.cancel');
 
-    Route::resource('treatment-sessions', TreatmentSessionController::class)->names('backend.treatment-sessions');
+    // Custom treatment session routes
     Route::get('treatment-sessions/today', [TreatmentSessionController::class, 'today'])->name('backend.treatment-sessions.today');
-    Route::get('treatment-sessions/treatment/{treatment}', [TreatmentSessionController::class, 'treatmentSessions'])->name('backend.treatment-sessions.by-treatment');
-    Route::post('treatment-sessions/quick-create/{treatment}', [TreatmentSessionController::class, 'quickCreate'])->name('backend.treatment-sessions.quick-create');
-    Route::post('treatment-sessions/{session}/start', [TreatmentSessionController::class, 'start'])->name('backend.treatment-sessions.start');
-    Route::post('treatment-sessions/{session}/complete', [TreatmentSessionController::class, 'complete'])->name('backend.treatment-sessions.complete');
-    Route::post('treatment-sessions/{session}/cancel', [TreatmentSessionController::class, 'cancel'])->name('backend.treatment-sessions.cancel');
-    Route::post('treatment-sessions/{session}/postpone', [TreatmentSessionController::class, 'postpone'])->name('backend.treatment-sessions.postpone');
-    Route::post('treatment-sessions/{session}/reschedule', [TreatmentSessionController::class, 'reschedule'])->name('backend.treatment-sessions.reschedule');
+
+    // Treatment Sessions Routes (CRUD + Actions)
+    Route::resource('treatment-sessions', TreatmentSessionController::class)->names('backend.treatment-sessions');
+
+    // Action routes for individual sessions
+    Route::prefix('treatment-sessions/{session}')->name('backend.treatment-sessions.')->group(function () {
+        Route::post('start', [TreatmentSessionController::class, 'start'])->name('start');
+        Route::post('complete', [TreatmentSessionController::class, 'complete'])->name('complete');
+        Route::post('cancel', [TreatmentSessionController::class, 'cancel'])->name('cancel');
+        Route::post('postpone', [TreatmentSessionController::class, 'postpone'])->name('postpone');
+        Route::post('reschedule', [TreatmentSessionController::class, 'reschedule'])->name('reschedule');
+    });
+
 
     // -----------------------------
     // Prescriptions
@@ -288,8 +303,8 @@ Route::middleware(['auth'])->group(function () {
     // -----------------------------
     // Payments
     // -----------------------------
-    Route::resource('payments', PaymentController::class)->names('payments');
-    Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
+    Route::resource('payments', PaymentController::class)->names('backend.payments');
+    Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('backend.payments.receipt');
 
     // -----------------------------
     // Payment Installments

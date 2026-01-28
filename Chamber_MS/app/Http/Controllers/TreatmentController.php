@@ -331,11 +331,10 @@ class TreatmentController extends Controller
     public function addSession(Treatment $treatment)
     {
         if (!$treatment->canAddSession()) {
-            return back()->with('error', 'Cannot add more sessions. Treatment is complete or cancelled.');
+            return back()->with('error', 'Cannot add more sessions.');
         }
 
-        $treatment->addSession();
-
+        $treatment->addSession(); // This likely doesn't create a TreatmentSession record
         return back()->with('success', 'Session added successfully.');
     }
 

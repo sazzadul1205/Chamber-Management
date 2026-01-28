@@ -19,19 +19,27 @@ class TreatmentSessionController extends Controller
     {
         $query = TreatmentSession::with(['treatment.patient', 'appointment', 'chair']);
 
-        // Filters
-        if ($request->filled('treatment_id')) $query->where('treatment_id', $request->treatment_id);
-        if ($request->filled('status')) $query->where('status', $request->status);
-        if ($request->filled('date')) $query->whereDate('scheduled_date', $request->date);
-        else $query->whereDate('scheduled_date', '>=', today());
-        if ($request->filled('chair_id')) $query->where('chair_id', $request->chair_id);
+        // Filters - remove the default future date filter
+        if ($request->filled('treatment_id')) {
+            $query->where('treatment_id', $request->treatment_id);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('date')) {
+            $query->whereDate('scheduled_date', $request->date);
+        }
+        // REMOVED: else $query->whereDate('scheduled_date', '>=', today());
+        if ($request->filled('chair_id')) {
+            $query->where('chair_id', $request->chair_id);
+        }
 
         $sessions = $query->orderBy('scheduled_date', 'desc')->orderBy('session_number')->paginate(20);
 
         $treatments = Treatment::active()->get();
         $chairs = DentalChair::active()->get();
 
-        return view('treatment-sessions.index', compact('sessions', 'treatments', 'chairs'));
+        return view('backend.treatment-sessions.index', compact('sessions', 'treatments', 'chairs'));
     }
 
     // =========================
@@ -42,16 +50,35 @@ class TreatmentSessionController extends Controller
         $treatment = null;
         $sessionNumber = 1;
 
+        // Check if treatment_id is provided in query string
         if ($request->filled('treatment_id')) {
-            $treatment = Treatment::findOrFail($request->treatment_id);
-            $sessionNumber = $treatment->sessions()->max('session_number') + 1;
+            $treatment = Treatment::find($request->treatment_id);
+            if ($treatment) {
+                $sessionNumber = $treatment->sessions()->max('session_number') + 1;
+            }
         }
 
         $treatments = Treatment::active()->with('patient')->get();
         $appointments = Appointment::where('status', 'scheduled')->get();
         $chairs = DentalChair::active()->available()->get();
 
-        return view('treatment-sessions.create', compact('treatment', 'sessionNumber', 'treatments', 'appointments', 'chairs'));
+        return view('backend.treatment-sessions.create', [
+            'treatment' => $treatment,
+            'sessionNumber' => $sessionNumber,
+            'treatments' => $treatments,
+            'appointments' => $appointments,
+            'chairs' => $chairs
+        ]);
+    }
+
+    // =========================
+    // SHOW CREATE FORM FOR TREATMENT
+    // =========================
+    public function createForTreatment(Treatment $treatment)
+    {
+        return redirect()->route('backend.treatment-sessions.create', [
+            'treatment_id' => $treatment->id
+        ]);
     }
 
     // =========================
@@ -112,7 +139,7 @@ class TreatmentSessionController extends Controller
             if ($appointment) $appointment->update(['status' => $request->status === 'completed' ? 'completed' : 'in_progress']);
         }
 
-        return redirect()->route('treatment-sessions.show', $session)
+        return redirect()->route('backend.treatment-sessions.show', $session)
             ->with('success', 'Treatment session created successfully.');
     }
 
@@ -130,7 +157,7 @@ class TreatmentSessionController extends Controller
             'updater'
         ]);
 
-        return view('treatment-sessions.show', compact('treatmentSession'));
+        return view('backend.treatment-sessions.show', compact('treatmentSession'));
     }
 
     // =========================
@@ -144,7 +171,7 @@ class TreatmentSessionController extends Controller
             ->orWhere('id', $treatmentSession->appointment_id)->get();
         $chairs = DentalChair::active()->get();
 
-        return view('treatment-sessions.edit', compact('treatmentSession', 'treatments', 'appointments', 'chairs'));
+        return view('backend.treatment-sessions.edit', compact('treatmentSession', 'treatments', 'appointments', 'chairs'));
     }
 
     // =========================
@@ -222,7 +249,7 @@ class TreatmentSessionController extends Controller
             $treatmentSession->treatment->addSession();
         }
 
-        return redirect()->route('treatment-sessions.show', $treatmentSession)
+        return redirect()->route('backend.treatment-sessions.show', $treatmentSession)
             ->with('success', 'Treatment session updated successfully.');
     }
 
@@ -242,44 +269,49 @@ class TreatmentSessionController extends Controller
 
         $treatmentSession->delete();
 
-        return redirect()->route('treatments.show', $treatmentSession->treatment_id)
+        // FIXED: Use correct route name
+        return redirect()->route('backend.treatments.show', $treatmentSession->treatment_id)
             ->with('success', 'Treatment session deleted successfully.');
     }
 
     // =========================
-    // ACTION METHODS
+    // ACTION METHODS - FIXED ROUTE PARAMETER
     // =========================
-    public function start(TreatmentSession $treatmentSession)
+    public function start(TreatmentSession $session)  // Changed parameter to match route definition
     {
-        $treatmentSession->start();
-        return back()->with('success', 'Session started successfully.');
+        try {
+            $session->start();
+            return back()->with('success', 'Session started successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to start session: ' . $e->getMessage());
+        }
     }
 
-    public function complete(TreatmentSession $treatmentSession)
+    public function complete(TreatmentSession $session)  // Changed parameter to match route definition
     {
         $request = request();
-        $treatmentSession->update($request->only(['duration_actual', 'doctor_notes', 'materials_used']));
-        $treatmentSession->complete();
+        $session->update($request->only(['duration_actual', 'doctor_notes', 'materials_used']));
+        $session->complete();
         return back()->with('success', 'Session completed successfully.');
     }
 
-    public function cancel(TreatmentSession $treatmentSession)
+    public function cancel(TreatmentSession $session)  // Changed parameter to match route definition
     {
-        $treatmentSession->cancel();
+        $session->cancel();
         return back()->with('success', 'Session cancelled successfully.');
     }
 
-    public function postpone(Request $request, TreatmentSession $treatmentSession)
+    public function postpone(Request $request, TreatmentSession $session)  // Changed parameter to match route definition
     {
         $request->validate(['new_date' => 'required|date', 'notes' => 'nullable|string']);
-        $treatmentSession->postpone($request->new_date, $request->notes);
+        $session->postpone($request->new_date, $request->notes);
         return back()->with('success', 'Session postponed successfully.');
     }
 
-    public function reschedule(Request $request, TreatmentSession $treatmentSession)
+    public function reschedule(Request $request, TreatmentSession $session)  // Changed parameter to match route definition
     {
         $request->validate(['new_date' => 'required|date']);
-        $treatmentSession->reschedule($request->new_date);
+        $session->reschedule($request->new_date);
         return back()->with('success', 'Session rescheduled successfully.');
     }
 
@@ -292,7 +324,7 @@ class TreatmentSessionController extends Controller
             ->orderBy('session_number')
             ->get();
 
-        return view('treatment-sessions.treatment-sessions', compact('treatment', 'sessions'));
+        return view('backend.treatment-sessions.treatment-sessions', compact('treatment', 'sessions'));
     }
 
     // =========================
@@ -313,7 +345,7 @@ class TreatmentSessionController extends Controller
             'total' => $todaySessions->flatten()->count(),
         ];
 
-        return view('treatment-sessions.today', compact('todaySessions', 'stats'));
+        return view('backend.treatment-sessions.today', compact('todaySessions', 'stats'));
     }
 
     // =========================
