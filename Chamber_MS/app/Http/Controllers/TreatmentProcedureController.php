@@ -41,9 +41,16 @@ class TreatmentProcedureController extends Controller
     // =========================
     public function create($treatmentId = null)
     {
-        $treatment = $treatmentId ? Treatment::with('patient')->findOrFail($treatmentId) : null;
+        // Check if treatmentId is provided via route parameter
+        if (is_numeric($treatmentId)) {
+            $treatment = Treatment::with('patient')->findOrFail($treatmentId);
+            $treatments = collect([$treatment]); // Only include this treatment
+        } else {
+            $treatment = null;
+            $treatments = Treatment::active()->with('patient')->get();
+        }
+
         $commonProcedures = TreatmentProcedure::getCommonProcedures();
-        $treatments = Treatment::active()->with('patient')->get();
         $proceduresCatalog = ProcedureCatalog::active()->get();
 
         return view(
@@ -152,28 +159,31 @@ class TreatmentProcedureController extends Controller
     // =========================
     // STATUS ACTIONS
     // =========================
-    public function start(TreatmentProcedure $treatmentProcedure)
+    public function start($procedure) 
     {
+        $treatmentProcedure = TreatmentProcedure::findOrFail($procedure);
         $treatmentProcedure->start();
 
         return back()->with('success', 'Procedure started successfully.');
     }
 
-    public function complete(TreatmentProcedure $treatmentProcedure)
+    public function complete($procedure)
     {
+        $treatmentProcedure = TreatmentProcedure::findOrFail($procedure);
         $treatmentProcedure->complete();
 
         return back()->with('success', 'Procedure completed successfully.');
     }
 
-    public function cancel(TreatmentProcedure $treatmentProcedure)
+    public function cancel($procedure)
     {
+        $treatmentProcedure = TreatmentProcedure::findOrFail($procedure);
         $treatmentProcedure->cancel();
 
         return back()->with('success', 'Procedure cancelled successfully.');
     }
 
-    // =========================
+    // =========================    
     // BULK ADD PROCEDURES
     // =========================
     public function bulkAdd(Request $request, Treatment $treatment)
@@ -227,18 +237,20 @@ class TreatmentProcedureController extends Controller
     }
 
     // =========================
-    // SEARCH CATALOG PROCEDURES (AJAX)
+    // SEARCH CATALOG PROCEDURES (AJAX) - UPDATED
     // =========================
     public function getCatalogProcedures(Request $request)
     {
         $search = $request->get('search', '');
 
-        $procedures = ProcedureCatalog::where('status', 'active')
+        $procedures = ProcedureCatalog::active()
             ->where(function ($query) use ($search) {
                 $query->where('procedure_code', 'like', "%{$search}%")
-                    ->orWhere('procedure_name', 'like', "%{$search}%");
+                    ->orWhere('procedure_name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             })
-            ->limit(10)
+            ->orderBy('procedure_code')
+            ->limit(30) // Increased from 10
             ->get()
             ->map(function ($proc) {
                 return [
@@ -257,9 +269,29 @@ class TreatmentProcedureController extends Controller
     public function catalogSearch()
     {
         $search = request('search', '');
-        if (strlen($search) < 2) return response()->json([]);
 
-        $procedures = ProcedureCatalog::searchCatalog($search);
+        if (strlen($search) < 2) {
+            return response()->json([]);
+        }
+
+        // Get more results for better search experience
+        $procedures = ProcedureCatalog::active()
+            ->where(function ($query) use ($search) {
+                $query->where('procedure_name', 'like', "%{$search}%")
+                    ->orWhere('procedure_code', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            })
+            ->orderBy('procedure_code')
+            ->limit(50) // Increased from 20
+            ->get([
+                'id',
+                'procedure_code as code',
+                'procedure_name as name',
+                'category',
+                'standard_cost as cost',
+                'standard_duration as duration'
+            ]);
+
         return response()->json($procedures);
     }
 }

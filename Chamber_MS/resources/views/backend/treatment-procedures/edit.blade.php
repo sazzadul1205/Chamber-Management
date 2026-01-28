@@ -2,60 +2,135 @@
 
 @section('content')
     <div class="space-y-6">
-        <!-- Header -->
+        <!-- ==============================================
+                    HEADER SECTION
+                ============================================== -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Edit Procedure</h1>
-                <p class="text-gray-600 mt-1">Update procedure information</p>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Edit Procedure - {{ $treatmentProcedure->procedure_code }}
+                </h1>
+                <p class="text-gray-600 mt-1">
+                    Update procedure information for {{ $treatmentProcedure->treatment->patient->full_name ?? 'patient' }}'s
+                    treatment
+                </p>
             </div>
-            <div class="text-sm bg-blue-50 px-4 py-2 rounded-lg">
-                <span class="font-medium">Patient:</span> {{ $treatmentProcedure->treatment->patient->name }}
+            <div class="text-sm bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                <span class="font-medium">Patient:</span> {{ $treatmentProcedure->treatment->patient->full_name ?? 'N/A' }}
                 <span class="mx-2">|</span>
-                <span class="font-medium">Treatment #{{ $treatmentProcedure->treatment_id }}</span>
+                <span class="font-medium">Treatment:</span> {{ $treatmentProcedure->treatment->treatment_code }}
             </div>
         </div>
 
+        <!-- ==============================================
+                    FORM CARD
+                ============================================== -->
         <div class="bg-white rounded-lg shadow">
             <form action="{{ route('backend.treatment-procedures.update', $treatmentProcedure) }}" method="POST">
                 @csrf
                 @method('PUT')
 
                 <div class="p-6 space-y-6">
-                    <!-- Procedure Details -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Left Column -->
-                        <div class="space-y-6">
-                            <!-- Common Procedures Quick Select -->
-                            @if($commonProcedures->isNotEmpty())
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Quick Select from Common
-                                        Procedures:</label>
-                                    <div class="grid grid-cols-1 gap-2">
-                                        @foreach($commonProcedures as $common)
-                                            <button type="button"
-                                                class="text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-150"
-                                                onclick="selectCommonProcedure('{{ $common->procedure_code }}', '{{ $common->procedure_name }}', {{ $common->cost }}, {{ $common->duration }})">
-                                                <div class="flex justify-between items-start">
-                                                    <div>
-                                                        <span class="font-medium text-gray-900">{{ $common->procedure_code }}</span>
-                                                        <span class="text-gray-600 ml-2">{{ $common->procedure_name }}</span>
-                                                    </div>
-                                                    <div class="text-right">
-                                                        <div class="font-medium">${{ number_format($common->cost, 2) }}</div>
-                                                        <div class="text-sm text-gray-500">{{ $common->duration }} min</div>
-                                                    </div>
-                                                </div>
-                                            </button>
-                                        @endforeach
-                                    </div>
+                    <!-- ==============================================
+                                TREATMENT INFO SECTION
+                            ============================================== -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold text-blue-800">Treatment Information</h3>
+                                <div class="mt-1 space-y-1">
+                                    <p class="text-sm text-gray-700">
+                                        <span class="font-medium">Patient:</span>
+                                        {{ $treatmentProcedure->treatment->patient->full_name ?? 'N/A' }}
+                                    </p>
+                                    <p class="text-sm text-gray-700">
+                                        <span class="font-medium">Treatment Code:</span>
+                                        {{ $treatmentProcedure->treatment->treatment_code }}
+                                    </p>
+                                    <p class="text-sm text-gray-700">
+                                        <span class="font-medium">Status:</span>
+                                        <span
+                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-{{ $treatmentProcedure->treatment->status_color }}">
+                                            {{ $treatmentProcedure->treatment->status_text }}
+                                        </span>
+                                    </p>
                                 </div>
-                            @endif
+                            </div>
+                            <a href="{{ route('backend.treatments.show', $treatmentProcedure->treatment) }}"
+                                class="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                                <i class="fas fa-external-link-alt"></i>
+                                View Treatment
+                            </a>
+                        </div>
+                    </div>
 
-                            <!-- Procedure Information -->
+                    <!-- ==============================================
+                                PROCEDURE DETAILS SECTION
+                            ============================================== -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- LEFT COLUMN: Procedure selection and basic details -->
+                        <div class="space-y-6">
+                            <!-- PROCEDURE SEARCH & QUICK SELECT -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Select Procedure</label>
+                                <div class="space-y-2">
+                                    <!-- Search catalog -->
+                                    <div class="flex gap-2">
+                                        <div class="flex-1 relative">
+                                            <input type="text" id="procedure-search"
+                                                class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Search by code or name...">
+                                            <div id="catalog-results"
+                                                class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-60 overflow-y-auto">
+                                            </div>
+                                        </div>
+                                        <button type="button" id="search-btn"
+                                            class="px-4 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-200">
+                                            Search
+                                        </button>
+                                    </div>
+                                    <div id="search-error" class="mt-1 text-sm text-red-600 hidden"></div>
+
+                                    <!-- Quick select from common procedures -->
+                                    @if(!empty($commonProcedures))
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Quick Select:</label>
+                                            <div class="grid grid-cols-1 gap-2">
+                                                @foreach($commonProcedures as $common)
+                                                    <button type="button"
+                                                        class="text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 transition-colors duration-150 procedure-quick-select"
+                                                        data-procedure-code="{{ $common['procedure_code'] ?? $common->procedure_code }}"
+                                                        data-procedure-name="{{ $common['procedure_name'] ?? $common->procedure_name }}"
+                                                        data-cost="{{ $common['cost'] ?? $common->cost }}"
+                                                        data-duration="{{ $common['duration'] ?? $common->duration }}">
+                                                        <div class="flex justify-between items-start">
+                                                            <div>
+                                                                <span
+                                                                    class="font-medium text-gray-900">{{ $common['procedure_code'] ?? $common->procedure_code }}</span>
+                                                                <span
+                                                                    class="text-gray-600 ml-2">{{ $common['procedure_name'] ?? $common->procedure_name }}</span>
+                                                            </div>
+                                                            <div class="text-right">
+                                                                <div class="font-medium">
+                                                                    ${{ number_format($common['cost'] ?? $common->cost, 2) }}</div>
+                                                                <div class="text-sm text-gray-500">
+                                                                    {{ $common['duration'] ?? $common->duration }} min
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- MANUAL ENTRY -->
                             <div class="border-t pt-6">
-                                <h3 class="text-lg font-medium text-gray-900 mb-4">Procedure Information</h3>
-
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">Procedure Details</h3>
                                 <div class="space-y-4">
+                                    <!-- Procedure code -->
                                     <div>
                                         <label for="procedure_code" class="block text-sm font-medium text-gray-700 mb-1">
                                             Procedure Code *
@@ -68,6 +143,7 @@
                                         @enderror
                                     </div>
 
+                                    <!-- Procedure name -->
                                     <div>
                                         <label for="procedure_name" class="block text-sm font-medium text-gray-700 mb-1">
                                             Procedure Name *
@@ -83,12 +159,13 @@
                             </div>
                         </div>
 
-                        <!-- Right Column -->
+                        <!-- RIGHT COLUMN: Dental details, financial info, and notes -->
                         <div class="space-y-6">
-                            <!-- Dental Details -->
+                            <!-- DENTAL DETAILS -->
                             <div>
                                 <h3 class="text-lg font-medium text-gray-900 mb-4">Dental Details</h3>
                                 <div class="grid grid-cols-2 gap-4">
+                                    <!-- Tooth number -->
                                     <div>
                                         <label for="tooth_number" class="block text-sm font-medium text-gray-700 mb-1">
                                             Tooth Number
@@ -102,6 +179,7 @@
                                         @enderror
                                     </div>
 
+                                    <!-- Surface -->
                                     <div>
                                         <label for="surface" class="block text-sm font-medium text-gray-700 mb-1">
                                             Surface
@@ -109,15 +187,11 @@
                                         <select id="surface" name="surface"
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                             <option value="">Select Surface</option>
-                                            <option value="Occlusal" {{ old('surface', $treatmentProcedure->surface) == 'Occlusal' ? 'selected' : '' }}>Occlusal
-                                            </option>
-                                            <option value="Mesial" {{ old('surface', $treatmentProcedure->surface) == 'Mesial' ? 'selected' : '' }}>Mesial</option>
-                                            <option value="Distal" {{ old('surface', $treatmentProcedure->surface) == 'Distal' ? 'selected' : '' }}>Distal</option>
-                                            <option value="Buccal" {{ old('surface', $treatmentProcedure->surface) == 'Buccal' ? 'selected' : '' }}>Buccal</option>
-                                            <option value="Lingual" {{ old('surface', $treatmentProcedure->surface) == 'Lingual' ? 'selected' : '' }}>Lingual
-                                            </option>
-                                            <option value="Multiple" {{ old('surface', $treatmentProcedure->surface) == 'Multiple' ? 'selected' : '' }}>Multiple
-                                            </option>
+                                            @foreach(['Occlusal', 'Mesial', 'Distal', 'Buccal', 'Lingual', 'Multiple'] as $surface)
+                                                <option value="{{ $surface }}" {{ old('surface', $treatmentProcedure->surface) == $surface ? 'selected' : '' }}>
+                                                    {{ $surface }}
+                                                </option>
+                                            @endforeach
                                         </select>
                                         @error('surface')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -126,10 +200,11 @@
                                 </div>
                             </div>
 
-                            <!-- Financial Details -->
+                            <!-- FINANCIAL & TIME -->
                             <div>
                                 <h3 class="text-lg font-medium text-gray-900 mb-4">Financial & Time</h3>
                                 <div class="grid grid-cols-2 gap-4">
+                                    <!-- Cost -->
                                     <div>
                                         <label for="cost" class="block text-sm font-medium text-gray-700 mb-1">
                                             Cost ($) *
@@ -142,6 +217,7 @@
                                         @enderror
                                     </div>
 
+                                    <!-- Duration -->
                                     <div>
                                         <label for="duration" class="block text-sm font-medium text-gray-700 mb-1">
                                             Duration (min) *
@@ -156,24 +232,25 @@
                                 </div>
                             </div>
 
-                            <!-- Status -->
+                            <!-- STATUS -->
                             <div>
                                 <label for="status" class="block text-sm font-medium text-gray-700 mb-1">
                                     Status *
                                 </label>
                                 <select id="status" name="status" required
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="planned" {{ old('status', $treatmentProcedure->status) == 'planned' ? 'selected' : '' }}>Planned</option>
-                                    <option value="in_progress" {{ old('status', $treatmentProcedure->status) == 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                                    <option value="completed" {{ old('status', $treatmentProcedure->status) == 'completed' ? 'selected' : '' }}>Completed</option>
-                                    <option value="cancelled" {{ old('status', $treatmentProcedure->status) == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                                    @foreach(\App\Models\TreatmentProcedure::statuses() as $key => $val)
+                                        <option value="{{ $key }}" {{ old('status', $treatmentProcedure->status) == $key ? 'selected' : '' }}>
+                                            {{ $val }}
+                                        </option>
+                                    @endforeach
                                 </select>
                                 @error('status')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
 
-                            <!-- Notes -->
+                            <!-- NOTES -->
                             <div>
                                 <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">
                                     Notes
@@ -188,31 +265,382 @@
                     </div>
                 </div>
 
-                <!-- Form Actions -->
-                <div class="flex justify-end items-center px-6 py-4 bg-gray-50 border-t border-gray-200 space-x-3">
-                    <a href="{{ route('backend.treatment-procedures.show', $treatmentProcedure) }}"
-                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        Cancel
-                    </a>
-                    <button type="submit"
-                        class="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        Update Procedure
-                    </button>
+                <!-- ==============================================
+                            FORM ACTIONS
+                        ============================================== -->
+                <div class="px-6 pb-4 bg-gray-50 border-t border-gray-200 space-x-3">
+                    <x-back-submit-buttons back-url="{{ route('backend.treatment-procedures.show', $treatmentProcedure) }}"
+                        submit-text="Update Procedure" />
                 </div>
             </form>
         </div>
     </div>
 
-    @push('scripts')
-        <script>
-            function selectCommonProcedure(code, name, cost, duration) {
-                if (confirm('Replace current procedure details with ' + code + '?')) {
-                    document.getElementById('procedure_code').value = code;
-                    document.getElementById('procedure_name').value = name;
-                    document.getElementById('cost').value = cost;
-                    document.getElementById('duration').value = duration;
+    <!-- ==============================================
+                JAVASCRIPT SECTION
+            ============================================== -->
+    <script>
+        // ==============================================
+        // GLOBAL VARIABLES
+        // ==============================================
+        let currentSelectedProcedure = null;
+
+        // ==============================================
+        // QUICK SELECT FUNCTIONALITY
+        // ==============================================
+        document.querySelectorAll('.procedure-quick-select').forEach(button => {
+            button.addEventListener('click', function () {
+                if (confirm('Replace current procedure details? This will overwrite existing values.')) {
+                    const code = this.getAttribute('data-procedure-code');
+                    const name = this.getAttribute('data-procedure-name');
+                    const cost = this.getAttribute('data-cost');
+                    const duration = this.getAttribute('data-duration');
+
+                    // Store the current selection
+                    currentSelectedProcedure = { code, name, cost, duration };
+
+                    // Fill all fields (overwrite existing values)
+                    fillProcedureFields(code, name, cost, duration);
+
+                    // Visual feedback
+                    this.classList.add('bg-blue-100', 'border-blue-300');
+                    setTimeout(() => {
+                        this.classList.remove('bg-blue-100', 'border-blue-300');
+                    }, 500);
+                }
+            });
+        });
+
+        // ==============================================
+        // SEARCH FUNCTIONALITY
+        // ==============================================
+        // Setup event listeners
+        document.getElementById('search-btn').addEventListener('click', performSearch);
+        document.getElementById('procedure-search').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                performSearch();
+            }
+        });
+
+        // Load popular procedures when search input is focused
+        document.getElementById('procedure-search').addEventListener('focus', function () {
+            const resultsDiv = document.getElementById('catalog-results');
+            const searchInput = document.getElementById('procedure-search');
+
+            // Only load popular if input is empty and results aren't already showing
+            if (!searchInput.value.trim() && resultsDiv.classList.contains('hidden')) {
+                loadPopularProcedures();
+            }
+        });
+
+        // ==============================================
+        // SEARCH FUNCTIONS
+        // ==============================================
+        /**
+         * Load popular procedures (shows when search input is empty)
+         */
+        function loadPopularProcedures() {
+            const resultsDiv = document.getElementById('catalog-results');
+            const errorDiv = document.getElementById('search-error');
+
+            // Clear previous error
+            errorDiv.classList.add('hidden');
+            errorDiv.textContent = '';
+
+            // Show loading state
+            showLoading(resultsDiv);
+
+            // Fetch popular procedures
+            fetch(`{{ route('backend.treatment-procedures.get-catalog-procedures') }}?search=`)
+                .then(handleResponse)
+                .then(data => {
+                    if (!data || !data.length) {
+                        resultsDiv.classList.add('hidden');
+                        return;
+                    }
+                    displayPopularResults(data, resultsDiv);
+                })
+                .catch(error => {
+                    console.error('Error loading popular procedures:', error);
+                    resultsDiv.classList.add('hidden');
+                });
+        }
+
+        /**
+         * Perform search based on user input
+         */
+        function performSearch() {
+            const searchInput = document.getElementById('procedure-search');
+            const search = searchInput.value.trim();
+            const resultsDiv = document.getElementById('catalog-results');
+            const errorDiv = document.getElementById('search-error');
+
+            // Clear previous results and error
+            resultsDiv.innerHTML = '';
+            errorDiv.classList.add('hidden');
+            errorDiv.textContent = '';
+
+            // If empty search, show popular procedures
+            if (!search) {
+                loadPopularProcedures();
+                return;
+            }
+
+            // Validate search input
+            if (search.length < 2) {
+                showError('Please enter at least 2 characters');
+                return;
+            }
+
+            // Show loading state
+            showLoading(resultsDiv);
+
+            // Perform search
+            fetch(`{{ route('backend.treatment-procedures.get-catalog-procedures') }}?search=${encodeURIComponent(search)}`)
+                .then(handleResponse)
+                .then(data => {
+                    if (!data || !data.length) {
+                        showNoResults(resultsDiv, search);
+                        return;
+                    }
+                    displaySearchResults(data, resultsDiv, search);
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    showSearchError(resultsDiv);
+                });
+
+            // Helper function for showing errors
+            function showError(message) {
+                errorDiv.textContent = message;
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Handle API response
+         */
+        function handleResponse(response) {
+            if (!response.ok) {
+                throw new Error('Search failed');
+            }
+            return response.json();
+        }
+
+        // ==============================================
+        // UI HELPER FUNCTIONS
+        // ==============================================
+        function showLoading(container) {
+            container.innerHTML = `
+                        <div class="p-4 text-center">
+                            <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                            <p class="mt-2 text-gray-500">Searching...</p>
+                        </div>
+                    `;
+            container.classList.remove('hidden');
+        }
+
+        function showNoResults(container, searchTerm) {
+            container.innerHTML = `
+                        <div class="p-4 text-center">
+                            <div class="text-gray-500 mb-2">No procedures found for "${searchTerm}"</div>
+                            <div class="text-sm text-gray-400">Try searching with different keywords</div>
+                        </div>
+                    `;
+            container.classList.remove('hidden');
+        }
+
+        function showSearchError(container) {
+            container.innerHTML = '<div class="p-4 text-red-500 text-center">Error searching. Please try again.</div>';
+            container.classList.remove('hidden');
+        }
+
+        function displayPopularResults(data, container) {
+            container.innerHTML = '';
+
+            // Add header for popular procedures
+            const header = document.createElement('div');
+            header.className = 'p-3 bg-gray-50 border-b border-gray-200';
+            header.innerHTML = `
+                        <div class="text-sm font-medium text-gray-700">Popular Procedures</div>
+                        ${currentSelectedProcedure ?
+                    `<div class="text-xs text-gray-500 mt-1">Currently selected: ${currentSelectedProcedure.code} - ${currentSelectedProcedure.name}</div>` :
+                    ''
+                }
+                    `;
+            container.appendChild(header);
+
+            if (!data.length) {
+                container.innerHTML += '<div class="p-4 text-gray-500 text-center">No popular procedures found</div>';
+            } else {
+                data.forEach(proc => {
+                    createResultItem(proc, container, true);
+                });
+            }
+
+            container.classList.remove('hidden');
+        }
+
+        function displaySearchResults(data, container, searchTerm) {
+            container.innerHTML = '';
+
+            // Add header with search info
+            const header = document.createElement('div');
+            header.className = 'p-3 bg-gray-50 border-b border-gray-200';
+            header.innerHTML = `
+                        <div class="text-sm font-medium text-gray-700">${data.length} result${data.length !== 1 ? 's' : ''} for "${searchTerm}"</div>
+                        ${currentSelectedProcedure ?
+                    `<div class="text-xs text-gray-500 mt-1">Click to replace: ${currentSelectedProcedure.code} - ${currentSelectedProcedure.name}</div>` :
+                    ''
+                }
+                    `;
+            container.appendChild(header);
+
+            data.forEach(proc => {
+                createResultItem(proc, container, false);
+            });
+
+            container.classList.remove('hidden');
+        }
+
+        /**
+         * Create a search result item
+         */
+        function createResultItem(proc, container, isPopular) {
+            const div = document.createElement('div');
+            div.className = 'p-3 border-b border-gray-200 hover:bg-blue-50 cursor-pointer last:border-b-0 procedure-search-result';
+            div.setAttribute('data-procedure-code', proc.code);
+            div.setAttribute('data-procedure-name', proc.name);
+            div.setAttribute('data-cost', proc.cost);
+            div.setAttribute('data-duration', proc.duration);
+
+            // Highlight if this is the currently selected procedure
+            const isSelected = currentSelectedProcedure &&
+                currentSelectedProcedure.code === proc.code;
+
+            div.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-medium ${isSelected ? 'text-green-600' : 'text-blue-600'}">
+                                    ${proc.code}
+                                    ${isSelected ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded ml-2">Selected</span>' : ''}
+                                </div>
+                                <div class="text-gray-900">${proc.name}</div>
+                                <div class="text-sm text-gray-600">${proc.category || ''}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-medium">$${proc.cost}</div>
+                                <div class="text-sm text-gray-600">${proc.duration} min</div>
+                            </div>
+                        </div>
+                    `;
+            container.appendChild(div);
+        }
+
+        // ==============================================
+        // RESULT SELECTION HANDLING
+        // ==============================================
+        document.addEventListener('click', function (e) {
+            // Search results selection
+            if (e.target.closest('.procedure-search-result')) {
+                const div = e.target.closest('.procedure-search-result');
+                const code = div.getAttribute('data-procedure-code');
+                const name = div.getAttribute('data-procedure-name');
+                const cost = div.getAttribute('data-cost');
+                const duration = div.getAttribute('data-duration');
+
+                if (confirm('Replace current procedure details? This will overwrite existing values.')) {
+                    // Store the current selection
+                    currentSelectedProcedure = { code, name, cost, duration };
+
+                    // Fill all fields (overwrite existing values)
+                    fillProcedureFields(code, name, cost, duration);
+
+                    // Close results and clear search
+                    document.getElementById('catalog-results').classList.add('hidden');
+                    document.getElementById('procedure-search').value = '';
+
+                    // Show confirmation feedback
+                    showSelectionFeedback();
                 }
             }
-        </script>
-    @endpush
+        });
+
+        // ==============================================
+        // FORM FIELD MANIPULATION FUNCTIONS
+        // ==============================================
+        /**
+         * Fill procedure fields (overwrites existing values)
+         */
+        function fillProcedureFields(code, name, cost, duration) {
+            const codeField = document.getElementById('procedure_code');
+            const nameField = document.getElementById('procedure_name');
+            const costField = document.getElementById('cost');
+            const durationField = document.getElementById('duration');
+
+            // Fill all fields
+            codeField.value = code;
+            nameField.value = name;
+            costField.value = cost;
+            durationField.value = duration;
+
+            // Trigger change events
+            [codeField, nameField, costField, durationField].forEach(field => {
+                field.dispatchEvent(new Event('change'));
+            });
+        }
+
+        /**
+         * Show visual feedback when a procedure is selected
+         */
+        function showSelectionFeedback() {
+            const codeField = document.getElementById('procedure_code');
+            const nameField = document.getElementById('procedure_name');
+
+            // Highlight the filled fields temporarily
+            [codeField, nameField].forEach(field => {
+                field.classList.add('bg-green-50', 'border-green-300');
+                setTimeout(() => {
+                    field.classList.remove('bg-green-50', 'border-green-300');
+                }, 1500);
+            });
+
+            // Show toast notification
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg shadow-lg z-50';
+            toast.innerHTML = `
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Procedure "${currentSelectedProcedure.code}" selected</span>
+                        </div>
+                    `;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // ==============================================
+        // UTILITY FUNCTIONS
+        // ==============================================
+        /**
+         * Close results when clicking outside
+         */
+        document.addEventListener('click', function (e) {
+            const resultsDiv = document.getElementById('catalog-results');
+            const searchInput = document.getElementById('procedure-search');
+            const searchBtn = document.getElementById('search-btn');
+
+            if (!e.target.closest('#catalog-results') &&
+                e.target !== searchInput &&
+                e.target !== searchBtn &&
+                !searchInput.contains(e.target) &&
+                !searchBtn.contains(e.target)) {
+                resultsDiv.classList.add('hidden');
+            }
+        });
+    </script>
 @endsection

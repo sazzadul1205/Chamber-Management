@@ -119,6 +119,11 @@
                     'route' => 'backend.treatment-sessions.index',
                 ],
                 [
+                    'label' => 'Treatment Procedures',
+                    'icon' => 'Treatment_Procedure',
+                    'route' => 'backend.treatment-procedures.index',
+                ],
+                [
                     'label' => 'Procedure Catalog',
                     'icon' => 'list',
                     'route' => 'backend.treatment-procedures.catalog.search',
@@ -329,8 +334,8 @@
                             @include('partials.sidebar-icon', ['name' => $item['icon'] ?? 'default'])
                             <span>{{ $item['title'] }}</span>
                         </div>
-                        <svg :class="{ 'rotate-180': open }" class="w-4 h-4 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg :class="{ 'rotate-180': open }" class="w-4 h-4 transition-transform duration-200" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
@@ -343,7 +348,7 @@
                             @endphp
                             <a href="{{ $href }}"
                                 class="flex items-center gap-3 px-3 py-2 rounded transition
-                                                                                                                                                                                                                          {{ $active ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
+                                                                                                                                                                                                                                                  {{ $active ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
                                 @include('partials.sidebar-icon', ['name' => $sub['icon'] ?? 'default'])
                                 <span>{{ $sub['label'] }}</span>
                             </a>
@@ -358,7 +363,7 @@
                 @endphp
                 <a href="{{ $href }}"
                     class="flex items-center gap-3 px-3 py-2 rounded transition font-semibold
-                                                                                                                                                  {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}">
+                                                                                                                                                                  {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}">
                     @include('partials.sidebar-icon', ['name' => $item['icon'] ?? 'default'])
                     <span>{{ $item['label'] }}</span>
                 </a>

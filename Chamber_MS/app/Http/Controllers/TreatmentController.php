@@ -369,4 +369,19 @@ class TreatmentController extends Controller
             ]
         ]);
     }
+
+    // =========================
+    // LIST TREATMENTS FOR A SPECIFIC PATIENT
+    // =========================
+    public function patientTreatments($patientId)
+    {
+        $patient = Patient::with('treatments')->findOrFail($patientId);
+
+        $treatments = Treatment::with(['doctor.user', 'appointment'])
+            ->where('patient_id', $patientId)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('backend.treatments.patient-treatments', compact('patient', 'treatments'));
+    }
 }

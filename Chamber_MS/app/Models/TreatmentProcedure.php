@@ -198,7 +198,7 @@ class TreatmentProcedure extends Model
         return ProcedureCatalog::active()
             ->select('procedure_code', 'procedure_name', 'standard_cost as cost', 'standard_duration as duration')
             ->orderBy('procedure_code')
-            ->limit(10)
+            ->limit(5)
             ->get() // This returns a Collection
             ->toArray(); // Convert to array for consistency
     }

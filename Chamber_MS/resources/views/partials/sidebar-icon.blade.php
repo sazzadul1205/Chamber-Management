@@ -108,6 +108,18 @@
     @case('TV')
         @include('components.icons.TV')
     @break
+    
+    @case('Treatment_Plan')
+        @include('components.icons.Treatment_Plan')
+    @break
+
+    @case('Treatment_Session')
+        @include('components.icons.Treatment_Session')
+    @break
+
+    @case('Treatment_Procedure')
+        @include('components.icons.Treatment_Procedure')
+    @break
 
     {{-- ==============================
          BUTTON / ACTION ICONS
@@ -151,13 +163,6 @@
         @include('components.icons.Bed')
     @break
 
-    @case('Treatment_Plan')
-        @include('components.icons.Treatment_Plan')
-    @break
-
-    @case('Treatment_Session')
-        @include('components.icons.Treatment_Session')
-    @break
 
     {{-- ==============================
          DEFAULT ICON

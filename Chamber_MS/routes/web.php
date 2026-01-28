@@ -204,9 +204,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('treatment-procedures/create/{treatment}', [TreatmentProcedureController::class, 'create'])->name('backend.treatment-procedures.create-for-treatment');
     Route::post('treatment-procedures/{treatment}/bulk-add', [TreatmentProcedureController::class, 'bulkAdd'])->name('backend.treatment-procedures.bulk-add');
     Route::get('treatment-procedures/treatment/{treatment}', [TreatmentProcedureController::class, 'treatmentProcedures'])->name('backend.treatment-procedures.by-treatment');
-    Route::post('treatment-procedures/{procedure}/start', [TreatmentProcedureController::class, 'start'])->name('backend.treatment-procedures.start');
-    Route::post('treatment-procedures/{procedure}/complete', [TreatmentProcedureController::class, 'complete'])->name('backend.treatment-procedures.complete');
-    Route::post('treatment-procedures/{procedure}/cancel', [TreatmentProcedureController::class, 'cancel'])->name('backend.treatment-procedures.cancel');
+    Route::post('treatment-procedures/{treatmentProcedure}/start', [TreatmentProcedureController::class, 'start'])
+        ->name('backend.treatment-procedures.start');
+    Route::post('treatment-procedures/{treatmentProcedure}/complete', [TreatmentProcedureController::class, 'complete'])
+        ->name('backend.treatment-procedures.complete');
+    Route::post('treatment-procedures/{treatmentProcedure}/cancel', [TreatmentProcedureController::class, 'cancel'])
+        ->name('backend.treatment-procedures.cancel');
 
     Route::resource('treatment-sessions', TreatmentSessionController::class)->names('backend.treatment-sessions');
     Route::get('treatment-sessions/today', [TreatmentSessionController::class, 'today'])->name('backend.treatment-sessions.today');
