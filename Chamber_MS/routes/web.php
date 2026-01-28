@@ -205,6 +205,10 @@ Route::middleware(['auth'])->group(function () {
 
         // Create session for this specific treatment
         Route::get('sessions/create', [TreatmentSessionController::class, 'createForTreatment'])->name('sessions.create');
+
+        // Payment routes
+        Route::get('session-payments', [TreatmentController::class, 'sessionPayments'])->name('session-payments');
+        Route::get('procedure-payments', [TreatmentController::class, 'procedurePayments'])->name('procedure-payments');
     });
 
     // Treatment Procedures Routes

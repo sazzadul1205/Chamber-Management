@@ -16,6 +16,7 @@ class PaymentAllocation extends Model
         'payment_id',
         'installment_id',
         'treatment_session_id',
+        'treatment_procedure_id',
         'allocated_amount',
         'allocation_date',
         'notes',
@@ -54,6 +55,11 @@ class PaymentAllocation extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function treatmentProcedure(): BelongsTo
+    {
+        return $this->belongsTo(TreatmentProcedure::class);
     }
 
     /*-----------------------------------

@@ -49,6 +49,12 @@ class TreatmentProcedure extends Model
         return $this->belongsTo(User::class, 'completed_by');
     }
 
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'payable_id')
+            ->where('payable_type', 'App\Models\TreatmentProcedure');
+    }
+
     // =========================
     // SCOPES
     // =========================
@@ -201,5 +207,39 @@ class TreatmentProcedure extends Model
             ->limit(5)
             ->get() // This returns a Collection
             ->toArray(); // Convert to array for consistency
+    }
+
+    public function addPayment($amount)
+    {
+        // Create payment allocation or direct payment
+        // This method should be called when payment is allocated to this session
+
+        // You might want to add a 'paid_amount' field to TreatmentSession
+        $this->paid_amount = ($this->paid_amount ?? 0) + $amount;
+        $this->save();
+
+        // Or create a Payment record linked to this session
+        $payment = Payment::create([
+            'payment_no' => Payment::generatePaymentNo(),
+            'for_treatment_session_id' => $this->id,
+            'patient_id' => $this->treatment->patient_id,
+            'amount' => $amount,
+            'payment_date' => now(),
+            'payment_method' => 'allocated', // Or track actual method
+            'status' => 'completed',
+            'created_by' => auth()->id(),
+        ]);
+
+        return $payment;
+    }
+
+    public function getPaidAmountAttribute()
+    {
+        return $this->payments()->sum('amount');
+    }
+
+    public function getBalanceAttribute()
+    {
+        return $this->cost_for_session - $this->paid_amount;
     }
 }

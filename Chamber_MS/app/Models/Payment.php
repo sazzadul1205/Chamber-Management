@@ -18,7 +18,10 @@ class Payment extends Model
         'patient_id',
         'installment_id',
         'is_advance',
+        'payable_type',    
+        'payable_id',      
         'for_treatment_session_id',
+        'treatment_id',    
         'payment_date',
         'payment_method',
         'payment_type',
@@ -28,7 +31,7 @@ class Payment extends Model
         'bank_name',
         'remarks',
         'status',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [
@@ -67,6 +70,25 @@ class Payment extends Model
     public function receipt()
     {
         return $this->hasOne(Receipt::class);
+    }
+
+    // Polymorphic relationship
+    public function payable()
+    {
+        return $this->morphTo();
+    }
+
+    // Add relationship to Treatment (if you need it)
+    public function treatment()
+    {
+        return $this->belongsTo(Treatment::class, 'treatment_id');
+    }
+
+    // Add relationship to TreatmentProcedure
+    public function procedure()
+    {
+        return $this->belongsTo(TreatmentProcedure::class, 'payable_id')
+            ->where('payable_type', 'App\Models\TreatmentProcedure');
     }
 
     /*-----------------------------------
@@ -153,6 +175,17 @@ class Payment extends Model
         return $this->payment_date->format('d M Y, h:i A');
     }
 
+    public function getPayableTypeNameAttribute(): string
+    {
+        return match ($this->payable_type) {
+            'App\Models\Treatment' => 'Treatment',
+            'App\Models\TreatmentSession' => 'Session',
+            'App\Models\TreatmentProcedure' => 'Procedure',
+            'App\Models\Invoice' => 'Invoice',
+            default => 'Direct Payment'
+        };
+    }
+
     /*-----------------------------------
      | Scopes
      *-----------------------------------*/
@@ -187,6 +220,12 @@ class Payment extends Model
     public function scopeByMethod($query, $method)
     {
         return $query->where('payment_method', $method);
+    }
+
+    public function scopeForPayable($query, $type, $id)
+    {
+        return $query->where('payable_type', $type)
+            ->where('payable_id', $id);
     }
 
     /*-----------------------------------

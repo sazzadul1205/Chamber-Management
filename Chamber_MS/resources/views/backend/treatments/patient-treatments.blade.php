@@ -13,6 +13,7 @@
                 </p>
             </div>
             <div class="flex items-center gap-3">
+                {{-- Back to Patient --}}
                 <a href="{{ route('backend.patients.show', $patient) }}"
                     class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -21,6 +22,17 @@
                     </svg>
                     Back to Patient
                 </a>
+
+                {{-- Back to Treatments --}}
+                <a href="{{ route('backend.treatments.index', ['patient_id' => $patient->id]) }}"
+                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7m0 0l7-7" />
+                    </svg>
+                    Back to Treatments
+                </a>
+
+                {{-- New Treatment --}}
                 <a href="{{ route('backend.treatments.create', ['patient_id' => $patient->id]) }}"
                     class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,10 +41,11 @@
                     New Treatment
                 </a>
             </div>
+
         </div>
 
         <!-- Treatments List -->
-        @if($treatments->count() > 0)
+        @if ($treatments->count() > 0)
             <div class="bg-white rounded-lg shadow overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -59,14 +72,15 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach($treatments as $treatment)
+                            @foreach ($treatments as $treatment)
                                 <tr class="hover:bg-gray-50 transition-colors">
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="font-medium text-gray-900">{{ $treatment->treatment_code }}</div>
                                         <div class="text-sm text-gray-500">{{ $treatment->diagnosis }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">{{ $treatment->treatment_date->format('M d, Y') }}</div>
+                                        <div class="text-sm text-gray-900">
+                                            {{ $treatment->treatment_date->format('M d, Y') }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-gray-900">
@@ -74,29 +88,51 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 py-1 text-xs font-semibold rounded-full 
-                                        @elseif($treatment->status == 'in_progress') bg-blue-100 text-blue-800
-                                        @if($treatment->status == 'completed') bg-green-100 text-green-800
-                                            @elseif($treatment->status == 'planned') bg-yellow-100 text-yellow-800
-                                            @elseif($treatment->status == 'cancelled') bg-red-100 text-red-800
-                                            @else bg-gray-100 text-gray-800 @endif">
+                                        <span
+                                            class="px-2 py-1 text-xs font-semibold rounded-full
+        @if ($treatment->status === 'completed') bg-green-100 text-green-800
+        @elseif($treatment->status === 'in_progress')
+            bg-blue-100 text-blue-800
+        @elseif($treatment->status === 'planned')
+            bg-yellow-100 text-yellow-800
+        @elseif($treatment->status === 'cancelled')
+            bg-red-100 text-red-800
+        @else
+            bg-gray-100 text-gray-800 @endif
+    ">
                                             {{ ucfirst(str_replace('_', ' ', $treatment->status)) }}
                                         </span>
                                     </td>
+
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900">
                                             ৳ {{ number_format($treatment->total_actual_cost, 2) }}
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <div class="flex items-center space-x-2">
+                                        <div class="flex items-center space-x-3">
+                                            <!-- View Button -->
                                             <a href="{{ route('backend.treatments.show', $treatment) }}"
-                                                class="text-blue-600 hover:text-blue-900">
-                                                View
+                                                class="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                                                title="View Details">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
                                             </a>
+
+                                            <!-- Edit Button -->
                                             <a href="{{ route('backend.treatments.edit', $treatment) }}"
-                                                class="text-yellow-600 hover:text-yellow-900">
-                                                Edit
+                                                class="text-yellow-600 hover:text-yellow-900 transition-colors duration-200"
+                                                title="Edit Treatment">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
                                             </a>
                                         </div>
                                     </td>
@@ -107,7 +143,7 @@
                 </div>
 
                 <!-- Pagination -->
-                @if($treatments->hasPages())
+                @if ($treatments->hasPages())
                     <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
                         {{ $treatments->links() }}
                     </div>

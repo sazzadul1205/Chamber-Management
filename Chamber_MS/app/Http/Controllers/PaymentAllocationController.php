@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\PaymentInstallment;
+use App\Models\TreatmentProcedure;
 use App\Models\TreatmentSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,12 +61,14 @@ class PaymentAllocationController extends Controller
             'payment_id' => 'required|exists:payments,id',
             'installment_id' => 'nullable|exists:payment_installments,id',
             'treatment_session_id' => 'nullable|exists:treatment_sessions,id',
+            'treatment_procedure_id' => 'nullable|exists:treatment_procedures,id', // ADD THIS
             'allocated_amount' => 'required|numeric|min:0.01',
             'allocation_date' => 'required|date',
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        if (!$request->installment_id && !$request->treatment_session_id) {
+        // Validate at least one target
+        if (!$request->installment_id && !$request->treatment_session_id && !$request->treatment_procedure_id) {
             return redirect()->back()->withErrors(['error' => 'Select at least one allocation target.'])->withInput();
         }
 
@@ -85,15 +88,22 @@ class PaymentAllocationController extends Controller
                 'payment_id' => $request->payment_id,
                 'installment_id' => $request->installment_id,
                 'treatment_session_id' => $request->treatment_session_id,
+                'treatment_procedure_id' => $request->treatment_procedure_id, // ADD THIS
                 'allocated_amount' => $request->allocated_amount,
                 'allocation_date' => $request->allocation_date,
                 'notes' => $request->notes,
                 'created_by' => auth()->id(),
             ]);
 
-            // Update installment and invoice if allocated to installment
+            // Apply allocation
             if ($request->installment_id) {
                 $this->applyAllocationToInstallment($request->installment_id, $request->allocated_amount);
+            }
+            if ($request->treatment_session_id) {
+                $this->applyAllocationToSession($request->treatment_session_id, $request->allocated_amount);
+            }
+            if ($request->treatment_procedure_id) {
+                $this->applyAllocationToProcedure($request->treatment_procedure_id, $request->allocated_amount);
             }
 
             DB::commit();
@@ -266,5 +276,25 @@ class PaymentAllocationController extends Controller
         $invoice->status = $invoice->paid_amount <= 0
             ? 'pending' : ($invoice->paid_amount < $invoice->total_amount ? 'partial' : 'paid');
         $invoice->save();
+    }
+
+    // Add these helper methods to PaymentAllocationController:
+    private function applyAllocationToSession($sessionId, $amount)
+    {
+        // You need to add payment tracking to TreatmentSession
+        $session = TreatmentSession::find($sessionId);
+        if ($session) {
+            // Create payment record or update session paid amount
+            // This depends on how you want to track session payments
+        }
+    }
+
+    private function applyAllocationToProcedure($procedureId, $amount)
+    {
+        // Similar logic for procedures
+        $procedure = TreatmentProcedure::find($procedureId);
+        if ($procedure) {
+            // Update procedure paid amount
+        }
     }
 }

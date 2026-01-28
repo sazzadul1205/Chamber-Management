@@ -126,7 +126,7 @@
                 [
                     'label' => 'Procedure Catalog',
                     'icon' => 'list',
-                    'route' => 'backend.treatment-procedures.catalog.search',
+                    'route' => 'backend.procedure-catalog.index',
                 ],
                 [
                     'label' => 'Diagnosis Codes',

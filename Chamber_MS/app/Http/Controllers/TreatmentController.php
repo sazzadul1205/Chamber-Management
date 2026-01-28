@@ -171,17 +171,109 @@ class TreatmentController extends Controller
     // =========================
     public function show(Treatment $treatment)
     {
+        // Load ALL relationships including payments
         $treatment->load([
             'patient',
             'doctor.user',
             'appointment',
-            'procedures',
-            'sessions',
+            'procedures.payments', 
+            'sessions.payments',   
             'prescriptions',
-            'invoices'
+            'invoices.payments'
         ]);
 
-        return view('backend.treatments.show', compact('treatment'));
+        // Calculate session costs - FIXED with null-safe operator
+        $sessionCosts = $treatment->sessions->map(function ($session) {
+            $sessionPaid = optional($session->payments)->sum('amount') ?? 0;
+            $sessionBalance = max(0, ($session->cost_for_session ?? 0) - $sessionPaid);
+
+            return [
+                'id' => $session->id,
+                'session_number' => $session->session_number,
+                'title' => $session->session_title,
+                'scheduled_date' => $session->scheduled_date,
+                'status' => $session->status,
+                'cost' => $session->cost_for_session ?? 0,
+                'paid' => $sessionPaid,
+                'balance' => $sessionBalance,
+                'duration' => $session->duration_planned,
+                'actual_duration' => $session->duration_actual
+            ];
+        });
+
+        // Calculate procedure costs - FIXED with null-safe operator
+        $procedureCosts = $treatment->procedures->map(function ($procedure) {
+            $procedurePaid = optional($procedure->payments)->sum('amount') ?? 0;
+            $procedureBalance = max(0, ($procedure->cost ?? 0) - $procedurePaid);
+
+            return [
+                'id' => $procedure->id,
+                'code' => $procedure->procedure_code,
+                'name' => $procedure->procedure_name,
+                'cost' => $procedure->cost ?? 0,
+                'paid' => $procedurePaid,
+                'balance' => $procedureBalance,
+                'status' => $procedure->status
+            ];
+        });
+
+        // Calculate totals
+        $totalSessionCost = $sessionCosts->sum('cost');
+        $totalSessionPaid = $sessionCosts->sum('paid');
+        $totalProceduresCost = $procedureCosts->sum('cost');
+        $totalProceduresPaid = $procedureCosts->sum('paid');
+
+        $subtotal = $totalSessionCost + $totalProceduresCost;
+        $totalPaidFromItems = $totalSessionPaid + $totalProceduresPaid;
+
+        // Calculate payment totals from ALL sources
+        $totalPaid = 0;
+
+        // 1. Payments from invoices
+        foreach ($treatment->invoices as $invoice) {
+            $totalPaid += optional($invoice->payments)->sum('amount') ?? 0;
+        }
+
+        // 2. Direct session payments (already counted above)
+        // 3. Direct procedure payments (already counted above)
+
+        // Use whichever is greater (in case there are direct payments)
+        $totalPaid = max($totalPaid, $totalPaidFromItems);
+
+        // Calculate treatment final cost
+        $finalActualCost = max(
+            $subtotal - ($treatment->discount ?? 0),
+            ($treatment->total_actual_cost ?? 0) - ($treatment->discount ?? 0)
+        );
+
+        // Treatment cost breakdown
+        $costBreakdown = [
+            'estimated_cost' => $treatment->total_estimated_cost,
+            'actual_cost' => $treatment->total_actual_cost,
+            'session_costs' => $totalSessionCost,
+            'session_paid' => $totalSessionPaid,
+            'procedure_costs' => $totalProceduresCost,
+            'procedure_paid' => $totalProceduresPaid,
+            'discount' => $treatment->discount ?? 0,
+            'final_estimated' => ($treatment->total_estimated_cost ?? 0) - ($treatment->discount ?? 0),
+            'final_actual' => $finalActualCost
+        ];
+
+        // Payment calculations
+        $paidAmount = $totalPaid;
+        $balanceDue = max(0, $finalActualCost - $totalPaid);
+        $paymentPercentage = $finalActualCost > 0 ? round(($totalPaid / $finalActualCost) * 100, 2) : 0;
+
+        return view('backend.treatments.show', compact(
+            'treatment',
+            'sessionCosts',
+            'procedureCosts',
+            'costBreakdown',
+            'subtotal',
+            'paidAmount',
+            'balanceDue',
+            'paymentPercentage'
+        ));
     }
 
     // =========================
@@ -382,5 +474,78 @@ class TreatmentController extends Controller
             ->paginate(20);
 
         return view('backend.treatments.patient-treatments', compact('patient', 'treatments'));
+    }
+
+
+    // =========================
+    // QUICK METHOD TO UPDATE SESSION COST IN TREATMENT
+    // =========================
+    public function updateSessionCost(Request $request, Treatment $treatment)
+    {
+        $request->validate([
+            'session_id' => 'required|exists:treatment_sessions,id',
+            'cost' => 'required|numeric|min:0'
+        ]);
+
+        $session = $treatment->sessions()->findOrFail($request->session_id);
+        $session->update(['cost_for_session' => $request->cost]);
+
+        // Recalculate treatment actual cost
+        $this->recalculateTreatmentCost($treatment);
+
+        return back()->with('success', 'Session cost updated successfully.');
+    }
+
+    // =========================
+    // RECALCULATE TREATMENT COST (PRIVATE METHOD)
+    // =========================
+    private function recalculateTreatmentCost(Treatment $treatment)
+    {
+        $totalSessionCost = $treatment->sessions()->sum('cost_for_session');
+        $totalProcedureCost = $treatment->procedures()->sum('cost');
+
+        // Use whichever is appropriate for your logic
+        $totalActualCost = max($totalSessionCost, $totalProcedureCost);
+
+        $treatment->update([
+            'total_actual_cost' => $totalActualCost
+        ]);
+
+        return $totalActualCost;
+    }
+
+    // =========================
+    // GET TREATMENT COST SUMMARY (AJAX)
+    // =========================
+    public function getCostSummary(Treatment $treatment)
+    {
+        $treatment->load(['sessions', 'procedures']);
+
+        $summary = [
+            'session_costs' => $treatment->sessions->sum('cost_for_session'),
+            'procedure_costs' => $treatment->procedures->sum('cost'),
+            'estimated_cost' => $treatment->total_estimated_cost,
+            'discount' => $treatment->discount ?? 0,
+            'final_estimated' => ($treatment->total_estimated_cost ?? 0) - ($treatment->discount ?? 0),
+            'final_actual' => ($treatment->total_actual_cost ?? 0) - ($treatment->discount ?? 0)
+        ];
+
+        return response()->json($summary);
+    }
+
+    // Session Payments View
+    public function sessionPayments(Treatment $treatment)
+    {
+        $treatment->load(['sessions.payments']);
+
+        return view('backend.payments.session-payments', compact('treatment'));
+    }
+
+    // Procedure Payments View
+    public function procedurePayments(Treatment $treatment)
+    {
+        $treatment->load(['procedures.payments']);
+
+        return view('backend.payments.procedure-payments', compact('treatment'));
     }
 }

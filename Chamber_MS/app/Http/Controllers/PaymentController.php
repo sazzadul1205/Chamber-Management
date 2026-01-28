@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Payment;
 use App\Models\Invoice;
 use App\Models\Patient;
+use App\Models\PaymentAllocation;
 use App\Models\PaymentInstallment;
+use App\Models\TreatmentProcedure;
 use App\Models\TreatmentSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -127,6 +129,13 @@ class PaymentController extends Controller
             ]);
 
             $payment->processPayment();
+
+            // NEW: Auto-allocate to outstanding sessions/procedures if no installment specified
+            if (!$request->installment_id && $request->auto_allocate) {
+                $this->autoAllocateToTreatments($payment, $request->amount);
+            }
+
+            // Deduct payment from invoice
             DB::commit();
 
             return redirect()->route('payments.show', $payment->id)->with('success', 'Payment recorded successfully.');
@@ -312,5 +321,76 @@ class PaymentController extends Controller
         $installments = $invoice->installments()->where('status', '!=', 'paid')->orderBy('due_date')->get();
 
         return response()->json($installments);
+    }
+
+
+    private function autoAllocateToTreatments(Payment $payment, $amount)
+    {
+        $invoice = $payment->invoice;
+        $patient = $invoice->patient;
+
+        // Get unpaid sessions for this patient's treatments
+        $unpaidSessions = TreatmentSession::whereHas('treatment', function ($query) use ($patient) {
+            $query->where('patient_id', $patient->id);
+        })
+            ->whereRaw('cost_for_session > IFNULL((SELECT SUM(amount) FROM payments WHERE for_treatment_session_id = treatment_sessions.id), 0)')
+            ->orderBy('scheduled_date')
+            ->get();
+
+        $remainingAmount = $amount;
+
+        foreach ($unpaidSessions as $session) {
+            if ($remainingAmount <= 0) break;
+
+            $sessionBalance = $session->balance;
+            $allocateAmount = min($sessionBalance, $remainingAmount);
+
+            if ($allocateAmount > 0) {
+                // Create allocation
+                PaymentAllocation::create([
+                    'payment_id' => $payment->id,
+                    'treatment_session_id' => $session->id,
+                    'allocated_amount' => $allocateAmount,
+                    'allocation_date' => now(),
+                    'created_by' => auth()->id(),
+                ]);
+
+                // Update session
+                $session->addPayment($allocateAmount);
+
+                $remainingAmount -= $allocateAmount;
+            }
+        }
+
+        // If still have remaining amount, allocate to procedures
+        if ($remainingAmount > 0) {
+            $unpaidProcedures = TreatmentProcedure::whereHas('treatment', function ($query) use ($patient) {
+                $query->where('patient_id', $patient->id);
+            })
+                ->where('status', 'completed')
+                ->whereRaw('cost > IFNULL((SELECT SUM(allocated_amount) FROM payment_allocations WHERE treatment_procedure_id = treatment_procedures.id), 0)')
+                ->get();
+
+            foreach ($unpaidProcedures as $procedure) {
+                if ($remainingAmount <= 0) break;
+
+                $procedureBalance = $procedure->cost - ($procedure->paid_amount ?? 0);
+                $allocateAmount = min($procedureBalance, $remainingAmount);
+
+                if ($allocateAmount > 0) {
+                    PaymentAllocation::create([
+                        'payment_id' => $payment->id,
+                        'treatment_procedure_id' => $procedure->id,
+                        'allocated_amount' => $allocateAmount,
+                        'allocation_date' => now(),
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    $remainingAmount -= $allocateAmount;
+                }
+            }
+        }
+
+        return $amount - $remainingAmount; // Return allocated amount
     }
 }
