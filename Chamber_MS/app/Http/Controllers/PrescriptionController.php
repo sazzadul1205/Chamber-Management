@@ -26,7 +26,7 @@ class PrescriptionController extends Controller
         $prescriptions = $query->orderByDesc('created_at')->paginate(20);
         $treatments = Treatment::active()->get();
 
-        return view('prescriptions.index', compact('prescriptions', 'treatments'));
+        return view('backend.prescriptions.index', compact('prescriptions', 'treatments'));
     }
 
     // =========================
@@ -41,7 +41,7 @@ class PrescriptionController extends Controller
         $treatments = Treatment::active()->with('patient')->get();
         $medicines = Medicine::active()->get();
 
-        return view('prescriptions.create', compact('treatment', 'treatments', 'medicines'));
+        return view('backend.prescriptions.create', compact('treatment', 'treatments', 'medicines'));
     }
 
     public function store(Request $request)
@@ -84,7 +84,7 @@ class PrescriptionController extends Controller
             }
         });
 
-        return redirect()->route('prescriptions.index')->with('success', 'Prescription created successfully.');
+        return redirect()->route('backend.prescriptions.index')->with('success', 'Prescription created successfully.');
     }
 
     // =========================
@@ -93,7 +93,7 @@ class PrescriptionController extends Controller
     public function show(Prescription $prescription)
     {
         $prescription->load(['treatment.patient', 'treatment.doctor.user', 'creator', 'items.medicine']);
-        return view('prescriptions.show', compact('prescription'));
+        return view('backend.prescriptions.show', compact('prescription'));
     }
 
     // =========================
@@ -103,7 +103,7 @@ class PrescriptionController extends Controller
     {
         $prescription->load(['treatment', 'items.medicine']);
         $medicines = Medicine::active()->get();
-        return view('prescriptions.edit', compact('prescription', 'medicines'));
+        return view('backend.prescriptions.edit', compact('prescription', 'medicines'));
     }
 
     public function update(Request $request, Prescription $prescription)
@@ -117,7 +117,7 @@ class PrescriptionController extends Controller
 
         $prescription->update($request->only(['prescription_date', 'validity_days', 'notes', 'status']));
 
-        return redirect()->route('prescriptions.show', $prescription)
+        return redirect()->route('backend.prescriptions.show', $prescription)
             ->with('success', 'Prescription updated successfully.');
     }
 
@@ -131,7 +131,7 @@ class PrescriptionController extends Controller
         }
 
         $prescription->delete();
-        return redirect()->route('prescriptions.index')->with('success', 'Prescription deleted successfully.');
+        return redirect()->route('backend.prescriptions.index')->with('success', 'Prescription deleted successfully.');
     }
 
     // =========================
@@ -235,7 +235,7 @@ class PrescriptionController extends Controller
     public function print(Prescription $prescription)
     {
         $prescription->load(['treatment.patient', 'treatment.doctor.user', 'items.medicine']);
-        return view('prescriptions.print', compact('prescription'));
+        return view('backend.prescriptions.print', compact('prescription'));
     }
 
     // =========================
@@ -244,7 +244,7 @@ class PrescriptionController extends Controller
     public function treatmentPrescriptions(Treatment $treatment)
     {
         $prescriptions = $treatment->prescriptions()->orderByDesc('created_at')->get();
-        return view('prescriptions.treatment-prescriptions', compact('treatment', 'prescriptions'));
+        return view('backend.prescriptions.treatment-prescriptions', compact('treatment', 'prescriptions'));
     }
 
     // =========================

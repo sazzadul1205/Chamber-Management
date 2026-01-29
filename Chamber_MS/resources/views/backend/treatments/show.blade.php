@@ -87,8 +87,7 @@
                                         <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
                                             Appointment Details</h4>
                                         <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                            <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                                                 <i class="fas fa-calendar-check text-purple-600"></i>
                                             </div>
                                             <div>
@@ -232,6 +231,8 @@
                 @include('backend.treatments.Components.treatments')
 
                 @include('backend.treatments.Components.session')
+
+                @include('backend.treatments.Components.prescriptions')
             </div>
 
             <!-- Right Column: Actions & Timeline -->
@@ -354,12 +355,11 @@
                                                 {{ \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') }}
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap">
-                                                <span
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                            @if ($payment->payment_method == 'cash') bg-green-100 text-green-800
-                            @elseif($payment->payment_method == 'card') bg-blue-100 text-blue-800
-                            @elseif($payment->payment_method == 'bank_transfer') bg-purple-100 text-purple-800
-                            @else bg-gray-100 text-gray-800 @endif">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        @if ($payment->payment_method == 'cash') bg-green-100 text-green-800
+                                        @elseif($payment->payment_method == 'card') bg-blue-100 text-blue-800
+                                        @elseif($payment->payment_method == 'bank_transfer') bg-purple-100 text-purple-800
+                                        @else bg-gray-100 text-gray-800 @endif">
                                                     {{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}
                                                 </span>
                                             </td>
@@ -367,11 +367,10 @@
                                                 ৳ {{ number_format($payment->amount, 2) }}
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap">
-                                                <span
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                            @if ($payment->status == 'completed') bg-green-100 text-green-800
-                            @elseif($payment->status == 'pending') bg-yellow-100 text-yellow-800
-                            @else bg-red-100 text-red-800 @endif">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        @if ($payment->status == 'completed') bg-green-100 text-green-800
+                                        @elseif($payment->status == 'pending') bg-yellow-100 text-yellow-800
+                                        @else bg-red-100 text-red-800 @endif">
                                                     {{ ucfirst($payment->status) }}
                                                 </span>
                                             </td>
