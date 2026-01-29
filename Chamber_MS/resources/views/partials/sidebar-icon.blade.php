@@ -136,47 +136,51 @@
          BUTTON / ACTION ICONS
     ============================== --}}
     @case('B_View')
-        @include('components.icons.B_View')
+        @include('components.icons.Buttons.B_View')
     @break
 
     @case('B_Edit')
-        @include('components.icons.B_Edit')
+        @include('components.icons.Buttons.B_Edit')
     @break
 
     @case('B_Delete')
-        @include('components.icons.B_Delete')
+        @include('components.icons.Buttons.B_Delete')
     @break
 
     @case('B_Add')
-        @include('components.icons.B_Add')
+        @include('components.icons.Buttons.B_Add')
     @break
 
     @case('B_Export')
-        @include('components.icons.B_Export')
+        @include('components.icons.Buttons.B_Export')
     @break
 
     @case('B_Reschedule')
-        @include('components.icons.B_Reschedule')
+        @include('components.icons.Buttons.B_Reschedule')
     @break
 
     @case('B_Tick')
-        @include('components.icons.B_Tick')
+        @include('components.icons.Buttons.B_Tick')
     @break
 
     @case('B_Cross')
-        @include('components.icons.B_Cross')
+        @include('components.icons.Buttons.B_Cross')
     @break
 
     @case('B_Play')
-        @include('components.icons.B_Play')
+        @include('components.icons.Buttons.B_Play')
     @break
 
     @case('B_Print')
-        @include('components.icons.B_Print')
+        @include('components.icons.Buttons.B_Print')
     @break
 
     @case('B_Back')
-        @include('components.icons.B_Back')
+        @include('components.icons.Buttons.B_Back')
+    @break
+
+    @case('B_Pause')
+        @include('components.icons.Buttons.B_Pause')
     @break
 
     {{-- ==============================
