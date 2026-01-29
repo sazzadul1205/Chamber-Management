@@ -88,7 +88,8 @@
                                 <div class="flex justify-between">
                                     <dt class="text-gray-600">Doctor:</dt>
                                     <dd class="font-semibold">
-                                        {{ $prescription->treatment->doctor->user->full_name ?? 'N/A' }}</dd>
+                                        {{ $prescription->treatment->doctor->user->full_name ?? 'N/A' }}
+                                    </dd>
                                 </div>
                                 <div class="flex justify-between">
                                     <dt class="text-gray-600">Created By:</dt>
@@ -111,7 +112,8 @@
                     <div class="px-6 py-4 border-b flex justify-between items-center">
                         <h3 class="text-lg font-semibold text-gray-800">Prescribed Medicines</h3>
                         @if($prescription->status === 'active')
-                            <form action="{{ route('backend.prescriptions.dispenseAll', $prescription) }}" method="POST" class="inline">
+                            <form action="{{ route('backend.prescriptions.dispense-all', $prescription) }}" method="POST"
+                                class="inline">
                                 @csrf
                                 <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
                                     onclick="return confirm('Dispense all items?')">
@@ -169,8 +171,8 @@
                                             <div class="flex space-x-2">
                                                 @if($prescription->status === 'active')
                                                     @if($item->status === 'pending')
-                                                        <form action="{{ route('backend.prescriptions.dispenseItem', $item) }}" method="POST"
-                                                            class="inline">
+                                                        <form action="{{ route('backend.prescriptions.dispenseItem', $item) }}"
+                                                            method="POST" class="inline">
                                                             @csrf
                                                             <button type="submit" class="text-green-600 hover:text-green-800"
                                                                 title="Dispense">
@@ -178,8 +180,8 @@
                                                             </button>
                                                         </form>
 
-                                                        <form action="{{ route('backend.prescriptions.removeItem', $item) }}" method="POST"
-                                                            class="inline" onsubmit="return confirm('Remove this item?')">
+                                                        <form action="{{ route('backend.prescriptions.removeItem', $item) }}"
+                                                            method="POST" class="inline" onsubmit="return confirm('Remove this item?')">
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" class="text-red-600 hover:text-red-800"
@@ -190,8 +192,8 @@
                                                     @endif
 
                                                     @if($item->status === 'dispensed')
-                                                        <form action="{{ route('backend.prescriptions.cancelItem', $item) }}" method="POST"
-                                                            class="inline">
+                                                        <form action="{{ route('backend.prescriptions.cancelItem', $item) }}"
+                                                            method="POST" class="inline">
                                                             @csrf
                                                             <button type="submit" class="text-red-600 hover:text-red-800" title="Cancel"
                                                                 onclick="return confirm('Cancel this dispensed item?')">
@@ -245,7 +247,7 @@
                                 </button>
                             </form>
 
-                            <form action="{{ route('backend.prescriptions.markAsFilled', $prescription) }}" method="POST">
+                            <form action="{{ route('backend.prescriptions.mark-as-filled', $prescription) }}" method="POST">
                                 @csrf
                                 <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                                     onclick="return confirm('Mark as filled?')">

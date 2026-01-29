@@ -103,7 +103,21 @@ class PrescriptionController extends Controller
     {
         $prescription->load(['treatment', 'items.medicine']);
         $medicines = Medicine::active()->get();
-        return view('backend.prescriptions.edit', compact('prescription', 'medicines'));
+
+        // Prepare existing items data for JavaScript
+        $existingItems = $prescription->items->map(function ($item) {
+            return [
+                'medicine_id' => $item->medicine_id,
+                'dosage' => $item->dosage,
+                'frequency' => $item->frequency,
+                'duration' => $item->duration,
+                'route' => $item->route,
+                'quantity' => $item->quantity,
+                'instructions' => $item->instructions
+            ];
+        })->toArray();
+
+        return view('backend.prescriptions.edit', compact('prescription', 'medicines', 'existingItems'));
     }
 
     public function update(Request $request, Prescription $prescription)

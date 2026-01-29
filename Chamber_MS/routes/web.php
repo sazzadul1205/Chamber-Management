@@ -243,16 +243,21 @@ Route::middleware(['auth'])->group(function () {
     // -----------------------------
     // Prescriptions
     // -----------------------------
+    // These are your actual route names:
     Route::resource('prescriptions', PrescriptionController::class)->names('backend.prescriptions');
     Route::get('prescriptions/treatment/{treatment}', [PrescriptionController::class, 'treatmentPrescriptions'])->name('backend.prescriptions.by-treatment');
     Route::get('prescriptions/get-medicines', [PrescriptionController::class, 'getMedicines'])->name('backend.prescriptions.get-medicines');
     Route::post('prescriptions/quick-create', [PrescriptionController::class, 'quickCreate'])->name('backend.prescriptions.quick-create');
     Route::get('prescriptions/{prescription}/print', [PrescriptionController::class, 'print'])->name('backend.prescriptions.print');
+
+    // Status actions (note the hyphens in the names):
     Route::post('prescriptions/{prescription}/expire', [PrescriptionController::class, 'expire'])->name('backend.prescriptions.expire');
     Route::post('prescriptions/{prescription}/cancel', [PrescriptionController::class, 'cancel'])->name('backend.prescriptions.cancel');
-    Route::post('prescriptions/{prescription}/mark-as-filled', [PrescriptionController::class, 'markAsFilled'])->name('backend.prescriptions.mark-as-filled');
-    Route::post('prescriptions/{prescription}/dispense-all', [PrescriptionController::class, 'dispenseAll'])->name('backend.prescriptions.dispense-all');
-    Route::post('prescriptions/{prescription}/add-item', [PrescriptionController::class, 'addItem'])->name('backend.prescriptions.add-item');
+    Route::post('prescriptions/{prescription}/mark-as-filled', [PrescriptionController::class, 'markAsFilled'])->name('backend.prescriptions.mark-as-filled'); // Note: mark-as-filled (with hyphens)
+    Route::post('prescriptions/{prescription}/dispense-all', [PrescriptionController::class, 'dispenseAll'])->name('backend.prescriptions.dispense-all'); // Note: dispense-all (with hyphens)
+
+    // Item actions:
+    Route::post('prescriptions/{prescription}/add-item', [PrescriptionController::class, 'addItem'])->name('backend.prescriptions.add-item'); // Note: add-item (with hyphen)
     Route::post('prescription-item/{item}/dispense', [PrescriptionController::class, 'dispenseItem'])->name('backend.prescriptions.item.dispense');
     Route::post('prescription-item/{item}/cancel', [PrescriptionController::class, 'cancelItem'])->name('backend.prescriptions.item.cancel');
     Route::delete('prescription-item/{item}', [PrescriptionController::class, 'removeItem'])->name('backend.prescriptions.item.remove');
