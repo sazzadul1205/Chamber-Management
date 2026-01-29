@@ -10,19 +10,47 @@
                 <p class="text-gray-600">{{ $prescription->prescription_code }}</p>
             </div>
             <div class="flex space-x-3">
+                {{-- Print --}}
                 <a href="{{ route('backend.prescriptions.print', $prescription) }}" target="_blank"
-                    class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
-                    <i class="fas fa-print mr-2"></i>Print
+                    class="inline-flex items-center justify-center gap-2 px-10 h-11 rounded-lg font-medium text-sm bg-purple-600 text-white hover:bg-purple-700 transition">
+
+                    {{-- Print Icon --}}
+                    @include('partials.sidebar-icon', [
+                        'name' => 'B_Print',
+                        'class' => 'w-4 h-4',
+                    ])
+
+                    <span>Print</span>
                 </a>
+
+                {{-- Edit --}}
                 <a href="{{ route('backend.prescriptions.edit', $prescription) }}"
-                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                    <i class="fas fa-edit mr-2"></i>Edit
+                    class="inline-flex items-center justify-center gap-2 px-10 h-11 rounded-lg font-medium text-sm bg-green-600 text-white hover:bg-green-700 transition">
+
+                    {{-- Edit Icon --}}
+                    @include('partials.sidebar-icon', [
+                        'name' => 'B_Edit',
+                        'class' => 'w-4 h-4',
+                    ])
+
+                    <span>Edit</span>
                 </a>
+
+
+                {{-- Back Button --}}
                 <a href="{{ route('backend.prescriptions.index') }}"
-                    class="border border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-50">
-                    <i class="fas fa-arrow-left mr-2"></i>Back
+                    class="inline-flex items-center justify-center gap-2 px-10 h-11 rounded-lg font-medium text-sm bg-gray-300 text-gray-700 hover:bg-gray-400 transition">
+
+                    {{-- Back Icon --}}
+                    @include('partials.sidebar-icon', [
+                        'name' => 'B_Back',
+                        'class' => 'w-4 h-4',
+                    ])
+
+                    <span>Back</span>
                 </a>
             </div>
+
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -99,7 +127,7 @@
                         </div>
                     </div>
 
-                    @if($prescription->notes)
+                    @if ($prescription->notes)
                         <div class="mt-6 pt-6 border-t">
                             <h4 class="font-semibold text-gray-700 mb-2">Notes:</h4>
                             <p class="text-gray-600 bg-gray-50 p-4 rounded">{{ $prescription->notes }}</p>
@@ -111,7 +139,7 @@
                 <div class="bg-white rounded shadow">
                     <div class="px-6 py-4 border-b flex justify-between items-center">
                         <h3 class="text-lg font-semibold text-gray-800">Prescribed Medicines</h3>
-                        @if($prescription->status === 'active')
+                        @if ($prescription->status === 'active')
                             <form action="{{ route('backend.prescriptions.dispense-all', $prescription) }}" method="POST"
                                 class="inline">
                                 @csrf
@@ -139,7 +167,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
-                                @foreach($prescription->items as $item)
+                                @foreach ($prescription->items as $item)
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-6 py-4">
                                             <div class="font-semibold">{{ $item->medicine->brand_name }}</div>
@@ -160,28 +188,33 @@
                                                     'cancelled' => 'bg-red-100 text-red-800',
                                                 ];
                                             @endphp
-                                            <span class="px-2 py-1 text-xs rounded-full {{ $itemStatusColors[$item->status] }}">
+                                            <span
+                                                class="px-2 py-1 text-xs rounded-full {{ $itemStatusColors[$item->status] }}">
                                                 {{ ucfirst($item->status) }}
                                             </span>
-                                            @if($item->quantity)
+                                            @if ($item->quantity)
                                                 <div class="text-xs text-gray-500 mt-1">Qty: {{ $item->quantity }}</div>
                                             @endif
                                         </td>
                                         <td class="px-6 py-4">
                                             <div class="flex space-x-2">
-                                                @if($prescription->status === 'active')
-                                                    @if($item->status === 'pending')
-                                                        <form action="{{ route('backend.prescriptions.dispenseItem', $item) }}"
+                                                @if ($prescription->status === 'active')
+                                                    @if ($item->status === 'pending')
+                                                        <form
+                                                            action="{{ route('backend.prescriptions.item.dispense', $item) }}"
                                                             method="POST" class="inline">
                                                             @csrf
-                                                            <button type="submit" class="text-green-600 hover:text-green-800"
+                                                            <button type="submit"
+                                                                class="text-green-600 hover:text-green-800"
                                                                 title="Dispense">
                                                                 <i class="fas fa-check"></i>
                                                             </button>
                                                         </form>
 
-                                                        <form action="{{ route('backend.prescriptions.removeItem', $item) }}"
-                                                            method="POST" class="inline" onsubmit="return confirm('Remove this item?')">
+                                                        <form
+                                                            action="{{ route('backend.prescriptions.item.remove', $item) }}"
+                                                            method="POST" class="inline"
+                                                            onsubmit="return confirm('Remove this item?')">
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" class="text-red-600 hover:text-red-800"
@@ -191,11 +224,13 @@
                                                         </form>
                                                     @endif
 
-                                                    @if($item->status === 'dispensed')
-                                                        <form action="{{ route('backend.prescriptions.cancelItem', $item) }}"
+                                                    @if ($item->status === 'dispensed')
+                                                        <form
+                                                            action="{{ route('backend.prescriptions.item.cancel', $item) }}"
                                                             method="POST" class="inline">
                                                             @csrf
-                                                            <button type="submit" class="text-red-600 hover:text-red-800" title="Cancel"
+                                                            <button type="submit" class="text-red-600 hover:text-red-800"
+                                                                title="Cancel"
                                                                 onclick="return confirm('Cancel this dispensed item?')">
                                                                 <i class="fas fa-undo"></i>
                                                             </button>
@@ -205,7 +240,7 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    @if($item->instructions)
+                                    @if ($item->instructions)
                                         <tr class="bg-gray-50">
                                             <td colspan="6" class="px-6 py-3">
                                                 <div class="text-sm">
@@ -229,7 +264,7 @@
                 <div class="bg-white rounded shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Prescription Actions</h3>
                     <div class="space-y-3">
-                        @if($prescription->status === 'active')
+                        @if ($prescription->status === 'active')
                             <form action="{{ route('backend.prescriptions.expire', $prescription) }}" method="POST">
                                 @csrf
                                 <button type="submit"
@@ -241,27 +276,31 @@
 
                             <form action="{{ route('backend.prescriptions.cancel', $prescription) }}" method="POST">
                                 @csrf
-                                <button type="submit" class="w-full bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                                <button type="submit"
+                                    class="w-full bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                                     onclick="return confirm('Cancel this prescription?')">
                                     <i class="fas fa-ban mr-2"></i>Cancel Prescription
                                 </button>
                             </form>
 
-                            <form action="{{ route('backend.prescriptions.mark-as-filled', $prescription) }}" method="POST">
+                            <form action="{{ route('backend.prescriptions.mark-as-filled', $prescription) }}"
+                                method="POST">
                                 @csrf
-                                <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                                <button type="submit"
+                                    class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                                     onclick="return confirm('Mark as filled?')">
                                     <i class="fas fa-check-circle mr-2"></i>Mark as Filled
                                 </button>
                             </form>
                         @endif
 
-                        @if(!$prescription->items()->where('status', 'dispensed')->exists())
+                        @if (!$prescription->items()->where('status', 'dispensed')->exists())
                             <form action="{{ route('backend.prescriptions.destroy', $prescription) }}" method="POST"
                                 onsubmit="return confirm('Delete this prescription?')">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="w-full bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">
+                                <button type="submit"
+                                    class="w-full bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">
                                     <i class="fas fa-trash mr-2"></i>Delete Prescription
                                 </button>
                             </form>
@@ -270,17 +309,17 @@
                 </div>
 
                 <!-- Add New Medicine -->
-                @if($prescription->status === 'active')
+                @if ($prescription->status === 'active')
                     <div class="bg-white rounded shadow p-6">
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">Add Medicine</h3>
-                        <form action="{{ route('backend.prescriptions.addItem', $prescription) }}" method="POST">
+                        <form action="{{ route('backend.prescriptions.add-item', $prescription) }}" method="POST">
                             @csrf
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Medicine</label>
                                     <select name="medicine_id" required class="w-full border rounded px-3 py-2">
                                         <option value="">Select Medicine</option>
-                                        @foreach(App\Models\Medicine::active()->get() as $medicine)
+                                        @foreach (App\Models\Medicine::active()->get() as $medicine)
                                             <option value="{{ $medicine->id }}">
                                                 {{ $medicine->brand_name }} ({{ $medicine->generic_name }})
                                             </option>

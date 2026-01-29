@@ -195,17 +195,20 @@
         // ===============================
         [
             'title' => 'Prescriptions',
-            'icon' => 'file-text',
+            'icon' => 'Prescription',
             'items' => [
-                ['label' => 'Create Prescription'],
+                ['label' => 'Create Prescription', 'icon' => 'Add-Circle', 'route' => 'backend.prescriptions.create'],
                 ['label' => 'Prescription Templates'],
-                ['label' => 'Prescription History'],
+                [
+                    'label' => 'Prescription History',
+                    'icon' => 'list',
+                    'route' => 'backend.prescriptions.index',
+                ],
                 [
                     'label' => 'Medicine Catalog',
                     'icon' => 'medicine',
                     'route' => 'backend.medicines.index',
                 ],
-                ['label' => 'Print Prescription'],
             ],
         ],
 
@@ -334,8 +337,8 @@
                             @include('partials.sidebar-icon', ['name' => $item['icon'] ?? 'default'])
                             <span>{{ $item['title'] }}</span>
                         </div>
-                        <svg :class="{ 'rotate-180': open }" class="w-4 h-4 transition-transform duration-200" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
+                        <svg :class="{ 'rotate-180': open }" class="w-4 h-4 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>

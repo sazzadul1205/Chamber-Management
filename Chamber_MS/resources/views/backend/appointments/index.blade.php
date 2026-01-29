@@ -135,11 +135,10 @@
                                             data-modal-target="reschedule-modal-{{ $appointment->id }}"
                                             data-modal-toggle="reschedule-modal-{{ $appointment->id }}"
                                             title="Reschedule Appointment">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                                stroke="currentColor" class="w-4 h-4">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M8 7H16M8 11H16M8 15H12M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2v10a2 2 0 002 2z" />
-                                            </svg>
+                                            @include('partials.sidebar-icon', [
+                                                'name' => 'B_Reschedule',
+                                                'class' => 'w-4 h-4',
+                                            ])
                                         </button>
                                     @endif
 
@@ -152,11 +151,10 @@
                                             <button type="submit"
                                                 class="w-8 h-8 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs"
                                                 title="Check-In">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                                    stroke="currentColor" class="w-4 h-4">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M5 13l4 4L19 7" />
-                                                </svg>
+                                                @include('partials.sidebar-icon', [
+                                                    'name' => 'B_Tick',
+                                                    'class' => 'w-4 h-4',
+                                                ])
                                             </button>
                                         </form>
                                     @endif
@@ -169,11 +167,10 @@
                                             <button type="submit"
                                                 class="w-8 h-8 flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white rounded text-xs"
                                                 title="Start Appointment">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                                    stroke="currentColor" class="w-4 h-4">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M14.752 11.168l-6.518-3.759A1 1 0 007 8.215v7.57a1 1 0 001.234.97l6.518-1.887a1 1 0 00.752-.97v-3.72a1 1 0 00-.752-.97z" />
-                                                </svg>
+                                                @include('partials.sidebar-icon', [
+                                                    'name' => 'B_Play',
+                                                    'class' => 'w-4 h-4',
+                                                ])
                                             </button>
                                         </form>
                                     @endif
@@ -186,11 +183,10 @@
                                             <button type="submit"
                                                 class="w-8 h-8 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded text-xs"
                                                 title="Complete Appointment">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                    viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M5 13l4 4L19 7" />
-                                                </svg>
+                                                @include('partials.sidebar-icon', [
+                                                    'name' => 'B_Tick',
+                                                    'class' => 'w-4 h-4',
+                                                ])
                                             </button>
                                         </form>
                                     @endif
@@ -203,11 +199,10 @@
                                             <button type="submit"
                                                 class="w-8 h-8 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white rounded text-xs"
                                                 title="Mark as No Show">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                    viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
+                                                @include('partials.sidebar-icon', [
+                                                    'name' => 'B_Cross',
+                                                    'class' => 'w-4 h-4',
+                                                ])
                                             </button>
                                         </form>
                                     @endif

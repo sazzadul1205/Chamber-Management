@@ -108,7 +108,7 @@
     @case('TV')
         @include('components.icons.TV')
     @break
-    
+
     @case('Treatment_Plan')
         @include('components.icons.Treatment_Plan')
     @break
@@ -119,6 +119,17 @@
 
     @case('Treatment_Procedure')
         @include('components.icons.Treatment_Procedure')
+    @break
+
+    {{-- ==============================
+         PRESCRIPTION ICONS
+    ============================== --}}
+    @case('Prescription')
+        @include('components.icons.Prescription')
+    @break
+
+    @case('medicine')
+        @include('components.icons.medicine')
     @break
 
     {{-- ==============================
@@ -144,13 +155,33 @@
         @include('components.icons.B_Export')
     @break
 
+    @case('B_Reschedule')
+        @include('components.icons.B_Reschedule')
+    @break
+
+    @case('B_Tick')
+        @include('components.icons.B_Tick')
+    @break
+
+    @case('B_Cross')
+        @include('components.icons.B_Cross')
+    @break
+
+    @case('B_Play')
+        @include('components.icons.B_Play')
+    @break
+
+    @case('B_Print')
+        @include('components.icons.B_Print')
+    @break
+
+    @case('B_Back')
+        @include('components.icons.B_Back')
+    @break
+
     {{-- ==============================
          MISC ICONS
     ============================== --}}
-    @case('medicine')
-        @include('components.icons.medicine')
-    @break
-
     @case('Add-Circle')
         @include('components.icons.Add-Circle')
     @break
@@ -162,7 +193,6 @@
     @case('Bed')
         @include('components.icons.Bed')
     @break
-
 
     {{-- ==============================
          DEFAULT ICON

@@ -48,17 +48,19 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Treatment *</label>
                             <div class="relative">
-                                @if(request('treatment'))
+                                @if (request('treatment'))
                                     <!-- Hidden input for form submission -->
                                     <input type="hidden" name="treatment_id" value="{{ request('treatment') }}">
 
                                     <!-- Display-only field (looks like a select but is disabled) -->
-                                    <div class="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50 text-gray-700">
+                                    <div
+                                        class="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50 text-gray-700">
                                         @php
                                             $selectedTreatment = $treatments->firstWhere('id', request('treatment'));
                                         @endphp
-                                        @if($selectedTreatment)
-                                            {{ $selectedTreatment->treatment_code }} - {{ $selectedTreatment->patient->full_name }}
+                                        @if ($selectedTreatment)
+                                            {{ $selectedTreatment->treatment_code }} -
+                                            {{ $selectedTreatment->patient->full_name }}
                                             <span class="text-green-600 text-sm ml-2">
                                                 <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor"
                                                     viewBox="0 0 24 24">
@@ -81,8 +83,10 @@
                                     <select name="treatment_id" id="treatment-select" required
                                         class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                                         <option value="">Select Treatment</option>
-                                        @foreach($treatments as $t)
-                                            <option value="{{ $t->id }}" {{ old('treatment_id', $treatment->id ?? '') == $t->id ? 'selected' : '' }} data-patient="{{ $t->patient->full_name }}"
+                                        @foreach ($treatments as $t)
+                                            <option value="{{ $t->id }}"
+                                                {{ old('treatment_id', $treatment->id ?? '') == $t->id ? 'selected' : '' }}
+                                                data-patient="{{ $t->patient->full_name }}"
                                                 data-patient-code="{{ $t->patient->patient_code }}"
                                                 data-doctor="{{ $t->doctor->user->full_name ?? 'N/A' }}">
                                                 {{ $t->treatment_code }} - {{ $t->patient->full_name }}
@@ -93,7 +97,7 @@
 
                                 <!-- Info icon -->
                                 <div class="absolute right-3 top-3">
-                                    @if(request('treatment'))
+                                    @if (request('treatment'))
                                         <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -109,7 +113,7 @@
                                 </div>
                             </div>
 
-                            @if(request('treatment') && $selectedTreatment)
+                            @if (request('treatment') && $selectedTreatment)
                                 <p class="text-sm text-gray-500 mt-1 flex items-center">
                                     <svg class="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
@@ -162,8 +166,8 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Prescription Date *</label>
                             <div class="relative">
-                                <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
+                                <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
@@ -176,8 +180,8 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Validity (Days) *</label>
                             <div class="relative">
-                                <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
+                                <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -191,8 +195,8 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                             <div class="relative">
-                                <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
+                                <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
@@ -211,7 +215,7 @@
                                 class="bg-blue-100 text-blue-800 w-8 h-8 rounded-full flex items-center justify-center mr-3">3</span>
                             Prescribed Medicines
                         </h3>
-                        <button type="button" onclick="addMedicineRow()"
+                        <button type="button" onclick="addNewMedicine()"
                             class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2.5 rounded-lg hover:from-green-600 hover:to-emerald-700 transition shadow-md flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -253,6 +257,7 @@
                                     <h4 class="font-semibold text-gray-800">Medicine Item <span
                                             class="item-number text-blue-600"></span></h4>
                                 </div>
+
                                 <button type="button" onclick="removeMedicineRow(this)"
                                     class="text-red-500 hover:text-red-700 hover:bg-red-50 w-9 h-9 rounded-full flex items-center justify-center transition"
                                     title="Delete this medicine">
@@ -276,9 +281,11 @@
                                         <select name="items[INDEX][medicine_id]" required
                                             class="medicine-select w-full border border-gray-300 rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                                             <option value="">Search and select medicine...</option>
-                                            @foreach($medicines as $medicine)
-                                                <option value="{{ $medicine->id }}" data-strength="{{ $medicine->strength }}"
-                                                    data-form="{{ $medicine->dosage_form }}" data-unit="{{ $medicine->unit }}"
+                                            @foreach ($medicines as $medicine)
+                                                <option value="{{ $medicine->id }}"
+                                                    data-strength="{{ $medicine->strength }}"
+                                                    data-form="{{ $medicine->dosage_form }}"
+                                                    data-unit="{{ $medicine->unit }}"
                                                     data-generic="{{ $medicine->generic_name }}">
                                                     {{ $medicine->brand_name }} ({{ $medicine->generic_name }}) -
                                                     {{ $medicine->strength }}
@@ -325,7 +332,8 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
-                                        <input type="text" name="items[INDEX][dosage]" required placeholder="e.g., 1 tablet"
+                                        <input type="text" name="items[INDEX][dosage]" required
+                                            placeholder="e.g., 1 tablet"
                                             class="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                                     </div>
                                 </div>
@@ -386,10 +394,6 @@
                                             <option value="topical">Topical</option>
                                             <option value="inhalation">Inhalation</option>
                                             <option value="injection">Injection</option>
-                                            <option value="rectal">Rectal</option>
-                                            <option value="vaginal">Vaginal</option>
-                                            <option value="ophthalmic">Ophthalmic</option>
-                                            <option value="otic">Otic</option>
                                         </select>
                                     </div>
                                 </div>
@@ -400,18 +404,21 @@
                                     <div class="flex items-center">
                                         <button type="button" onclick="decrementQuantity(this)"
                                             class="bg-gray-100 text-gray-700 w-10 h-10 rounded-l-lg border border-gray-300 hover:bg-gray-200 transition flex items-center justify-center">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M20 12H4" />
                                             </svg>
                                         </button>
                                         <div class="relative flex-1">
-                                            <input type="number" name="items[INDEX][quantity]" min="1" required value="1"
+                                            <input type="number" name="items[INDEX][quantity]" min="1" required
+                                                value="1"
                                                 class="w-full border-y border-gray-300 px-4 py-3 text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                         </div>
                                         <button type="button" onclick="incrementQuantity(this)"
                                             class="bg-gray-100 text-gray-700 w-10 h-10 rounded-r-lg border border-gray-300 hover:bg-gray-200 transition flex items-center justify-center">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                             </svg>
@@ -428,8 +435,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
-                                        <textarea name="items[INDEX][instructions]" rows="2"
-                                            placeholder="Special instructions for patient..."
+                                        <textarea name="items[INDEX][instructions]" rows="2" placeholder="Special instructions for patient..."
                                             class="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></textarea>
                                     </div>
                                 </div>
@@ -447,10 +453,7 @@
                     @endphp
 
                     <x-back-submit-buttons :back-url="$backUrl" submit-text="Make Prescription" />
-
                 </div>
-                <!-- Submit -->
-
 
             </div>
         </form>
@@ -511,7 +514,7 @@
         }
 
         // Update treatment info display
-        document.getElementById('treatment-select').addEventListener('change', function () {
+        document.getElementById('treatment-select').addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
             const patientInfo = document.getElementById('patient-info');
 
@@ -525,8 +528,8 @@
             }
         });
 
-        // Add new medicine row
-        function addMedicineRow() {
+        // Add new medicine row - NEW ITEMS WILL BE ADDED AT THE TOP
+        function addMedicineRow(insertAtTop = true) {
             const template = document.getElementById('medicine-row-template');
             const container = document.getElementById('medicine-items');
             const warning = document.getElementById('no-medicine-warning');
@@ -545,27 +548,42 @@
             newItem.dataset.itemNumber = itemNumber;
             newItem.querySelector('.item-number').textContent = '#' + itemNumber;
 
-            // Add to container
-            container.appendChild(newItem);
-            medicineRows.push(newItem);
+            // Add to container - AT THE TOP if insertAtTop is true
+            if (insertAtTop && container.firstChild) {
+                container.insertBefore(newItem, container.firstChild);
+                medicineRows.unshift(newItem); // Add to beginning of array
+            } else {
+                container.appendChild(newItem);
+                medicineRows.push(newItem); // Add to end of array
+            }
+
+            // Update item names for all rows after insertion
+            updateItemNames();
 
             // Hide warning
             warning.classList.add('hidden');
             container.classList.remove('hidden');
 
             // Initialize select2 for new select
-            $(newItem).find('.medicine-select').select2({
-                placeholder: 'Search and select medicine...',
-                allowClear: true,
-                width: '100%',
-                theme: 'classic',
-                dropdownParent: newItem
-            });
+            setTimeout(() => {
+                $(newItem).find('.medicine-select').select2({
+                    placeholder: 'Search and select medicine...',
+                    allowClear: true,
+                    width: '100%',
+                    theme: 'classic',
+                    dropdownParent: newItem
+                });
 
-            // Add change event for medicine info
-            $(newItem).find('.medicine-select').on('change', function () {
-                updateMedicineInfo(this);
-            });
+                // Add change event for medicine info
+                $(newItem).find('.medicine-select').on('change', function() {
+                    updateMedicineInfo(this);
+                });
+            }, 100);
+        }
+
+        // Function to add new medicine (for the Add Medicine button)
+        function addNewMedicine() {
+            addMedicineRow(true); // Add empty row at the top
         }
 
         // Remove medicine row
@@ -606,7 +624,7 @@
             }
         }
 
-        // Update item names (indexes) after deletion
+        // Update item names (indexes) after deletion or insertion
         function updateItemNames() {
             medicineRows.forEach((item, index) => {
                 item.querySelectorAll('[name]').forEach(input => {
@@ -659,7 +677,7 @@
         }
 
         // Form validation
-        document.getElementById('prescription-form').addEventListener('submit', function (e) {
+        document.getElementById('prescription-form').addEventListener('submit', function(e) {
             const items = document.querySelectorAll('.medicine-item');
             if (items.length === 0) {
                 e.preventDefault();
@@ -688,7 +706,7 @@
         });
 
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             // Initialize select2
             initializeMedicineSearch();
 
@@ -697,7 +715,7 @@
 
             // Trigger treatment select if pre-selected
             const treatmentSelect = document.getElementById('treatment-select');
-            if (treatmentSelect.value) {
+            if (treatmentSelect && treatmentSelect.value) {
                 treatmentSelect.dispatchEvent(new Event('change'));
             }
         });

@@ -107,6 +107,7 @@ class PrescriptionController extends Controller
         // Prepare existing items data for JavaScript
         $existingItems = $prescription->items->map(function ($item) {
             return [
+                'id' => $item->id, // ADD THIS LINE
                 'medicine_id' => $item->medicine_id,
                 'dosage' => $item->dosage,
                 'frequency' => $item->frequency,
@@ -120,6 +121,7 @@ class PrescriptionController extends Controller
         return view('backend.prescriptions.edit', compact('prescription', 'medicines', 'existingItems'));
     }
 
+
     public function update(Request $request, Prescription $prescription)
     {
         $request->validate([
@@ -127,11 +129,79 @@ class PrescriptionController extends Controller
             'validity_days' => 'required|integer|min:1|max:30',
             'notes' => 'nullable|string',
             'status' => 'required|in:active,expired,cancelled,filled',
+            'items' => 'required|array|min:1',
+            'items.*.medicine_id' => 'required|exists:medicines,id',
+            'items.*.dosage' => 'required|string|max:50',
+            'items.*.frequency' => 'required|string|max:50',
+            'items.*.duration' => 'required|string|max:50',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.instructions' => 'nullable|string|max:255',
         ]);
 
-        $prescription->update($request->only(['prescription_date', 'validity_days', 'notes', 'status']));
+        DB::transaction(function () use ($request, $prescription) {
+            // Update prescription details
+            $prescription->update([
+                'prescription_date' => $request->prescription_date,
+                'validity_days' => $request->validity_days,
+                'notes' => $request->notes,
+                'status' => $request->status,
+            ]);
 
-        return redirect()->route('backend.prescriptions.show', $prescription)
+            // Get current item IDs to track what exists
+            $currentItemIds = $prescription->items()->pluck('id')->toArray();
+            $updatedItemIds = [];
+
+            foreach ($request->items as $index => $itemData) {
+                // Check if this is an existing item (has ID in form data)
+                if (isset($itemData['id']) && in_array($itemData['id'], $currentItemIds)) {
+                    // Update existing item
+                    $item = PrescriptionItem::find($itemData['id']);
+
+                    // Only update if not dispensed (you might want to preserve dispensed items)
+                    if ($item->status !== 'dispensed') {
+                        $item->update([
+                            'medicine_id' => $itemData['medicine_id'],
+                            'dosage' => $itemData['dosage'],
+                            'frequency' => $itemData['frequency'],
+                            'duration' => $itemData['duration'],
+                            'route' => $itemData['route'] ?? 'oral',
+                            'instructions' => $itemData['instructions'] ?? null,
+                            'quantity' => $itemData['quantity'],
+                            // Preserve existing status (pending, dispensed, cancelled)
+                        ]);
+                    }
+
+                    $updatedItemIds[] = $itemData['id'];
+                } else {
+                    // Create new item
+                    $newItem = PrescriptionItem::create([
+                        'prescription_id' => $prescription->id,
+                        'medicine_id' => $itemData['medicine_id'],
+                        'dosage' => $itemData['dosage'],
+                        'frequency' => $itemData['frequency'],
+                        'duration' => $itemData['duration'],
+                        'route' => $itemData['route'] ?? 'oral',
+                        'instructions' => $itemData['instructions'] ?? null,
+                        'quantity' => $itemData['quantity'],
+                        'status' => 'pending', // New items start as pending
+                    ]);
+
+                    $updatedItemIds[] = $newItem->id;
+                }
+            }
+
+            // Delete items that were removed from the form
+            // Only delete items that are not dispensed
+            $itemsToDelete = array_diff($currentItemIds, $updatedItemIds);
+            if (!empty($itemsToDelete)) {
+                $prescription->items()
+                    ->whereIn('id', $itemsToDelete)
+                    ->where('status', '!=', 'dispensed') // Don't delete dispensed items
+                    ->delete();
+            }
+        });
+
+        return redirect()->route('backend.prescriptions.index', $prescription)
             ->with('success', 'Prescription updated successfully.');
     }
 
