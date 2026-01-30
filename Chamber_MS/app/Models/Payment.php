@@ -18,10 +18,10 @@ class Payment extends Model
         'patient_id',
         'installment_id',
         'is_advance',
-        'payable_type',    
-        'payable_id',      
+        'payable_type',
+        'payable_id',
         'for_treatment_session_id',
-        'treatment_id',    
+        'treatment_id',
         'payment_date',
         'payment_method',
         'payment_type',
@@ -233,18 +233,26 @@ class Payment extends Model
      *-----------------------------------*/
     public static function generatePaymentNo()
     {
-        $latest = self::withTrashed()->latest()->first();
         $year = date('Y');
         $month = date('m');
+        $prefix = 'PAY' . $year . $month;
 
-        if ($latest && str_starts_with($latest->payment_no, 'PAY' . $year . $month)) {
-            $number = intval(substr($latest->payment_no, 9)) + 1;
-            return 'PAY' . $year . $month . str_pad($number, 4, '0', STR_PAD_LEFT);
+        // Get the highest payment number for this month/year
+        $latest = self::where('payment_no', 'like', $prefix . '%')
+            ->orderByRaw('LENGTH(payment_no) DESC, payment_no DESC')
+            ->first();
+
+        if ($latest) {
+            // Extract the number part (everything after the prefix)
+            $lastNumber = substr($latest->payment_no, strlen($prefix));
+            $nextNumber = str_pad(intval($lastNumber) + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $nextNumber = '0001';
         }
 
-        return 'PAY' . $year . $month . '0001';
+        return $prefix . $nextNumber;
     }
-
+    
     public function processPayment()
     {
         $this->invoice->addPayment($this->amount);

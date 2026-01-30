@@ -47,6 +47,7 @@
                             <p class="font-semibold text-blue-700">{{ $treatment->treatment_code }} -
                                 {{ $treatment->patient->full_name }}</p>
                             <p class="text-xs text-gray-500 mt-1">Diagnosis: {{ $treatment->diagnosis }}</p>
+                            <p class="text-xs text-gray-500">Doctor: {{ $treatment->doctor->user->full_name ?? 'N/A' }}</p>
                         </div>
                     @else
                         <!-- Treatment Selection (if not pre-selected) -->
@@ -75,11 +76,12 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Session Number *</label>
                             <input type="number" name="session_number"
                                 value="{{ $sessionNumber ?? old('session_number') }}"
-                                class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                required min="1">
+                                class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-100"
+                                required min="1" readonly>
                             @error('session_number')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
+                            <p class="text-xs text-gray-500 mt-1">Auto-generated based on existing sessions</p>
                         </div>
 
                         <div>
@@ -120,17 +122,31 @@
                             <select name="appointment_id"
                                 class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">-- No Appointment --</option>
+                                @if (isset($appointmentId) && $appointmentId)
+                                    @php
+                                        $linkedAppointment = App\Models\Appointment::find($appointmentId);
+                                    @endphp
+                                    @if ($linkedAppointment && !$linkedAppointment->treatment_session_id)
+                                        <option value="{{ $appointmentId }}" selected>
+                                            {{ $linkedAppointment->appointment_code }} -
+                                            {{ $linkedAppointment->appointment_date->format('d/m/Y') }}
+                                            at {{ date('h:i A', strtotime($linkedAppointment->appointment_time)) }}
+                                            ({{ $linkedAppointment->patient->full_name }}) - Linked to Treatment
+                                        </option>
+                                    @endif
+                                @endif
                                 @foreach ($appointments as $appointment)
                                     @if (!$appointment->treatment_session_id)
-                                        {{-- Only show appointments not linked to a session
-                                        --}}
-                                        <option value="{{ $appointment->id }}"
-                                            {{ old('appointment_id') == $appointment->id ? 'selected' : '' }}>
-                                            {{ $appointment->appointment_code }} -
-                                            {{ $appointment->appointment_date->format('d/m/Y') }}
-                                            at {{ date('h:i A', strtotime($appointment->appointment_time)) }}
-                                            ({{ $appointment->patient->full_name }})
-                                        </option>
+                                        {{-- Only show appointments not linked to a session --}}
+                                        @if (!isset($appointmentId) || $appointment->id != $appointmentId)
+                                            <option value="{{ $appointment->id }}"
+                                                {{ old('appointment_id') == $appointment->id ? 'selected' : '' }}>
+                                                {{ $appointment->appointment_code }} -
+                                                {{ $appointment->appointment_date->format('d/m/Y') }}
+                                                at {{ date('h:i A', strtotime($appointment->appointment_time)) }}
+                                                ({{ $appointment->patient->full_name }})
+                                            </option>
+                                        @endif
                                     @endif
                                 @endforeach
                             </select>
@@ -177,13 +193,24 @@
 
                         <!-- Cost -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Cost for Session (৳)</label>
-                            <input type="number" step="0.01" name="cost_for_session"
-                                value="{{ old('cost_for_session') }}"
-                                class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Cost for Session (৳) *</label>
+                            <div class="relative">
+                                <input type="number" step="0.01" name="cost_for_session"
+                                    value="{{ old('cost_for_session') ?? $consultationFee }}"
+                                    class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    required>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <span class="text-gray-500 text-sm">৳</span>
+                                </div>
+                            </div>
                             @error('cost_for_session')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
+                            @if (isset($consultationFee) && $consultationFee > 0)
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Default: Doctor's consultation fee (৳{{ number_format($consultationFee, 2) }})
+                                </p>
+                            @endif
                         </div>
                     </div>
 
@@ -221,8 +248,7 @@
                     <!-- Submit Buttons -->
                     <div class=" mt-8 pb-6">
                         <x-back-submit-buttons back-url="{{ route('backend.treatments.index') }}"
-                            submit-text="Save Treatment" />
-
+                            submit-text="Save Treatment Session" />
                     </div>
                 </form>
             </div>

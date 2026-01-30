@@ -326,14 +326,35 @@
                                 <i class="fas fa-money-bill-wave text-teal-600"></i>
                                 Recent Payments
                             </h3>
-                            <a href="{{ route('backend.payments.index', ['treatment_id' => $treatment->id]) }}"
+                            <a href="{{ route('backend.payments.index', ['treatment_id' => $treatment->id, 'patient_id' => $treatment->patient_id]) }}"
                                 class="text-sm text-teal-600 hover:text-teal-700 font-medium">
                                 View All
                             </a>
                         </div>
                     </div>
 
-                    @if ($treatment->invoices->flatMap->payments->count() > 0)
+                    @php
+                        // Get all payments related to this treatment
+                        $recentPayments = collect();
+
+                        // 1. Get payments from invoices
+                        foreach ($treatment->invoices as $invoice) {
+                            $recentPayments = $recentPayments->merge($invoice->payments);
+                        }
+
+                        // 2. Get direct session payments
+                        foreach ($treatment->sessions as $session) {
+                            $recentPayments = $recentPayments->merge($session->payments);
+                        }
+
+                        // 3. Get direct treatment payments (if any)
+                        // If you have direct treatment payments, add them here
+
+                        // Sort by date and take latest 5
+                        $recentPayments = $recentPayments->sortByDesc('payment_date')->take(5);
+                    @endphp
+
+                    @if ($recentPayments->count() > 0)
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
@@ -352,6 +373,10 @@
                                         </th>
                                         <th
                                             class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Source
+                                        </th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                             Status
                                         </th>
                                     </tr>
@@ -362,20 +387,22 @@
                                         'cash' => 'bg-green-100 text-green-800',
                                         'card' => 'bg-blue-100 text-blue-800',
                                         'bank_transfer' => 'bg-purple-100 text-purple-800',
+                                        'cheque' => 'bg-yellow-100 text-yellow-800',
+                                        'mobile_banking' => 'bg-indigo-100 text-indigo-800',
                                         'default' => 'bg-gray-100 text-gray-800',
                                     ];
 
                                     $paymentStatusColors = [
                                         'completed' => 'bg-green-100 text-green-800',
                                         'pending' => 'bg-yellow-100 text-yellow-800',
-                                        'failed' => 'bg-red-100 text-red-800',
+                                        'cancelled' => 'bg-red-100 text-red-800',
+                                        'refunded' => 'bg-gray-100 text-gray-800',
                                         'default' => 'bg-gray-100 text-gray-800',
                                     ];
                                 @endphp
 
-
                                 <tbody class="divide-y divide-gray-200">
-                                    @foreach ($treatment->invoices->flatMap->payments->sortByDesc('payment_date')->take(5) as $payment)
+                                    @foreach ($recentPayments as $payment)
                                         <tr class="hover:bg-gray-50">
                                             <!-- Payment Date -->
                                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
@@ -395,6 +422,17 @@
                                                 ৳ {{ number_format($payment->amount, 2) }}
                                             </td>
 
+                                            <!-- Payment Source -->
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                                @if ($payment->for_treatment_session_id)
+                                                    Session #{{ $payment->treatmentSession->session_number ?? 'N/A' }}
+                                                @elseif($payment->invoice_id)
+                                                    Invoice
+                                                @else
+                                                    Direct
+                                                @endif
+                                            </td>
+
                                             <!-- Payment Status -->
                                             <td class="px-4 py-3 whitespace-nowrap">
                                                 <span
@@ -405,7 +443,6 @@
                                         </tr>
                                     @endforeach
                                 </tbody>
-
                             </table>
                         </div>
                     @else
@@ -415,7 +452,7 @@
                             </div>
                             <h3 class="text-lg font-medium text-gray-900 mb-2">No Payments Yet</h3>
                             <p class="text-gray-500 mb-4">Record payments for this treatment</p>
-                            <a href="{{ route('backend.payments.create', ['treatment_id' => $treatment->id]) }}"
+                            <a href="{{ route('backend.payments.create', ['treatment_id' => $treatment->id, 'patient_id' => $treatment->patient_id]) }}"
                                 class="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
                                 <i class="fas fa-plus mr-2"></i>
                                 Record First Payment

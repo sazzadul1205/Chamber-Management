@@ -193,6 +193,10 @@
         @include('components.icons.Buttons.B_Upload')
     @break
 
+    @case('B_Pay')
+        @include('components.icons.Buttons.B_Pay', ['class' => $iconClass])
+    @break
+
     {{-- ==============================
          MISC ICONS
     ============================== --}}
@@ -214,6 +218,10 @@
 
     @case('Completed')
         @include('components.icons.Completed', ['class' => $iconClass])
+    @break
+
+    @case('Pending')
+        @include('components.icons.Pending', ['class' => $iconClass])
     @break
 
     @case('Pending')

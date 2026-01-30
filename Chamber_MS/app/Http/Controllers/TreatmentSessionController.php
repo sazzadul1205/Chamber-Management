@@ -49,12 +49,22 @@ class TreatmentSessionController extends Controller
     {
         $treatment = null;
         $sessionNumber = 1;
+        $consultationFee = 0;
+        $appointmentId = null;
 
         // Check if treatment_id is provided in query string
         if ($request->filled('treatment_id')) {
-            $treatment = Treatment::find($request->treatment_id);
+            $treatment = Treatment::with(['doctor', 'appointment'])->find($request->treatment_id);
             if ($treatment) {
                 $sessionNumber = $treatment->sessions()->max('session_number') + 1;
+
+                // Get doctor's consultation fee
+                if ($treatment->doctor) {
+                    $consultationFee = $treatment->doctor->consultation_fee ?? 0;
+                }
+
+                // Get linked appointment_id from treatment
+                $appointmentId = $treatment->appointment_id;
             }
         }
 
@@ -65,6 +75,8 @@ class TreatmentSessionController extends Controller
         return view('backend.treatment-sessions.create', [
             'treatment' => $treatment,
             'sessionNumber' => $sessionNumber,
+            'consultationFee' => $consultationFee,
+            'appointmentId' => $appointmentId,
             'treatments' => $treatments,
             'appointments' => $appointments,
             'chairs' => $chairs

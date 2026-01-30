@@ -393,4 +393,87 @@ class PaymentController extends Controller
 
         return $amount - $remainingAmount; // Return allocated amount
     }
+
+
+    /*-----------------------------------
+    | Store Session Payment (NEW METHOD)
+    *-----------------------------------*/
+    public function storeSessionPayment(Request $request)
+    {
+        $request->validate([
+            'for_treatment_session_id' => 'required|exists:treatment_sessions,id',
+            'patient_id' => 'required|exists:patients,id',
+            'payment_date' => 'required|date',
+            'payment_method' => 'required|in:cash,card,bank_transfer,cheque,mobile_banking,other',
+            'amount' => 'required|numeric|min:0.01',
+            'reference_no' => 'nullable|string|max:50',
+            'remarks' => 'nullable|string|max:500'
+        ]);
+
+        // Get the session
+        $session = TreatmentSession::findOrFail($request->for_treatment_session_id);
+
+        // Calculate balance
+        $sessionPaid = $session->paid_amount; // Now using the paid_amount column
+        $sessionBalance = $session->cost_for_session - $sessionPaid;
+
+        // Validate amount doesn't exceed balance
+        if ($request->amount > $sessionBalance) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Amount cannot exceed session balance of ৳" . number_format($sessionBalance, 2)
+                ], 422);
+            }
+            return back()->with('error', "Amount cannot exceed session balance of ৳" . number_format($sessionBalance, 2));
+        }
+
+        DB::beginTransaction();
+        try {
+            // Create payment WITHOUT invoice_id (for direct session payments)
+            $payment = Payment::create([
+                'payment_no' => Payment::generatePaymentNo(),
+                'patient_id' => $request->patient_id,
+                'for_treatment_session_id' => $request->for_treatment_session_id,
+                'payment_date' => $request->payment_date,
+                'payment_method' => $request->payment_method,
+                'payment_type' => 'partial',
+                'amount' => $request->amount,
+                'reference_no' => $request->reference_no,
+                'remarks' => $request->remarks,
+                'status' => 'completed',
+                'created_by' => auth()->id()
+            ]);
+
+            // Update the session's paid amount using the model method
+            $session->addPayment($request->amount);
+
+            DB::commit();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Payment recorded successfully for Session #' . $session->session_number,
+                    'payment' => [
+                        'id' => $payment->id,
+                        'amount' => $payment->amount,
+                        'payment_no' => $payment->payment_no
+                    ]
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Payment recorded successfully for Session #' . $session->session_number);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error recording payment: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withInput()->with('error', 'Error recording payment: ' . $e->getMessage());
+        }
+    }
 }

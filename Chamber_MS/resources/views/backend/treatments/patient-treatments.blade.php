@@ -88,18 +88,18 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span
-                                            class="px-2 py-1 text-xs font-semibold rounded-full
-        @if ($treatment->status === 'completed') bg-green-100 text-green-800
-        @elseif($treatment->status === 'in_progress')
-            bg-blue-100 text-blue-800
-        @elseif($treatment->status === 'planned')
-            bg-yellow-100 text-yellow-800
-        @elseif($treatment->status === 'cancelled')
-            bg-red-100 text-red-800
-        @else
-            bg-gray-100 text-gray-800 @endif
-    ">
+                                        @php
+                                            $statusClasses = [
+                                                'completed' => 'bg-green-100 text-green-800',
+                                                'in_progress' => 'bg-blue-100 text-blue-800',
+                                                'planned' => 'bg-yellow-100 text-yellow-800',
+                                                'cancelled' => 'bg-red-100 text-red-800',
+                                            ];
+
+                                            $statusClass =
+                                                $statusClasses[$treatment->status] ?? 'bg-gray-100 text-gray-800';
+                                        @endphp
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $statusClass }}">
                                             {{ ucfirst(str_replace('_', ' ', $treatment->status)) }}
                                         </span>
                                     </td>

@@ -26,7 +26,7 @@
             <div class="md:col-span-2">
                 <select name="status" class="w-full border rounded px-3 py-2">
                     <option value="">All Status</option>
-                    @foreach(App\Models\Treatment::statuses() as $key => $value)
+                    @foreach (App\Models\Treatment::statuses() as $key => $value)
                         <option value="{{ $key }}" {{ request('status') == $key ? 'selected' : '' }}>
                             {{ $value }}
                         </option>
@@ -37,7 +37,7 @@
             <div class="md:col-span-2">
                 <select name="patient_id" class="w-full border rounded px-3 py-2">
                     <option value="">All Patients</option>
-                    @foreach($patients as $patient)
+                    @foreach ($patients as $patient)
                         <option value="{{ $patient->id }}" {{ request('patient_id') == $patient->id ? 'selected' : '' }}>
                             {{ $patient->patient_code }} - {{ $patient->full_name }}
                         </option>
@@ -48,7 +48,7 @@
             <div class="md:col-span-3">
                 <select name="doctor_id" class="w-full border rounded px-3 py-2">
                     <option value="">All Doctors</option>
-                    @foreach($doctors as $doctor)
+                    @foreach ($doctors as $doctor)
                         <option value="{{ $doctor->id }}" {{ request('doctor_id') == $doctor->id ? 'selected' : '' }}>
                             {{ $doctor->user->full_name }}
                         </option>
@@ -96,7 +96,7 @@
                             <td class="px-3 py-2">{{ $treatment->doctor->user->full_name ?? '-' }}</td>
                             <td class="px-3 py-2">
                                 <div class="text-sm text-gray-800">{{ Str::limit($treatment->diagnosis, 50) }}</div>
-                                @if($treatment->appointment)
+                                @if ($treatment->appointment)
                                     <div class="text-xs text-gray-500">
                                         Appt: {{ $treatment->appointment->appointment_code }}
                                     </div>
@@ -108,19 +108,25 @@
                             </td>
                             <td class="px-3 py-2">
                                 <div class="text-sm font-medium">{{ $treatment->formatted_estimated_cost }}</div>
-                                @if($treatment->total_actual_cost)
+                                @if ($treatment->total_actual_cost)
                                     <div class="text-xs text-gray-500">
                                         Actual: {{ $treatment->formatted_actual_cost }}
                                     </div>
                                 @endif
                             </td>
+
+
                             <td class="px-3 py-2">
-                                <span class="px-2 py-1 text-xs rounded-full 
-                                                        @if($treatment->status == 'planned') bg-blue-100 text-blue-800
-                                                        @elseif($treatment->status == 'in_progress') bg-yellow-100 text-yellow-800
-                                                        @elseif($treatment->status == 'completed') bg-green-100 text-green-800
-                                                        @elseif($treatment->status == 'cancelled') bg-red-100 text-red-800
-                                                        @else bg-gray-100 text-gray-800 @endif">
+                                @php
+                                    $statusClasses = [
+                                        'planned' => 'bg-blue-100 text-blue-800',
+                                        'in_progress' => 'bg-yellow-100 text-yellow-800',
+                                        'completed' => 'bg-green-100 text-green-800',
+                                        'cancelled' => 'bg-red-100 text-red-800',
+                                    ];
+                                @endphp
+                                <span
+                                    class="px-2 py-1 text-xs rounded-full {{ $statusClasses[$treatment->status] ?? 'bg-gray-100 text-gray-800' }}">
                                     {{ $treatment->status_text }}
                                 </span>
                             </td>
@@ -132,11 +138,14 @@
                                 <a href="{{ route('backend.treatments.show', $treatment) }}"
                                     class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs"
                                     title="View Treatment">
-                                    @include('partials.sidebar-icon', ['name' => 'B_View', 'class' => 'w-4 h-4'])
+                                    @include('partials.sidebar-icon', [
+                                        'name' => 'B_View',
+                                        'class' => 'w-4 h-4',
+                                    ])
                                 </a>
 
                                 <!-- Complete (if not completed) -->
-                                @if($treatment->status != 'completed')
+                                @if ($treatment->status != 'completed')
                                     <form method="POST" action="{{ route('backend.treatments.complete', $treatment) }}">
                                         @csrf
                                         <button type="submit"
@@ -157,7 +166,8 @@
                         <tr>
                             <td colspan="9" class="px-4 py-6 text-center text-gray-500">
                                 No treatments found.
-                                <a href="{{ route('backend.treatments.create') }}" class="text-blue-600 hover:underline ml-1">
+                                <a href="{{ route('backend.treatments.create') }}"
+                                    class="text-blue-600 hover:underline ml-1">
                                     Create your first treatment
                                 </a>
                             </td>
@@ -170,5 +180,4 @@
         <!-- Pagination -->
         <x-pagination :paginator="$treatments" />
     </div>
-
 @endsection
