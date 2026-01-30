@@ -325,6 +325,7 @@ Route::middleware(['auth'])->group(function () {
     // Payments
     // -----------------------------
     Route::post('/payments/session', [PaymentController::class, 'storeSessionPayment'])->name('backend.payments.store-session');
+    Route::post('/payments/procedure', [PaymentController::class, 'storeSessionPayment'])->name('backend.payments.store-procedure');
     Route::resource('payments', PaymentController::class)->names('backend.payments');
     Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('backend.payments.receipt');
 

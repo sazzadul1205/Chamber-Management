@@ -476,4 +476,86 @@ class PaymentController extends Controller
             return back()->withInput()->with('error', 'Error recording payment: ' . $e->getMessage());
         }
     }
+
+    /*-----------------------------------
+    | Store Procedure Payment (NEW METHOD)
+    *-----------------------------------*/
+    public function storeProcedurePayment(Request $request)
+    {
+        $request->validate([
+            'procedure_id' => 'required|exists:treatment_procedures,id',
+            'patient_id' => 'required|exists:patients,id',
+            'treatment_id' => 'nullable|exists:treatments,id',
+            'payment_date' => 'required|date',
+            'payment_method' => 'required|in:cash,card,bank_transfer,cheque,mobile_banking,other',
+            'amount' => 'required|numeric|min:0.01',
+            'reference_no' => 'nullable|string|max:50',
+            'remarks' => 'nullable|string|max:500'
+        ]);
+
+        // Get the procedure
+        $procedure = TreatmentProcedure::with('treatment')->findOrFail($request->procedure_id);
+
+        // Calculate balance
+        $procedurePaid = $procedure->payments->sum('amount');
+        $procedureBalance = max(0, $procedure->cost - $procedurePaid);
+
+        // Validate amount doesn't exceed balance
+        if ($request->amount > $procedureBalance) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Amount cannot exceed procedure balance of ৳" . number_format($procedureBalance, 2)
+                ], 422);
+            }
+            return back()->with('error', "Amount cannot exceed procedure balance of ৳" . number_format($procedureBalance, 2));
+        }
+
+        DB::beginTransaction();
+        try {
+            // Create payment using polymorphic relationship
+            $payment = Payment::create([
+                'payment_no' => Payment::generatePaymentNo(),
+                'patient_id' => $request->patient_id,
+                'treatment_id' => $request->treatment_id ?? $procedure->treatment_id,
+                'payment_date' => $request->payment_date,
+                'payment_method' => $request->payment_method,
+                'payment_type' => 'partial',
+                'amount' => $request->amount,
+                'reference_no' => $request->reference_no,
+                'remarks' => $request->remarks,
+                'status' => 'completed',
+                'payable_type' => 'App\Models\TreatmentProcedure', // POLYMORPHIC
+                'payable_id' => $procedure->id, // POLYMORPHIC
+                'created_by' => auth()->id()
+            ]);
+
+            DB::commit();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Payment recorded successfully for Procedure: ' . $procedure->procedure_name,
+                    'payment' => [
+                        'id' => $payment->id,
+                        'amount' => $payment->amount,
+                        'payment_no' => $payment->payment_no
+                    ]
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Payment recorded successfully for Procedure: ' . $procedure->procedure_name);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error recording payment: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withInput()->with('error', 'Error recording payment: ' . $e->getMessage());
+        }
+    }
 }
