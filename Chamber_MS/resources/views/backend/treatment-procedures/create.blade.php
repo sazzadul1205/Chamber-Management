@@ -3,27 +3,27 @@
 @section('content')
     <div class="space-y-6">
         <!-- ==============================================
-                                                HEADER SECTION
-                                                Shows different titles based on context
-                                            ============================================== -->
+                                                    HEADER SECTION
+                                                    Shows different titles based on context
+                                                ============================================== -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">
-                    @if($treatment)
+                    @if ($treatment)
                         Add Procedure to {{ $treatment->treatment_code }}
                     @else
                         Add New Procedure
                     @endif
                 </h1>
                 <p class="text-gray-600 mt-1">
-                    @if($treatment)
+                    @if ($treatment)
                         Add a dental procedure to {{ $treatment->patient->full_name ?? 'patient' }}'s treatment
                     @else
                         Add a dental procedure to treatment
                     @endif
                 </p>
             </div>
-            @if($treatment)
+            @if ($treatment)
                 <div class="text-sm bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
                     <span class="font-medium">Patient:</span> {{ $treatment->patient->full_name ?? 'N/A' }}
                     <span class="mx-2">|</span>
@@ -33,29 +33,29 @@
         </div>
 
         <!-- ==============================================
-                                                FORM CARD
-                                                Main form for adding procedures
-                                            ============================================== -->
+                                                    FORM CARD
+                                                    Main form for adding procedures
+                                                ============================================== -->
         <div class="bg-white rounded-lg shadow">
             <form action="{{ route('backend.treatment-procedures.store') }}" method="POST">
                 @csrf
 
                 <!-- Hidden treatment_id for pre-selected treatment -->
-                @if($treatment)
+                @if ($treatment)
                     <input type="hidden" name="treatment_id" value="{{ $treatment->id }}">
                 @endif
 
                 <div class="p-6 space-y-6">
                     <!-- ==============================================
-                                                            TREATMENT SELECTION SECTION
-                                                            Three scenarios:
-                                                            1. From treatment page: Show treatment info box
-                                                            2. General page with multiple treatments: Show dropdown
-                                                            3. General page with only one treatment: Show dropdown
-                                                        ============================================== -->
+                                                                TREATMENT SELECTION SECTION
+                                                                Three scenarios:
+                                                                1. From treatment page: Show treatment info box
+                                                                2. General page with multiple treatments: Show dropdown
+                                                                3. General page with only one treatment: Show dropdown
+                                                            ============================================== -->
 
                     <!-- SCENARIO 1: From treatment page - show info box -->
-                    @if($treatment)
+                    @if ($treatment)
                         <div>
 
                         </div>
@@ -69,8 +69,9 @@
                             <select id="treatment_id" name="treatment_id" required
                                 class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Select Treatment</option>
-                                @foreach($treatments as $t)
-                                    <option value="{{ $t->id }}" {{ old('treatment_id') == $t->id ? 'selected' : '' }}>
+                                @foreach ($treatments as $t)
+                                    <option value="{{ $t->id }}"
+                                        {{ old('treatment_id') == $t->id ? 'selected' : '' }}>
                                         {{ $t->patient->full_name ?? 'N/A' }} - {{ $t->treatment_code }}
                                     </option>
                                 @endforeach
@@ -89,8 +90,9 @@
                             <select id="treatment_id" name="treatment_id" required
                                 class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Select Treatment</option>
-                                @foreach($treatments as $t)
-                                    <option value="{{ $t->id }}" {{ old('treatment_id') == $t->id ? 'selected' : '' }}>
+                                @foreach ($treatments as $t)
+                                    <option value="{{ $t->id }}"
+                                        {{ old('treatment_id') == $t->id ? 'selected' : '' }}>
                                         {{ $t->patient->full_name ?? 'N/A' }} - {{ $t->treatment_code }}
                                     </option>
                                 @endforeach
@@ -102,9 +104,9 @@
                     @endif
 
                     <!-- ==============================================
-                                                            PROCEDURE DETAILS SECTION
-                                                            Two-column layout for form fields
-                                                        ============================================== -->
+                                                                PROCEDURE DETAILS SECTION
+                                                                Two-column layout for form fields
+                                                            ============================================== -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- LEFT COLUMN: Procedure selection and basic details -->
                         <div class="space-y-6">
@@ -130,16 +132,18 @@
                                     <div id="search-error" class="mt-1 text-sm text-red-600 hidden"></div>
 
                                     <!-- Quick select from common procedures -->
-                                    @if(!empty($commonProcedures))
+                                    @if (!empty($commonProcedures))
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Quick Select:</label>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Quick
+                                                Select:</label>
                                             <div class="grid grid-cols-1 gap-2">
-                                                @foreach($commonProcedures as $common)
+                                                @foreach ($commonProcedures as $common)
                                                     <button type="button"
                                                         class="text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 transition-colors duration-150 procedure-quick-select"
                                                         data-procedure-code="{{ $common['procedure_code'] }}"
                                                         data-procedure-name="{{ $common['procedure_name'] }}"
-                                                        data-cost="{{ $common['cost'] }}" data-duration="{{ $common['duration'] }}">
+                                                        data-cost="{{ $common['cost'] }}"
+                                                        data-duration="{{ $common['duration'] }}">
                                                         <div class="flex justify-between items-start">
                                                             <div>
                                                                 <span
@@ -148,9 +152,11 @@
                                                                     class="text-gray-600 ml-2">{{ $common['procedure_name'] }}</span>
                                                             </div>
                                                             <div class="text-right">
-                                                                <div class="font-medium">${{ number_format($common['cost'], 2) }}
+                                                                <div class="font-medium">
+                                                                    ${{ number_format($common['cost'], 2) }}
                                                                 </div>
-                                                                <div class="text-sm text-gray-500">{{ $common['duration'] }} min
+                                                                <div class="text-sm text-gray-500">
+                                                                    {{ $common['duration'] }} min
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -223,8 +229,9 @@
                                         <select id="surface" name="surface"
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                             <option value="">Select Surface</option>
-                                            @foreach(['Occlusal', 'Mesial', 'Distal', 'Buccal', 'Lingual', 'Multiple'] as $surface)
-                                                <option value="{{ $surface }}" {{ old('surface') == $surface ? 'selected' : '' }}>
+                                            @foreach (['Occlusal', 'Mesial', 'Distal', 'Buccal', 'Lingual', 'Multiple'] as $surface)
+                                                <option value="{{ $surface }}"
+                                                    {{ old('surface') == $surface ? 'selected' : '' }}>
                                                     {{ $surface }}
                                                 </option>
                                             @endforeach
@@ -245,8 +252,8 @@
                                         <label for="cost" class="block text-sm font-medium text-gray-700 mb-1">
                                             Cost ($) *
                                         </label>
-                                        <input type="number" id="cost" name="cost" required step="0.01" min="0"
-                                            value="{{ old('cost') }}"
+                                        <input type="number" id="cost" name="cost" required step="0.01"
+                                            min="0" value="{{ old('cost') }}"
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                         @error('cost')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -258,8 +265,8 @@
                                         <label for="duration" class="block text-sm font-medium text-gray-700 mb-1">
                                             Duration (min) *
                                         </label>
-                                        <input type="number" id="duration" name="duration" required min="1" max="480"
-                                            value="{{ old('duration') }}"
+                                        <input type="number" id="duration" name="duration" required min="1"
+                                            max="480" value="{{ old('duration') }}"
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                         @error('duration')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -275,8 +282,9 @@
                                 </label>
                                 <select id="status" name="status" required
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    @foreach(\App\Models\TreatmentProcedure::statuses() as $key => $val)
-                                        <option value="{{ $key }}" {{ old('status') == $key ? 'selected' : '' }}>
+                                    @foreach (\App\Models\TreatmentProcedure::statuses() as $key => $val)
+                                        <option value="{{ $key }}"
+                                            {{ old('status') == $key ? 'selected' : '' }}>
                                             {{ $val }}
                                         </option>
                                     @endforeach
@@ -302,11 +310,11 @@
                 </div>
 
                 <!-- ==============================================
-                FORM ACTIONS
-                Submit and cancel buttons
-            ============================================== -->
+                    FORM ACTIONS
+                    Submit and cancel buttons
+                ============================================== -->
                 <div class="px-6 pb-4 bg-gray-50 border-t border-gray-200 space-x-3">
-                    @if($treatment)
+                    @if ($treatment)
                         <!-- If coming from treatment page, go back to treatment show page -->
                         <x-back-submit-buttons back-url="{{ route('backend.treatments.show', $treatment) }}"
                             submit-text="Add Procedure" />
@@ -321,9 +329,9 @@
     </div>
 
     <!-- ==============================================
-        JAVASCRIPT SECTION
-        Handles procedure selection, search, and form interactions
-    ============================================== -->
+            JAVASCRIPT SECTION
+            Handles procedure selection, search, and form interactions
+        ============================================== -->
     <script>
         // ==============================================
         // GLOBAL VARIABLES
@@ -334,14 +342,19 @@
         // QUICK SELECT FUNCTIONALITY
         // ==============================================
         document.querySelectorAll('.procedure-quick-select').forEach(button => {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', function() {
                 const code = this.getAttribute('data-procedure-code');
                 const name = this.getAttribute('data-procedure-name');
                 const cost = this.getAttribute('data-cost');
                 const duration = this.getAttribute('data-duration');
 
                 // Store the current selection
-                currentSelectedProcedure = { code, name, cost, duration };
+                currentSelectedProcedure = {
+                    code,
+                    name,
+                    cost,
+                    duration
+                };
 
                 // Fill all fields (overwrite existing values)
                 fillProcedureFields(code, name, cost, duration);
@@ -359,7 +372,7 @@
         // ==============================================
         // Setup event listeners
         document.getElementById('search-btn').addEventListener('click', performSearch);
-        document.getElementById('procedure-search').addEventListener('keypress', function (e) {
+        document.getElementById('procedure-search').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 performSearch();
@@ -367,7 +380,7 @@
         });
 
         // Load popular procedures when search input is focused
-        document.getElementById('procedure-search').addEventListener('focus', function () {
+        document.getElementById('procedure-search').addEventListener('focus', function() {
             const resultsDiv = document.getElementById('catalog-results');
             const searchInput = document.getElementById('procedure-search');
 
@@ -440,7 +453,8 @@
             showLoading(resultsDiv);
 
             // Perform search
-            fetch(`{{ route('backend.treatment-procedures.get-catalog-procedures') }}?search=${encodeURIComponent(search)}`)
+            fetch(
+                    `{{ route('backend.treatment-procedures.get-catalog-procedures') }}?search=${encodeURIComponent(search)}`)
                 .then(handleResponse)
                 .then(data => {
                     if (!data || !data.length) {
@@ -552,7 +566,8 @@
          */
         function createResultItem(proc, container, isPopular) {
             const div = document.createElement('div');
-            div.className = 'p-3 border-b border-gray-200 hover:bg-blue-50 cursor-pointer last:border-b-0 procedure-search-result';
+            div.className =
+                'p-3 border-b border-gray-200 hover:bg-blue-50 cursor-pointer last:border-b-0 procedure-search-result';
             div.setAttribute('data-procedure-code', proc.code);
             div.setAttribute('data-procedure-name', proc.name);
             div.setAttribute('data-cost', proc.cost);
@@ -584,7 +599,7 @@
         // ==============================================
         // RESULT SELECTION HANDLING
         // ==============================================
-        document.addEventListener('click', function (e) {
+        document.addEventListener('click', function(e) {
             // Search results selection
             if (e.target.closest('.procedure-search-result')) {
                 const div = e.target.closest('.procedure-search-result');
@@ -594,7 +609,12 @@
                 const duration = div.getAttribute('data-duration');
 
                 // Store the current selection
-                currentSelectedProcedure = { code, name, cost, duration };
+                currentSelectedProcedure = {
+                    code,
+                    name,
+                    cost,
+                    duration
+                };
 
                 // Fill all fields (overwrite existing values)
                 fillProcedureFields(code, name, cost, duration);
@@ -649,7 +669,8 @@
 
             // Show toast notification
             const toast = document.createElement('div');
-            toast.className = 'fixed top-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg shadow-lg z-50';
+            toast.className =
+                'fixed top-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg shadow-lg z-50';
             toast.innerHTML = `
                                                     <div class="flex items-center">
                                                         <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -695,7 +716,8 @@
 
             // Show feedback
             const toast = document.createElement('div');
-            toast.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-800 px-4 py-3 rounded-lg shadow-lg z-50';
+            toast.className =
+                'fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-800 px-4 py-3 rounded-lg shadow-lg z-50';
             toast.innerHTML = `
                                                     <div class="flex items-center">
                                                         <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -716,7 +738,7 @@
         /**
          * Close results when clicking outside
          */
-        document.addEventListener('click', function (e) {
+        document.addEventListener('click', function(e) {
             const resultsDiv = document.getElementById('catalog-results');
             const searchInput = document.getElementById('procedure-search');
             const searchBtn = document.getElementById('search-btn');
@@ -733,7 +755,7 @@
         // ==============================================
         // INITIALIZATION
         // ==============================================
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             addClearSelectionButton();
         });
     </script>

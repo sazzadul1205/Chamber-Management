@@ -8,7 +8,7 @@
                     Prescriptions ({{ $treatment->prescriptions->count() }})
                 </h3>
                 <!-- Only show edit button for existing prescription -->
-                @if($treatment->prescriptions->first())
+                @if ($treatment->prescriptions->first())
                     <a href="{{ route('backend.prescriptions.edit', $treatment->prescriptions->first()) }}"
                         class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded-lg flex items-center gap-1 transition-colors">
                         <i class="fas fa-edit"></i> Edit Prescription
@@ -69,12 +69,19 @@
                                                     @endif
                                                 </div>
                                             </div>
-                                            <span class="text-xs px-2 py-1 rounded-full 
-                                                                                    @if($item->status == 'dispensed') bg-green-100 text-green-800
-                                                                                    @elseif($item->status == 'cancelled') bg-red-100 text-red-800
-                                                                                    @else bg-yellow-100 text-yellow-800 @endif">
+                                            @php
+                                                $statusClass = 'bg-yellow-100 text-yellow-800'; 
+                                                if ($item->status === 'dispensed') {
+                                                    $statusClass = 'bg-green-100 text-green-800';
+                                                } elseif ($item->status === 'cancelled') {
+                                                    $statusClass = 'bg-red-100 text-red-800';
+                                                }
+                                            @endphp
+
+                                            <span class="text-xs px-2 py-1 rounded-full {{ $statusClass }}">
                                                 {{ ucfirst($item->status) }}
                                             </span>
+
                                         </div>
                                     @endforeach
 
@@ -159,11 +166,13 @@
                                                 class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 rounded hover:bg-green-100 transition-colors"
                                                 title="Dispense All"
                                                 onclick="return confirm('Dispense all items in this prescription?')">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
                                                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M9 12l2 2 4-4" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M9 12l2 2 4-4" />
                                                 </svg>
                                             </button>
                                         </form>
@@ -171,15 +180,17 @@
 
                                     <!-- Delete Button -->
                                     @if (!$prescription->items()->where('status', 'dispensed')->exists())
-                                        <form action="{{ route('backend.prescriptions.destroy', $prescription) }}" method="POST"
-                                            class="inline">
+                                        <form action="{{ route('backend.prescriptions.destroy', $prescription) }}"
+                                            method="POST" class="inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"
                                                 class="inline-flex items-center px-2 py-1 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
                                                 title="Delete" onclick="return confirm('Delete this prescription?')">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
                                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
                                             </button>

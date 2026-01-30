@@ -176,10 +176,11 @@ class TreatmentController extends Controller
             'patient',
             'doctor.user',
             'appointment',
-            'procedures.payments', 
-            'sessions.payments',   
+            'procedures.payments',
+            'sessions.payments',
             'prescriptions',
-            'invoices.payments'
+            'invoices.payments',
+            'medicalFiles.uploadedBy'
         ]);
 
         // Calculate session costs - FIXED with null-safe operator

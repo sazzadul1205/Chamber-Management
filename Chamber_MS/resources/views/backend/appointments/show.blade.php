@@ -8,17 +8,29 @@
             <h2 class="text-2xl font-semibold">Appointment Details</h2>
 
             <div class="flex gap-2">
+
                 @if (!in_array($appointment->status, ['completed', 'no_show']))
+                    {{-- Reschedule Button --}}
                     <button type="button"
-                        class="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-white rounded-md text-sm font-medium"
+                        class="flex items-center gap-2 px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md text-sm font-medium transition"
                         data-modal-toggle="reschedule-modal">
+                        @include('partials.sidebar-icon', [
+                            'name' => 'B_Reschedule',
+                            'class' => 'w-4 h-4',
+                        ])
                         Reschedule
                     </button>
 
                     <!-- Modal -->
                     <div id="reschedule-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-                        <div class="bg-white rounded shadow-lg w-full max-w-md p-6">
-                            <h3 class="text-lg font-semibold mb-4">Reschedule Appointment</h3>
+                        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+                            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                @include('partials.sidebar-icon', [
+                                    'name' => 'B_Calendar',
+                                    'class' => 'w-5 h-5 text-yellow-500',
+                                ])
+                                Reschedule Appointment
+                            </h3>
 
                             <form action="{{ route('backend.appointments.reschedule', $appointment) }}" method="POST">
                                 @csrf
@@ -39,10 +51,22 @@
                                 </div>
 
                                 <div class="flex justify-end gap-2 mt-4">
-                                    <button type="button" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                                        data-modal-hide="reschedule-modal">Cancel</button>
+                                    <button type="button"
+                                        class="flex items-center gap-1 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 text-sm"
+                                        data-modal-hide="reschedule-modal">
+                                        @include('partials.sidebar-icon', [
+                                            'name' => 'B_Close',
+                                            'class' => 'w-4 h-4',
+                                        ])
+                                        Cancel
+                                    </button>
+
                                     <button type="submit"
-                                        class="px-4 py-2 bg-yellow-400 text-white rounded hover:bg-yellow-500">
+                                        class="flex items-center gap-1 px-4 py-2 bg-yellow-400 text-white rounded hover:bg-yellow-500 text-sm">
+                                        @include('partials.sidebar-icon', [
+                                            'name' => 'B_Check',
+                                            'class' => 'w-4 h-4',
+                                        ])
                                         Save
                                     </button>
                                 </div>
@@ -50,22 +74,23 @@
                         </div>
                     </div>
                 @endif
+
+                {{-- Calendar --}}
                 <a href="{{ route('backend.appointments.calendar') }}"
-                    class="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition">
+                    class="flex items-center gap-2 px-4 py-2 bg-blue-200 hover:bg-blue-300 text-black rounded-md text-sm font-medium transition">
                     @include('partials.sidebar-icon', ['name' => 'Calendar', 'class' => 'w-4 h-4'])
                     Calendar
                 </a>
 
+                {{-- Back --}}
                 <a href="{{ route('backend.appointments.index') }}"
                     class="flex items-center gap-2 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md text-sm font-medium transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
+                    @include('partials.sidebar-icon', ['name' => 'B_Back', 'class' => 'w-4 h-4'])
                     Back
                 </a>
 
             </div>
+
         </div>
 
         <!-- Info Boxes -->

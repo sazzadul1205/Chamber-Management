@@ -91,5 +91,11 @@
             </a>
         @endif
 
+        {{-- Request Test --}}
+        <a href="{{ route('backend.medical-files.create', ['patient_id' => $treatment->patient_id, 'treatment_id' => $treatment->id]) }}"
+            class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5">
+            @include('partials.sidebar-icon', ['name' => 'B_Add', 'class' => 'w-5 h-5'])
+            Request Test
+        </a>
     </div>
 </div>

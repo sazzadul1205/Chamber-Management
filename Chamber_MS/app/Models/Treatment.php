@@ -100,6 +100,11 @@ class Treatment extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function medicalFiles()
+{
+    return $this->hasMany(MedicalFile::class);
+}
+
     // Scopes
     public function scopeSearch($query, $search)
     {

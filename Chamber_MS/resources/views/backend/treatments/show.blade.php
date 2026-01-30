@@ -237,6 +237,10 @@
 
                 {{-- Prescriptions --}}
                 @include('backend.treatments.Components.prescriptions')
+
+                {{-- Medical Files --}}
+                @include('backend.treatments.Components.medical-files')
+
             </div>
 
             <!-- Right Column: Actions & Timeline -->
@@ -352,37 +356,56 @@
                                         </th>
                                     </tr>
                                 </thead>
+
+                                @php
+                                    $paymentMethodColors = [
+                                        'cash' => 'bg-green-100 text-green-800',
+                                        'card' => 'bg-blue-100 text-blue-800',
+                                        'bank_transfer' => 'bg-purple-100 text-purple-800',
+                                        'default' => 'bg-gray-100 text-gray-800',
+                                    ];
+
+                                    $paymentStatusColors = [
+                                        'completed' => 'bg-green-100 text-green-800',
+                                        'pending' => 'bg-yellow-100 text-yellow-800',
+                                        'failed' => 'bg-red-100 text-red-800',
+                                        'default' => 'bg-gray-100 text-gray-800',
+                                    ];
+                                @endphp
+
+
                                 <tbody class="divide-y divide-gray-200">
                                     @foreach ($treatment->invoices->flatMap->payments->sortByDesc('payment_date')->take(5) as $payment)
                                         <tr class="hover:bg-gray-50">
+                                            <!-- Payment Date -->
                                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                                 {{ \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') }}
                                             </td>
+
+                                            <!-- Payment Method -->
                                             <td class="px-4 py-3 whitespace-nowrap">
                                                 <span
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                        @if ($payment->payment_method == 'cash') bg-green-100 text-green-800
-                                        @elseif($payment->payment_method == 'card') bg-blue-100 text-blue-800
-                                        @elseif($payment->payment_method == 'bank_transfer') bg-purple-100 text-purple-800
-                                        @else bg-gray-100 text-gray-800 @endif">
+                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $paymentMethodColors[$payment->payment_method] ?? $paymentMethodColors['default'] }}">
                                                     {{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}
                                                 </span>
                                             </td>
+
+                                            <!-- Payment Amount -->
                                             <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-green-700">
                                                 ৳ {{ number_format($payment->amount, 2) }}
                                             </td>
+
+                                            <!-- Payment Status -->
                                             <td class="px-4 py-3 whitespace-nowrap">
                                                 <span
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                        @if ($payment->status == 'completed') bg-green-100 text-green-800
-                                        @elseif($payment->status == 'pending') bg-yellow-100 text-yellow-800
-                                        @else bg-red-100 text-red-800 @endif">
+                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $paymentStatusColors[$payment->status] ?? $paymentStatusColors['default'] }}">
                                                     {{ ucfirst($payment->status) }}
                                                 </span>
                                             </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
+
                             </table>
                         </div>
                     @else

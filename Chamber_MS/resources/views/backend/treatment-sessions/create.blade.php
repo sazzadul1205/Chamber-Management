@@ -6,7 +6,7 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <h2 class="text-2xl font-bold text-gray-800">Create Treatment Session</h2>
-                @if($treatment)
+                @if ($treatment)
                     <p class="text-gray-600 mt-1">
                         For Treatment: <span class="font-semibold text-blue-700">{{ $treatment->treatment_code }}</span> -
                         Patient: <span class="font-medium">{{ $treatment->patient->full_name }}</span>
@@ -14,7 +14,7 @@
                 @endif
             </div>
             <div class="flex flex-wrap gap-2">
-                @if($treatment)
+                @if ($treatment)
                     <a href="{{ route('backend.treatments.show', $treatment) }}"
                         class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
                         <i class="fas fa-arrow-left"></i>
@@ -40,7 +40,7 @@
                 <form action="{{ route('backend.treatment-sessions.store') }}" method="POST">
                     @csrf
 
-                    @if($treatment)
+                    @if ($treatment)
                         <input type="hidden" name="treatment_id" value="{{ $treatment->id }}">
                         <div class="mb-4 p-3 bg-blue-50 rounded-lg">
                             <p class="text-sm font-medium text-gray-700">Treatment:</p>
@@ -56,8 +56,9 @@
                                 class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 required>
                                 <option value="">-- Select Treatment --</option>
-                                @foreach($treatments as $t)
-                                    <option value="{{ $t->id }}" {{ old('treatment_id') == $t->id ? 'selected' : '' }}>
+                                @foreach ($treatments as $t)
+                                    <option value="{{ $t->id }}"
+                                        {{ old('treatment_id') == $t->id ? 'selected' : '' }}>
                                         {{ $t->treatment_code }} - {{ $t->patient->full_name }}
                                     </option>
                                 @endforeach
@@ -72,7 +73,8 @@
                         <!-- Session Details -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Session Number *</label>
-                            <input type="number" name="session_number" value="{{ $sessionNumber ?? old('session_number') }}"
+                            <input type="number" name="session_number"
+                                value="{{ $sessionNumber ?? old('session_number') }}"
                                 class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 required min="1">
                             @error('session_number')
@@ -93,7 +95,8 @@
                         <!-- Date & Time -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Scheduled Date *</label>
-                            <input type="date" name="scheduled_date" value="{{ old('scheduled_date') ?? date('Y-m-d') }}"
+                            <input type="date" name="scheduled_date"
+                                value="{{ old('scheduled_date') ?? date('Y-m-d') }}"
                                 class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 required>
                             @error('scheduled_date')
@@ -117,10 +120,12 @@
                             <select name="appointment_id"
                                 class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">-- No Appointment --</option>
-                                @foreach($appointments as $appointment)
-                                    @if(!$appointment->treatment_session_id) {{-- Only show appointments not linked to a session
+                                @foreach ($appointments as $appointment)
+                                    @if (!$appointment->treatment_session_id)
+                                        {{-- Only show appointments not linked to a session
                                         --}}
-                                        <option value="{{ $appointment->id }}" {{ old('appointment_id') == $appointment->id ? 'selected' : '' }}>
+                                        <option value="{{ $appointment->id }}"
+                                            {{ old('appointment_id') == $appointment->id ? 'selected' : '' }}>
                                             {{ $appointment->appointment_code }} -
                                             {{ $appointment->appointment_date->format('d/m/Y') }}
                                             at {{ date('h:i A', strtotime($appointment->appointment_time)) }}
@@ -140,8 +145,9 @@
                             <select name="chair_id"
                                 class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">-- No Chair Assigned --</option>
-                                @foreach($chairs as $chair)
-                                    <option value="{{ $chair->id }}" {{ old('chair_id') == $chair->id ? 'selected' : '' }}>
+                                @foreach ($chairs as $chair)
+                                    <option value="{{ $chair->id }}"
+                                        {{ old('chair_id') == $chair->id ? 'selected' : '' }}>
                                         {{ $chair->name }} {{ $chair->is_available ? '(Available)' : '(Occupied)' }}
                                     </option>
                                 @endforeach
@@ -157,8 +163,9 @@
                             <select name="status"
                                 class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 required>
-                                @foreach(App\Models\TreatmentSession::statuses() as $key => $label)
-                                    <option value="{{ $key }}" {{ old('status') == $key ? 'selected' : ($key == 'scheduled' ? 'selected' : '') }}>
+                                @foreach (App\Models\TreatmentSession::statuses() as $key => $label)
+                                    <option value="{{ $key }}"
+                                        {{ old('status') == $key ? 'selected' : ($key == 'scheduled' ? 'selected' : '') }}>
                                         {{ $label }}
                                     </option>
                                 @endforeach
@@ -171,7 +178,8 @@
                         <!-- Cost -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Cost for Session (৳)</label>
-                            <input type="number" step="0.01" name="cost_for_session" value="{{ old('cost_for_session') }}"
+                            <input type="number" step="0.01" name="cost_for_session"
+                                value="{{ old('cost_for_session') }}"
                                 class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             @error('cost_for_session')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -212,8 +220,8 @@
 
                     <!-- Submit Buttons -->
                     <div class=" mt-8 pb-6">
-                                 <x-back-submit-buttons back-url="{{ route('backend.treatments.index') }}"
-                submit-text="Save Treatment" />
+                        <x-back-submit-buttons back-url="{{ route('backend.treatments.index') }}"
+                            submit-text="Save Treatment" />
 
                     </div>
                 </form>

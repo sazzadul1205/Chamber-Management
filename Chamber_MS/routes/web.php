@@ -263,11 +263,23 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('prescription-item/{item}', [PrescriptionController::class, 'removeItem'])->name('backend.prescriptions.item.remove');
 
     // -----------------------------
-    // Medical Files
+    // Medical Files Routes
     // -----------------------------
-    Route::resource('medical-files', MedicalFileController::class)->names('backend.medical_files');
-    Route::get('medical-files/patient/{patientId}', [MedicalFileController::class, 'getFilesByPatient'])->name('backend.medical_files.by-patient');
-    Route::get('medical-files/{id}/download', [MedicalFileController::class, 'download'])->name('backend.medical_files.download');
+    Route::prefix('medical-files')->name('backend.medical-files.')->group(function () {
+        Route::get('/', [MedicalFileController::class, 'index'])->name('index');
+        Route::get('/create', [MedicalFileController::class, 'create'])->name('create');
+        Route::post('/', [MedicalFileController::class, 'store'])->name('store');
+        Route::get('/{medicalFile}', [MedicalFileController::class, 'show'])->name('show');
+        Route::get('/{medicalFile}/edit', [MedicalFileController::class, 'edit'])->name('edit');
+        Route::put('/{medicalFile}', [MedicalFileController::class, 'update'])->name('update');
+        Route::delete('/{medicalFile}', [MedicalFileController::class, 'destroy'])->name('destroy');
+
+        // Additional actions
+        Route::post('/{medicalFile}/upload-result', [MedicalFileController::class, 'uploadResult'])->name('upload-result');
+        Route::patch('/{medicalFile}/mark-pending', [MedicalFileController::class, 'markAsPending'])->name('mark-pending');
+        Route::patch('/{medicalFile}/cancel', [MedicalFileController::class, 'cancel'])->name('cancel');
+        Route::get('/{medicalFile}/download', [MedicalFileController::class, 'download'])->name('download');
+    });
 
     // -----------------------------
     // Inventory Stock

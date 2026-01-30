@@ -1,5 +1,7 @@
 @php
     $icon = $name ?? 'default';
+    $iconClass = $class ?? 'w-4 h-4';
+
 @endphp
 
 @switch($icon)
@@ -183,6 +185,14 @@
         @include('components.icons.Buttons.B_Pause')
     @break
 
+    @case('B_Download')
+        @include('components.icons.Buttons.B_Download')
+    @break
+
+    @case('B_Upload')
+        @include('components.icons.Buttons.B_Upload')
+    @break
+
     {{-- ==============================
          MISC ICONS
     ============================== --}}
@@ -196,6 +206,18 @@
 
     @case('Bed')
         @include('components.icons.Bed')
+    @break
+
+    @case('Cancel')
+        @include('components.icons.Cancel', ['class' => $iconClass])
+    @break
+
+    @case('Completed')
+        @include('components.icons.Completed', ['class' => $iconClass])
+    @break
+
+    @case('Pending')
+        @include('components.icons.Pending', ['class' => $iconClass])
     @break
 
     {{-- ==============================
