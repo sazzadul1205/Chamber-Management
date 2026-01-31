@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\Patient;
 use App\Models\PaymentAllocation;
 use App\Models\PaymentInstallment;
+use App\Models\Treatment;
 use App\Models\TreatmentProcedure;
 use App\Models\TreatmentSession;
 use Illuminate\Http\Request;
@@ -323,7 +324,9 @@ class PaymentController extends Controller
         return response()->json($installments);
     }
 
-
+    /* -----------------------------------
+     Allocate payment to treatments
+     ----------------------------------- */
     private function autoAllocateToTreatments(Payment $payment, $amount)
     {
         $invoice = $payment->invoice;
@@ -485,7 +488,7 @@ class PaymentController extends Controller
         $request->validate([
             'procedure_id' => 'required|exists:treatment_procedures,id',
             'patient_id' => 'required|exists:patients,id',
-            'treatment_id' => 'nullable|exists:treatments,id',
+
             'payment_date' => 'required|date',
             'payment_method' => 'required|in:cash,card,bank_transfer,cheque,mobile_banking,other',
             'amount' => 'required|numeric|min:0.01',
@@ -494,10 +497,10 @@ class PaymentController extends Controller
         ]);
 
         // Get the procedure
-        $procedure = TreatmentProcedure::with('treatment')->findOrFail($request->procedure_id);
+        $procedure = TreatmentProcedure::findOrFail($request->procedure_id);
 
-        // Calculate balance
-        $procedurePaid = $procedure->payments->sum('amount');
+        // Calculate balance dynamically (same as session)
+        $procedurePaid = $procedure->payments()->sum('amount');
         $procedureBalance = max(0, $procedure->cost - $procedurePaid);
 
         // Validate amount doesn't exceed balance
@@ -525,12 +528,13 @@ class PaymentController extends Controller
                 'reference_no' => $request->reference_no,
                 'remarks' => $request->remarks,
                 'status' => 'completed',
-                'payable_type' => 'App\Models\TreatmentProcedure', // POLYMORPHIC
-                'payable_id' => $procedure->id, // POLYMORPHIC
+                'payable_type' => 'App\Models\TreatmentProcedure',
+                'payable_id' => $procedure->id,
+                'for_treatment_session_id' => null,
                 'created_by' => auth()->id()
             ]);
 
-            DB::commit();
+            DB::commit(); // NO NEED TO CALL $procedure->addPayment()
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -557,5 +561,274 @@ class PaymentController extends Controller
 
             return back()->withInput()->with('error', 'Error recording payment: ' . $e->getMessage());
         }
+    }
+
+    /*-----------------------------------
+    | Show Combined Payments Page for Treatment
+    *-----------------------------------*/
+    public function treatmentPayments(Treatment $treatment)
+    {
+        // Eager load all necessary relationships with payments
+        $treatment->load([
+            'sessions.payments' => function ($query) {
+                $query->latest();
+            },
+            'procedures.payments' => function ($query) {
+                $query->latest();
+            },
+            'patient',
+            'invoices.payments'
+        ]);
+
+        // Calculate totals
+        $sessionTotalCost = $treatment->sessions->sum('cost_for_session');
+        $sessionTotalPaid = $treatment->sessions->sum(function ($session) {
+            return $session->payments->sum('amount');
+        });
+        $sessionBalance = $sessionTotalCost - $sessionTotalPaid;
+
+        $procedureTotalCost = $treatment->procedures->sum('cost');
+        $procedureTotalPaid = $treatment->procedures->sum(function ($procedure) {
+            return $procedure->payments->sum('amount');
+        });
+        $procedureBalance = $procedureTotalCost - $procedureTotalPaid;
+
+        $overallTotalCost = $sessionTotalCost + $procedureTotalCost;
+        $overallTotalPaid = $sessionTotalPaid + $procedureTotalPaid;
+        $overallBalance = $overallTotalCost - $overallTotalPaid;
+
+        // Prepare session data for view
+        $sessions = $treatment->sessions->map(function ($session) {
+            $paid = $session->payments->sum('amount');
+            $balance = max(0, $session->cost_for_session - $paid);
+            $percentage = $session->cost_for_session > 0 ? round(($paid / $session->cost_for_session) * 100, 2) : 0;
+
+            return [
+                'id' => $session->id,
+                'type' => 'session',
+                'number' => $session->session_number,
+                'title' => $session->session_title,
+                'description' => "Session #{$session->session_number}: {$session->session_title}",
+                'date' => $session->scheduled_date,
+                'status' => $session->status,
+                'cost' => $session->cost_for_session,
+                'paid' => $paid,
+                'balance' => $balance,
+                'percentage' => $percentage,
+                'payments' => $session->payments
+            ];
+        });
+
+        // Prepare procedure data for view
+        $procedures = $treatment->procedures->map(function ($procedure) {
+            $paid = $procedure->payments->sum('amount');
+            $balance = max(0, $procedure->cost - $paid);
+            $percentage = $procedure->cost > 0 ? round(($paid / $procedure->cost) * 100, 2) : 0;
+
+            return [
+                'id' => $procedure->id,
+                'type' => 'procedure',
+                'code' => $procedure->procedure_code,
+                'name' => $procedure->procedure_name,
+                'description' => $procedure->procedure_name,
+                'date' => $procedure->created_at,
+                'status' => $procedure->status,
+                'cost' => $procedure->cost,
+                'paid' => $paid,
+                'balance' => $balance,
+                'percentage' => $percentage,
+                'payments' => $procedure->payments
+            ];
+        });
+
+        // Combine all items
+        $allItems = $sessions->merge($procedures)->sortByDesc('balance')->values();
+
+        return view('backend.payments.treatment-payments', compact(
+            'treatment',
+            'sessions',
+            'procedures',
+            'allItems',
+            'sessionTotalCost',
+            'sessionTotalPaid',
+            'sessionBalance',
+            'procedureTotalCost',
+            'procedureTotalPaid',
+            'procedureBalance',
+            'overallTotalCost',
+            'overallTotalPaid',
+            'overallBalance'
+        ));
+    }
+
+    /*-----------------------------------
+    | Store Combined Payment for Treatment
+    *-----------------------------------*/
+    public function storeTreatmentPayment(Request $request)
+    {
+        $request->validate([
+            'treatment_id' => 'required|exists:treatments,id',
+            'payment_for_type' => 'required|in:session,procedure,overall',
+            'item_id' => 'nullable|integer',
+            'patient_id' => 'required|exists:patients,id',
+            'payment_date' => 'required|date',
+            'payment_method' => 'required|in:cash,card,bank_transfer,cheque,mobile_banking,other',
+            'amount' => 'required|numeric|min:0.01',
+            'reference_no' => 'nullable|string|max:50',
+            'remarks' => 'nullable|string|max:500',
+            'allocate_to_invoice' => 'boolean'
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $treatment = Treatment::findOrFail($request->treatment_id);
+
+            // Calculate maximum allowed amount based on selection
+            $maxAmount = 0;
+            $targetItem = null;
+            $paymentDetails = [];
+
+            switch ($request->payment_for_type) {
+                case 'session':
+                    $session = TreatmentSession::findOrFail($request->item_id);
+                    $maxAmount = max(0, $session->cost_for_session - $session->payments->sum('amount'));
+                    $targetItem = $session;
+                    $paymentDetails['session_id'] = $session->id;
+                    break;
+
+                case 'procedure':
+                    $procedure = TreatmentProcedure::findOrFail($request->item_id);
+                    $maxAmount = max(0, $procedure->cost - $procedure->payments->sum('amount'));
+                    $targetItem = $procedure;
+                    $paymentDetails['procedure_id'] = $procedure->id;
+                    break;
+
+                case 'overall':
+                    // Calculate total unpaid balance for treatment
+                    $sessionBalance = $treatment->sessions->sum(function ($s) {
+                        return max(0, $s->cost_for_session - $s->payments->sum('amount'));
+                    });
+                    $procedureBalance = $treatment->procedures->sum(function ($p) {
+                        return max(0, $p->cost - $p->payments->sum('amount'));
+                    });
+                    $maxAmount = $sessionBalance + $procedureBalance;
+                    break;
+            }
+
+            // Validate amount
+            if ($request->amount > $maxAmount) {
+                return back()->withInput()->with(
+                    'error',
+                    "Amount cannot exceed available balance of ৳" . number_format($maxAmount, 2)
+                );
+            }
+
+            // Create the payment
+            $payment = Payment::create([
+                'payment_no' => Payment::generatePaymentNo(),
+                'patient_id' => $request->patient_id,
+                'treatment_id' => $treatment->id,
+                'payment_date' => $request->payment_date,
+                'payment_method' => $request->payment_method,
+                'payment_type' => $request->payment_for_type === 'overall' ? 'partial' : 'full',
+                'amount' => $request->amount,
+                'reference_no' => $request->reference_no,
+                'remarks' => $request->remarks,
+                'status' => 'completed',
+                'created_by' => auth()->id(),
+                'for_treatment_session_id' => $paymentDetails['session_id'] ?? null,
+                'payable_type' => isset($paymentDetails['procedure_id']) ? 'App\Models\TreatmentProcedure' : null,
+                'payable_id' => $paymentDetails['procedure_id'] ?? null,
+            ]);
+
+            // Update related models
+            if ($request->payment_for_type === 'session' && $targetItem) {
+                $targetItem->addPayment($request->amount);
+            }
+
+            // For overall payments, allocate to outstanding items
+            if ($request->payment_for_type === 'overall') {
+                $this->allocateOverallPayment($payment, $request->amount, $treatment);
+            }
+
+            // Optionally allocate to invoice
+            if ($request->allocate_to_invoice && $treatment->invoices->isNotEmpty()) {
+                $invoice = $treatment->invoices->first();
+                $payment->update(['invoice_id' => $invoice->id]);
+                $invoice->addPayment($request->amount);
+            }
+
+            DB::commit();
+
+            return redirect()->route('payments.treatment-payments', $treatment)
+                ->with('success', 'Payment recorded successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Error recording payment: ' . $e->getMessage());
+        }
+    }
+
+    /*-----------------------------------
+    | Allocate Overall Payment to Items
+    *-----------------------------------*/
+    private function allocateOverallPayment(Payment $payment, $amount, Treatment $treatment)
+    {
+        $remainingAmount = $amount;
+
+        // First allocate to sessions
+        $unpaidSessions = $treatment->sessions->filter(function ($session) {
+            return $session->cost_for_session > $session->payments->sum('amount');
+        })->sortBy('scheduled_date');
+
+        foreach ($unpaidSessions as $session) {
+            if ($remainingAmount <= 0) break;
+
+            $sessionBalance = max(0, $session->cost_for_session - $session->payments->sum('amount'));
+            $allocateAmount = min($sessionBalance, $remainingAmount);
+
+            if ($allocateAmount > 0) {
+                // Create allocation
+                PaymentAllocation::create([
+                    'payment_id' => $payment->id,
+                    'treatment_session_id' => $session->id,
+                    'allocated_amount' => $allocateAmount,
+                    'allocation_date' => now(),
+                    'created_by' => auth()->id(),
+                ]);
+
+                // Update session
+                $session->addPayment($allocateAmount);
+                $remainingAmount -= $allocateAmount;
+            }
+        }
+
+        // Then allocate to procedures
+        if ($remainingAmount > 0) {
+            $unpaidProcedures = $treatment->procedures->filter(function ($procedure) {
+                return $procedure->cost > $procedure->payments->sum('amount');
+            })->sortBy('created_at');
+
+            foreach ($unpaidProcedures as $procedure) {
+                if ($remainingAmount <= 0) break;
+
+                $procedureBalance = max(0, $procedure->cost - $procedure->payments->sum('amount'));
+                $allocateAmount = min($procedureBalance, $remainingAmount);
+
+                if ($allocateAmount > 0) {
+                    PaymentAllocation::create([
+                        'payment_id' => $payment->id,
+                        'treatment_procedure_id' => $procedure->id,
+                        'allocated_amount' => $allocateAmount,
+                        'allocation_date' => now(),
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    // Note: Procedure payments are tracked via polymorphic relationship
+                    $remainingAmount -= $allocateAmount;
+                }
+            }
+        }
+
+        return $amount - $remainingAmount;
     }
 }

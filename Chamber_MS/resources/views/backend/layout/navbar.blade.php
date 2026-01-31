@@ -1,3 +1,15 @@
+@php
+    $user = Auth::user();
+    $roleMap = [
+        1 => 'Super Admin',
+        2 => 'Admin',
+        3 => 'Doctor',
+        4 => 'Receptionist',
+        5 => 'Accountant'
+    ];
+    $userRoleName = $roleMap[$user->role_id] ?? 'User';
+@endphp
+
 <!-- NAVBAR -->
 <header class="py-2 bg-white border-b flex items-center justify-between px-6">
 
@@ -10,21 +22,18 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
         </button>
-
-        <span class="text-lg font-semibold text-gray-700 tracking-tight">
-            My App
-        </span>
     </div>
 
     <!-- Right: User Info -->
     <div class="flex items-center gap-3">
-        <img src="{{ asset('assets/Default_User.png') }}" class="w-10 h-10 rounded-full border" alt="User Avatar">
+        <img src="{{ $user->avatar ? asset('storage/' . $user->avatar) : asset('assets/Default_User.png') }}"
+            class="w-10 h-10 rounded-full border border-gray-300" alt="{{ $user->name }} Avatar">
         <div class="leading-tight text-right">
-            <div class="text-sm font-medium text-gray-700">
-                John Doe
+            <div class="text-sm font-medium text-gray-700 truncate">
+                {{ $user->full_name }}
             </div>
-            <div class="text-xs text-gray-500">
-                Administrator
+            <div class="text-xs text-left text-gray-500 truncate">
+                {{ $userRoleName }}
             </div>
         </div>
     </div>

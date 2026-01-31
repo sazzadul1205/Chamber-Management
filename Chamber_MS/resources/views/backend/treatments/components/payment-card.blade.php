@@ -60,40 +60,111 @@
         <div class="pt-3 space-y-3">
             <!-- Quick Payment Options -->
             <div class="grid grid-cols-2 gap-2">
-                <button onclick="quickPayment('full')"
-                    class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg py-2.5 font-medium text-sm transition-all">
-                    <i class="fas fa-check-circle mr-1"></i>
-                    Pay Full
-                </button>
-                <button onclick="quickPayment('partial')"
-                    class="bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 text-white rounded-lg py-2.5 font-medium text-sm transition-all">
-                    <i class="fas fa-money-bill-wave mr-1"></i>
-                    Partial Pay
-                </button>
+                @if($balanceDue > 0)
+                    <a href="{{ route('payments.treatment-payments', $treatment) }}"
+                        onclick="openOverallPaymentModal(); return false;"
+                        class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg py-2.5 font-medium text-sm transition-all flex items-center justify-center gap-1">
+                        <i class="fas fa-check-circle"></i>
+                        Pay Full Balance
+                    </a>
+
+                    <a href="{{ route('payments.treatment-payments', $treatment) }}"
+                        class="bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 text-white rounded-lg py-2.5 font-medium text-sm transition-all flex items-center justify-center gap-1">
+                        <i class="fas fa-money-bill-wave"></i>
+                        Partial Payment
+                    </a>
+                @else
+                    <div class="col-span-2">
+                        <div
+                            class="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 rounded-lg py-2.5 font-medium text-sm flex items-center justify-center gap-1">
+                            <i class="fas fa-check-circle"></i>
+                            Fully Paid
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <!-- Main Payment Actions -->
             <div class="space-y-2">
-                <a href="{{ route('backend.payments.create', ['treatment_id' => $treatment->id]) }}"
+                <!-- Unified Payments Page -->
+                <a href="{{ route('payments.treatment-payments', $treatment) }}"
                     class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
-                    <i class="fas fa-plus-circle"></i>
-                    Record Payment
+                    <i class="fas fa-list-alt"></i>
+                    All Payments & Items
                 </a>
 
                 <!-- Session-wise Payment -->
-                <a href="{{ route('backend.treatments.session-payments', $treatment->id) }}"
+                <a href="{{ route('backend.treatments.session-payments', $treatment) }}"
                     class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
                     <i class="fas fa-clock"></i>
                     Session Payments
                 </a>
 
                 <!-- Procedure-wise Payment -->
-                <a href="{{ route('backend.treatments.procedure-payments', $treatment->id) }}"
+                <a href="{{ route('backend.treatments.procedure-payments', $treatment) }}"
                     class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
                     <i class="fas fa-teeth"></i>
                     Procedure Payments
                 </a>
+
+                <!-- Create New Payment (Traditional) -->
+                <a href="{{ route('backend.payments.create', ['treatment_id' => $treatment->id]) }}"
+                    class="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all border border-gray-300">
+                    <i class="fas fa-plus-circle"></i>
+                    Record New Payment
+                </a>
+
+                <!-- View Invoice if exists -->
+                @if($treatment->invoices->count() > 0)
+                    <a href="{{ route('invoices.show', $treatment->invoices->first()) }}"
+                        class="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        View Invoice
+                    </a>
+                @endif
             </div>
         </div>
     </div>
 </div>
+
+<!-- JavaScript for Quick Payment Modal -->
+@push('scripts')
+    <script>
+        // Function to open the unified payments page with modal
+        function openOverallPaymentModal() {
+            // Store the current balance in localStorage for the payments page
+            localStorage.setItem('quickPaymentBalance', {{ $balanceDue }});
+            localStorage.setItem('quickPaymentType', 'full');
+
+            // Redirect to the unified payments page
+            window.location.href = "{{ route('payments.treatment-payments', $treatment) }}";
+        }
+
+        // Function to handle quick payments (you can customize this)
+        function quickPayment(type) {
+            if (type === 'full') {
+                // For full payment, open the unified payments page
+                openOverallPaymentModal();
+            } else {
+                // For partial payment, just go to the unified payments page
+                window.location.href = "{{ route('payments.treatment-payments', $treatment) }}";
+            }
+        }
+
+        // Check if we should auto-open modal on page load (for the payments page)
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.location.pathname.includes('/payments') && localStorage.getItem('quickPaymentType') === 'full') {
+                // This would be in the payments page - auto-open modal
+                setTimeout(() => {
+                    const overallModalBtn = document.querySelector('[onclick*="openOverallPaymentModal"]');
+                    if (overallModalBtn) {
+                        overallModalBtn.click();
+                    }
+                    // Clear the stored values
+                    localStorage.removeItem('quickPaymentBalance');
+                    localStorage.removeItem('quickPaymentType');
+                }, 500);
+            }
+        });
+    </script>
+@endpush

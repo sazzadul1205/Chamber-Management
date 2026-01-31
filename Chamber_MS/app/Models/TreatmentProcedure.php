@@ -211,27 +211,11 @@ class TreatmentProcedure extends Model
 
     public function addPayment($amount)
     {
-        // Create payment allocation or direct payment
-        // This method should be called when payment is allocated to this session
-
-        // You might want to add a 'paid_amount' field to TreatmentSession
-        $this->paid_amount = ($this->paid_amount ?? 0) + $amount;
-        $this->save();
-
-        // Or create a Payment record linked to this session
-        $payment = Payment::create([
-            'payment_no' => Payment::generatePaymentNo(),
-            'for_treatment_session_id' => $this->id,
-            'patient_id' => $this->treatment->patient_id,
-            'amount' => $amount,
-            'payment_date' => now(),
-            'payment_method' => 'allocated', // Or track actual method
-            'status' => 'completed',
-            'created_by' => auth()->id(),
-        ]);
-
-        return $payment;
+        // Just return true to be consistent with Session
+        // The payment is recorded in Payment table, not here
+        return true;
     }
+
 
     public function getPaidAmountAttribute()
     {
@@ -240,6 +224,16 @@ class TreatmentProcedure extends Model
 
     public function getBalanceAttribute()
     {
-        return $this->cost_for_session - $this->paid_amount;
+        return $this->cost - $this->paid_amount;
+    }
+
+    // =========================
+    // FORMATTED ATTRIBUTES - ADD PAID AMOUNT FORMAT
+    // =========================
+    public function getFormattedPaidAmountAttribute()
+    {
+        return $this->paid_amount !== null
+            ? '৳ ' . number_format((float) $this->paid_amount, 2)
+            : 'N/A';
     }
 }

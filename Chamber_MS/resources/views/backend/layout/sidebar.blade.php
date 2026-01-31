@@ -79,12 +79,6 @@
             'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
             'items' => [
                 [
-                    'label' => 'Calendar View',
-                    'route' => 'backend.appointments.calendar',
-                    'icon' => 'Calendar',
-                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
-                ],
-                [
                     'label' => 'Schedule Appointment',
                     'route' => 'backend.appointments.create',
                     'icon' => 'Add-Circle',
@@ -94,6 +88,12 @@
                     'label' => 'Appointment List',
                     'route' => 'backend.appointments.index',
                     'icon' => 'list',
+                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
+                ],
+                [
+                    'label' => 'Calendar View',
+                    'route' => 'backend.appointments.calendar',
+                    'icon' => 'Calendar',
                     'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
                 ],
                 [
@@ -131,18 +131,18 @@
                     'route' => 'backend.doctors.index',
                     'roles' => ['Super Admin', 'Admin', 'Doctor']
                 ],
-                [
-                    'label' => 'Doctor Schedule',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
-                ],
-                [
-                    'label' => 'Leave Management',
-                    'roles' => ['Admin', 'Super Admin']
-                ],
-                [
-                    'label' => 'Commission Reports',
-                    'roles' => ['Admin', 'Super Admin', 'Accountant']
-                ],
+                // [
+                //     'label' => 'Doctor Schedule',
+                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
+                // ],
+                // [
+                //     'label' => 'Leave Management',
+                //     'roles' => ['Admin', 'Super Admin']
+                // ],
+                // [
+                //     'label' => 'Commission Reports',
+                //     'roles' => ['Admin', 'Super Admin', 'Accountant']
+                // ],
             ],
         ],
 
@@ -207,22 +207,22 @@
                     'route' => 'backend.dental-charts.index',
                     'roles' => ['Super Admin', 'Admin', 'Doctor']
                 ],
-                [
-                    'label' => 'Tooth Conditions',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
-                ],
-                [
-                    'label' => 'Chart History',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
-                ],
-                [
-                    'label' => 'X-Ray Viewer',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
-                ],
-                [
-                    'label' => 'Print Chart',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
-                ],
+                // [
+                //     'label' => 'Tooth Conditions',
+                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
+                // ],
+                // [
+                //     'label' => 'Chart History',
+                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
+                // ],
+                // [
+                //     'label' => 'X-Ray Viewer',
+                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
+                // ],
+                // [
+                //     'label' => 'Print Chart',
+                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
+                // ],
             ],
         ],
 
@@ -275,10 +275,10 @@
                     'route' => 'backend.prescriptions.create',
                     'roles' => ['Super Admin', 'Admin', 'Doctor']
                 ],
-                [
-                    'label' => 'Prescription Templates',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
-                ],
+                // [
+                //     'label' => 'Prescription Templates',
+                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
+                // ],
                 [
                     'label' => 'Prescription History',
                     'icon' => 'list',
@@ -297,47 +297,47 @@
         // ===============================
         // INVENTORY
         // ===============================
-        [
-            'title' => 'Inventory',
-            'icon' => 'boxes',
-            'roles' => ['Super Admin', 'Admin', 'Accountant', 'Doctor'],
-            'items' => [
-                [
-                    'label' => 'Inventory Dashboard',
-                    'route' => 'backend.inventory-items.index',
-                    'icon' => 'grid',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant', 'Doctor']
-                ],
-                [
-                    'label' => 'Stock List',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant', 'Doctor']
-                ],
-                [
-                    'label' => 'Add / Update Stock',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant']
-                ],
-                [
-                    'label' => 'Low Stock Alerts',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant', 'Doctor']
-                ],
-                [
-                    'label' => 'Purchase Orders',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant']
-                ],
-                [
-                    'label' => 'Usage Tracking',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant', 'Doctor']
-                ],
-                [
-                    'label' => 'Suppliers',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant']
-                ],
-                [
-                    'label' => 'Expiry Tracking',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant']
-                ],
-            ],
-        ],
+        // [
+        //     'title' => 'Inventory',
+        //     'icon' => 'boxes',
+        //     'roles' => ['Super Admin', 'Admin', 'Accountant', 'Doctor'],
+        //     'items' => [
+        //         [
+        //             'label' => 'Inventory Dashboard',
+        //             'route' => 'backend.inventory-items.index',
+        //             'icon' => 'grid',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant', 'Doctor']
+        //         ],
+        //         [
+        //             'label' => 'Stock List',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant', 'Doctor']
+        //         ],
+        //         [
+        //             'label' => 'Add / Update Stock',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant']
+        //         ],
+        //         [
+        //             'label' => 'Low Stock Alerts',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant', 'Doctor']
+        //         ],
+        //         [
+        //             'label' => 'Purchase Orders',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant']
+        //         ],
+        //         [
+        //             'label' => 'Usage Tracking',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant', 'Doctor']
+        //         ],
+        //         [
+        //             'label' => 'Suppliers',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant']
+        //         ],
+        //         [
+        //             'label' => 'Expiry Tracking',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant']
+        //         ],
+        //     ],
+        // ],
 
         // ===============================
         // BILLING & PAYMENTS
@@ -399,45 +399,45 @@
         // ===============================
         // REPORTS
         // ===============================
-        [
-            'title' => 'Reports & Analytics',
-            'icon' => 'bar-chart',
-            'roles' => ['Super Admin', 'Admin', 'Accountant'],
-            'items' => [
-                [
-                    'label' => 'Daily / Monthly Reports',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant']
-                ],
-                [
-                    'label' => 'Financial Reports',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant']
-                ],
-                [
-                    'label' => 'Patient Statistics',
-                    'roles' => ['Super Admin', 'Admin']
-                ],
-                [
-                    'label' => 'Doctor Performance',
-                    'roles' => ['Super Admin', 'Admin']
-                ],
-                [
-                    'label' => 'Treatment Reports',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
-                ],
-                [
-                    'label' => 'Inventory Reports',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant']
-                ],
-                [
-                    'label' => 'Appointment Analytics',
-                    'roles' => ['Super Admin', 'Admin']
-                ],
-                [
-                    'label' => 'Revenue Reports',
-                    'roles' => ['Super Admin', 'Admin', 'Accountant']
-                ],
-            ],
-        ],
+        // [
+        //     'title' => 'Reports & Analytics',
+        //     'icon' => 'bar-chart',
+        //     'roles' => ['Super Admin', 'Admin', 'Accountant'],
+        //     'items' => [
+        //         [
+        //             'label' => 'Daily / Monthly Reports',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant']
+        //         ],
+        //         [
+        //             'label' => 'Financial Reports',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant']
+        //         ],
+        //         [
+        //             'label' => 'Patient Statistics',
+        //             'roles' => ['Super Admin', 'Admin']
+        //         ],
+        //         [
+        //             'label' => 'Doctor Performance',
+        //             'roles' => ['Super Admin', 'Admin']
+        //         ],
+        //         [
+        //             'label' => 'Treatment Reports',
+        //             'roles' => ['Super Admin', 'Admin', 'Doctor']
+        //         ],
+        //         [
+        //             'label' => 'Inventory Reports',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant']
+        //         ],
+        //         [
+        //             'label' => 'Appointment Analytics',
+        //             'roles' => ['Super Admin', 'Admin']
+        //         ],
+        //         [
+        //             'label' => 'Revenue Reports',
+        //             'roles' => ['Super Admin', 'Admin', 'Accountant']
+        //         ],
+        //     ],
+        // ],
 
         // ===============================
         // SYSTEM SETTINGS

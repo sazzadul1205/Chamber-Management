@@ -252,7 +252,7 @@ class Payment extends Model
 
         return $prefix . $nextNumber;
     }
-    
+
     public function processPayment()
     {
         $this->invoice->addPayment($this->amount);
