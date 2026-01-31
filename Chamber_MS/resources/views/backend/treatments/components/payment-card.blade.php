@@ -58,31 +58,7 @@
 
         <!-- Payment Actions -->
         <div class="pt-3 space-y-3">
-            <!-- Quick Payment Options -->
-            <div class="grid grid-cols-2 gap-2">
-                @if($balanceDue > 0)
-                    <a href="{{ route('payments.treatment-payments', $treatment) }}"
-                        onclick="openOverallPaymentModal(); return false;"
-                        class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg py-2.5 font-medium text-sm transition-all flex items-center justify-center gap-1">
-                        <i class="fas fa-check-circle"></i>
-                        Pay Full Balance
-                    </a>
 
-                    <a href="{{ route('payments.treatment-payments', $treatment) }}"
-                        class="bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 text-white rounded-lg py-2.5 font-medium text-sm transition-all flex items-center justify-center gap-1">
-                        <i class="fas fa-money-bill-wave"></i>
-                        Partial Payment
-                    </a>
-                @else
-                    <div class="col-span-2">
-                        <div
-                            class="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 rounded-lg py-2.5 font-medium text-sm flex items-center justify-center gap-1">
-                            <i class="fas fa-check-circle"></i>
-                            Fully Paid
-                        </div>
-                    </div>
-                @endif
-            </div>
 
             <!-- Main Payment Actions -->
             <div class="space-y-2">
@@ -90,7 +66,7 @@
                 <a href="{{ route('payments.treatment-payments', $treatment) }}"
                     class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
                     <i class="fas fa-list-alt"></i>
-                    All Payments & Items
+                    All Payment & History
                 </a>
 
                 <!-- Session-wise Payment -->
@@ -107,21 +83,13 @@
                     Procedure Payments
                 </a>
 
-                <!-- Create New Payment (Traditional) -->
-                <a href="{{ route('backend.payments.create', ['treatment_id' => $treatment->id]) }}"
-                    class="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all border border-gray-300">
-                    <i class="fas fa-plus-circle"></i>
-                    Record New Payment
-                </a>
-
                 <!-- View Invoice if exists -->
-                @if($treatment->invoices->count() > 0)
-                    <a href="{{ route('invoices.show', $treatment->invoices->first()) }}"
-                        class="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        View Invoice
-                    </a>
-                @endif
+                {{-- <a href="{{ route('invoices.show', $treatment->invoices->first()) }}"
+                    class="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    View Invoice
+                </a> --}}
+
             </div>
         </div>
     </div>
@@ -152,8 +120,9 @@
         }
 
         // Check if we should auto-open modal on page load (for the payments page)
-        document.addEventListener('DOMContentLoaded', function () {
-            if (window.location.pathname.includes('/payments') && localStorage.getItem('quickPaymentType') === 'full') {
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.location.pathname.includes('/payments') && localStorage.getItem('quickPaymentType') ===
+                'full') {
                 // This would be in the payments page - auto-open modal
                 setTimeout(() => {
                     const overallModalBtn = document.querySelector('[onclick*="openOverallPaymentModal"]');

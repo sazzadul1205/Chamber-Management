@@ -543,5 +543,6 @@
                     notification.remove();
                 }, 5000);
             }
+            
         </script>
     @endsection

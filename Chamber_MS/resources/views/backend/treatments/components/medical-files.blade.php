@@ -26,10 +26,6 @@
     <div class="bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 border-b">
         <div class="flex justify-between items-center">
             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                @include('partials.sidebar-icon', [
-                    'name' => 'MedicalFile',
-                    'class' => 'w-5 h-5 text-indigo-600',
-                ])
                 Test Requests ({{ $treatment->medicalFiles->count() }})
             </h3>
 
@@ -37,14 +33,13 @@
                 <!-- Manage Tests Button -->
                 <a href="{{ route('backend.medical-files.index', ['treatment_id' => $treatment->id]) }}"
                     class="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg flex items-center gap-1 transition-colors">
-                    @include('partials.sidebar-icon', ['name' => 'List', 'class' => 'w-4 h-4'])
                     Manage Tests
                 </a>
 
                 <!-- Request Test Button -->
                 <a href="{{ route('backend.medical-files.create', ['patient_id' => $treatment->patient_id, 'treatment_id' => $treatment->id]) }}"
                     class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg flex items-center gap-1 transition-colors">
-                    @include('partials.sidebar-icon', ['name' => 'B_Plus', 'class' => 'w-4 h-4'])
+
                     Request Test
                 </a>
             </div>

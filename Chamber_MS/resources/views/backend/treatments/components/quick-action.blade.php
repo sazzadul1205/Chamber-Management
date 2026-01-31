@@ -86,7 +86,7 @@
         @if (!$treatment->prescriptions()->exists())
             <a href="{{ route('backend.prescriptions.create', ['treatment' => $treatment->id]) }}"
                 class="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5">
-                @include('partials.sidebar-icon', ['name' => 'B_Plus', 'class' => 'w-5 h-5'])
+            @include('partials.sidebar-icon', ['name' => 'B_Add', 'class' => 'w-5 h-5'])
                 Create Prescription
             </a>
         @endif

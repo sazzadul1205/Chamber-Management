@@ -318,7 +318,7 @@
                 <!-- Payment Card -->
                 @include('backend.treatments.Components.payment-card')
 
-                <!-- Recent Payments Card -->
+          
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                     <div class="bg-gradient-to-r from-teal-50 to-cyan-50 px-6 py-4 border-b">
                         <div class="flex justify-between items-center">
@@ -347,10 +347,18 @@
                             $recentPayments = $recentPayments->merge($session->payments);
                         }
 
-                        // 3. Get direct treatment payments (if any)
-                        // If you have direct treatment payments, add them here
+                        // 3. Get procedure payments (ADDED)
+                        foreach ($treatment->procedures as $procedure) {
+                            $recentPayments = $recentPayments->merge($procedure->payments);
+                        }
 
-                        // Sort by date and take latest 5
+                        // 4. Get any other direct treatment payments
+                        // If you have a direct payments relationship on treatment, add it here
+                        if ($treatment->payments) {
+                            $recentPayments = $recentPayments->merge($treatment->payments);
+                        }
+
+                        // Sort by date (most recent first) and take latest 5
                         $recentPayments = $recentPayments->sortByDesc('payment_date')->take(5);
                     @endphp
 
@@ -403,6 +411,27 @@
 
                                 <tbody class="divide-y divide-gray-200">
                                     @foreach ($recentPayments as $payment)
+                                        @php
+                                            // Determine payment source with better detection
+                                            $source = 'Direct';
+                                            $sourceColor = 'text-gray-600';
+
+                                            if ($payment->for_treatment_session_id) {
+                                                $source =
+                                                    'Session #' . ($payment->treatmentSession->session_number ?? 'N/A');
+                                                $sourceColor = 'text-blue-600';
+                                            } elseif ($payment->for_treatment_procedure_id) {
+                                                $source = 'Procedure';
+                                                $sourceColor = 'text-purple-600';
+                                            } elseif ($payment->invoice_id) {
+                                                $source = 'Invoice';
+                                                $sourceColor = 'text-teal-600';
+                                            } elseif ($payment->treatment_id) {
+                                                $source = 'Treatment';
+                                                $sourceColor = 'text-indigo-600';
+                                            }
+                                        @endphp
+
                                         <tr class="hover:bg-gray-50">
                                             <!-- Payment Date -->
                                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
@@ -423,14 +452,10 @@
                                             </td>
 
                                             <!-- Payment Source -->
-                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                                                @if ($payment->for_treatment_session_id)
-                                                    Session #{{ $payment->treatmentSession->session_number ?? 'N/A' }}
-                                                @elseif($payment->invoice_id)
-                                                    Invoice
-                                                @else
-                                                    Direct
-                                                @endif
+                                            <td class="px-4 py-3 whitespace-nowrap">
+                                                <span class="text-sm font-medium {{ $sourceColor }}">
+                                                    {{ $source }}
+                                                </span>
                                             </td>
 
                                             <!-- Payment Status -->
@@ -444,6 +469,29 @@
                                     @endforeach
                                 </tbody>
                             </table>
+
+                            <!-- Payment Summary -->
+                            <div class="px-4 py-3 bg-gray-50 border-t text-sm text-gray-600">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        Showing {{ $recentPayments->count() }} most recent payments
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="flex items-center gap-1">
+                                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                            <span>Session</span>
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                                            <span>Procedure</span>
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+                                            <span>Invoice</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     @else
                         <div class="p-8 text-center">

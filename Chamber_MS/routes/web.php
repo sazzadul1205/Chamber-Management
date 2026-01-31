@@ -294,6 +294,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/payments/session', [PaymentController::class, 'storeSessionPayment'])->name('backend.payments.store-session');
         Route::post('/payments/procedure', [PaymentController::class, 'storeProcedurePayment'])->name('backend.payments.store-procedure');
         Route::get('treatments/{treatment}/payments', [PaymentController::class, 'treatmentPayments'])->name('payments.treatment-payments');
+        Route::post('payments/overall-payment', [PaymentController::class, 'storeOverallPayment'])->name('payments.store-overall-payment');
         Route::post('payments/treatment-payment', [PaymentController::class, 'storeTreatmentPayment'])->name('payments.store-treatment-payment');
         Route::resource('payments', PaymentController::class)->names('backend.payments');
         Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('backend.payments.receipt');

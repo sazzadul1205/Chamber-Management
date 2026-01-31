@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\DB;
 class PaymentController extends Controller
 {
     /*-----------------------------------
-     | List Payments with Filters
-     *-----------------------------------*/
+    | List Payments with Filters
+    *-----------------------------------*/
     public function index(Request $request)
     {
         $query = Payment::with(['invoice', 'patient', 'installment', 'treatmentSession']);
@@ -59,8 +59,8 @@ class PaymentController extends Controller
     }
 
     /*-----------------------------------
-     | Show Create Payment Form
-     *-----------------------------------*/
+    | Show Create Payment Form
+    *-----------------------------------*/
     public function create(Request $request)
     {
         $patients = Patient::active()->orderBy('full_name')->get();
@@ -76,8 +76,8 @@ class PaymentController extends Controller
     }
 
     /*-----------------------------------
-     | Store Payment
-     *-----------------------------------*/
+    | Store Payment
+    *-----------------------------------*/
     public function store(Request $request)
     {
         $request->validate([
@@ -166,8 +166,8 @@ class PaymentController extends Controller
     }
 
     /*-----------------------------------
-     | Edit Payment
-     *-----------------------------------*/
+    | Edit Payment
+    *-----------------------------------*/
     public function edit($id)
     {
         $payment = Payment::findOrFail($id);
@@ -183,8 +183,8 @@ class PaymentController extends Controller
     }
 
     /*-----------------------------------
-     | Update Payment
-     *-----------------------------------*/
+    | Update Payment
+    *-----------------------------------*/
     public function update(Request $request, $id)
     {
         $payment = Payment::findOrFail($id);
@@ -239,8 +239,8 @@ class PaymentController extends Controller
     }
 
     /*-----------------------------------
-     | Delete Payment
-     *-----------------------------------*/
+    | Delete Payment
+    *-----------------------------------*/
     public function destroy($id)
     {
         $payment = Payment::findOrFail($id);
@@ -250,8 +250,8 @@ class PaymentController extends Controller
     }
 
     /*-----------------------------------
-     | Refund Payment
-     *-----------------------------------*/
+    | Refund Payment
+    *-----------------------------------*/
     public function refund(Request $request, $id)
     {
         $request->validate(['reason' => 'required|string|max:255']);
@@ -262,8 +262,8 @@ class PaymentController extends Controller
     }
 
     /*-----------------------------------
-     | Cancel Payment
-     *-----------------------------------*/
+    | Cancel Payment
+    *-----------------------------------*/
     public function cancel(Request $request, $id)
     {
         $request->validate(['reason' => 'required|string|max:255']);
@@ -274,8 +274,8 @@ class PaymentController extends Controller
     }
 
     /*-----------------------------------
- | Allocate Payment to Installment
- *-----------------------------------*/
+    | Allocate Payment to Installment
+    *-----------------------------------*/
     public function allocate(Request $request, $id)
     {
         // First, get the payment
@@ -297,8 +297,8 @@ class PaymentController extends Controller
 
 
     /*-----------------------------------
-     | Get Daily Collection
-     *-----------------------------------*/
+    | Get Daily Collection
+    *-----------------------------------*/
     public function dailyCollection(Request $request)
     {
         $date = $request->date ?? date('Y-m-d');
@@ -314,8 +314,8 @@ class PaymentController extends Controller
     }
 
     /*-----------------------------------
-     | Get Invoice Installments
-     *-----------------------------------*/
+    | Get Invoice Installments
+    *-----------------------------------*/
     public function getInstallments($invoiceId)
     {
         $invoice = Invoice::findOrFail($invoiceId);
@@ -325,8 +325,8 @@ class PaymentController extends Controller
     }
 
     /* -----------------------------------
-     Allocate payment to treatments
-     ----------------------------------- */
+    |Allocate payment to treatments
+    *----------------------------------- */
     private function autoAllocateToTreatments(Payment $payment, $amount)
     {
         $invoice = $payment->invoice;
@@ -577,7 +577,8 @@ class PaymentController extends Controller
                 $query->latest();
             },
             'patient',
-            'invoices.payments'
+            'invoices.payments',
+            'doctor.user' // Add this line to load doctor with user
         ]);
 
         // Calculate totals
@@ -830,5 +831,145 @@ class PaymentController extends Controller
         }
 
         return $amount - $remainingAmount;
+    }
+
+    /*-----------------------------------
+    | Store Overall Payment - REUSING EXISTING METHODS
+    *-----------------------------------*/
+    public function storeOverallPayment(Request $request)
+    {
+        $request->validate([
+            'treatment_id' => 'required|exists:treatments,id',
+            'patient_id' => 'required|exists:patients,id',
+            'payment_date' => 'required|date',
+            'payment_method' => 'required|in:cash,card,bank_transfer,cheque,mobile_banking,other',
+            'amount' => 'required|numeric|min:0.01',
+            'reference_no' => 'nullable|string|max:50',
+            'remarks' => 'nullable|string|max:500'
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $treatment = Treatment::with(['sessions', 'procedures'])->findOrFail($request->treatment_id);
+            $remainingAmount = $request->amount;
+            $allocatedItems = [];
+
+            // Get unpaid items
+            $unpaidSessions = $this->getUnpaidSessions($treatment);
+            $unpaidProcedures = $this->getUnpaidProcedures($treatment);
+
+            // Pay sessions
+            foreach ($unpaidSessions as $session) {
+                if ($remainingAmount <= 0) break;
+
+                $sessionBalance = $session->cost_for_session - $session->payments()->sum('amount');
+                if ($sessionBalance > 0) {
+                    $payAmount = min($sessionBalance, $remainingAmount);
+
+                    // Call your existing session payment logic
+                    $this->createSessionPayment($session, $payAmount, $request);
+
+                    $allocatedItems[] = [
+                        'type' => 'session',
+                        'item' => "Session #{$session->session_number}",
+                        'amount' => $payAmount
+                    ];
+
+                    $remainingAmount -= $payAmount;
+                }
+            }
+
+            // Pay procedures
+            if ($remainingAmount > 0) {
+                foreach ($unpaidProcedures as $procedure) {
+                    if ($remainingAmount <= 0) break;
+
+                    $procedureBalance = $procedure->cost - $procedure->payments()->sum('amount');
+                    if ($procedureBalance > 0) {
+                        $payAmount = min($procedureBalance, $remainingAmount);
+
+                        // Call your existing procedure payment logic
+                        $this->createProcedurePayment($procedure, $payAmount, $request);
+
+                        $allocatedItems[] = [
+                            'type' => 'procedure',
+                            'item' => $procedure->procedure_name,
+                            'amount' => $payAmount
+                        ];
+
+                        $remainingAmount -= $payAmount;
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment processed!',
+                'allocated_items' => $allocatedItems,
+                'remaining_amount' => $remainingAmount
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Helper methods
+    private function getUnpaidSessions($treatment)
+    {
+        return $treatment->sessions()
+            ->whereRaw('cost_for_session > COALESCE((SELECT SUM(amount) FROM payments WHERE for_treatment_session_id = treatment_sessions.id), 0)')
+            ->orderBy('scheduled_date')
+            ->get();
+    }
+
+    private function getUnpaidProcedures($treatment)
+    {
+        return $treatment->procedures()
+            ->whereRaw('cost > COALESCE((SELECT SUM(amount) FROM payments WHERE payable_type = ? AND payable_id = treatment_procedures.id), 0)', ['App\Models\TreatmentProcedure'])
+            ->orderBy('created_at')
+            ->get();
+    }
+
+    private function createSessionPayment($session, $amount, $request)
+    {
+        return Payment::create([
+            'payment_no' => Payment::generatePaymentNo(),
+            'patient_id' => $request->patient_id,
+            'for_treatment_session_id' => $session->id,
+            'treatment_id' => $session->treatment_id,
+            'payment_date' => $request->payment_date,
+            'payment_method' => $request->payment_method,
+            'payment_type' => 'partial',
+            'amount' => $amount,
+            'reference_no' => $request->reference_no,
+            'remarks' => $request->remarks . " (Session #{$session->session_number})",
+            'status' => 'completed',
+            'created_by' => auth()->id()
+        ]);
+    }
+
+    private function createProcedurePayment($procedure, $amount, $request)
+    {
+        return Payment::create([
+            'payment_no' => Payment::generatePaymentNo(),
+            'patient_id' => $request->patient_id,
+            'treatment_id' => $procedure->treatment_id,
+            'payment_date' => $request->payment_date,
+            'payment_method' => $request->payment_method,
+            'payment_type' => 'partial',
+            'amount' => $amount,
+            'reference_no' => $request->reference_no,
+            'remarks' => $request->remarks . " (Procedure: {$procedure->procedure_name})",
+            'status' => 'completed',
+            'payable_type' => 'App\Models\TreatmentProcedure',
+            'payable_id' => $procedure->id,
+            'created_by' => auth()->id()
+        ]);
     }
 }
