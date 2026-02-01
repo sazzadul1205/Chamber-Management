@@ -344,45 +344,46 @@
         // ===============================
         [
             'title' => 'Billing & Payments',
-            'icon' => 'credit-card',
+            'icon' => 'Payment',
             'roles' => ['Accountant', 'Admin', 'Super Admin'],
             'items' => [
-                [
-                    'label' => 'Invoice Generation',
-                    'route' => 'backend.invoices.create',
-                    'roles' => ['Accountant', 'Admin', 'Super Admin']
-                ],
-                [
-                    'label' => 'Invoice List',
-                    'route' => 'backend.invoices.index',
-                    'roles' => ['Accountant', 'Admin', 'Super Admin']
-                ],
-                [
-                    'label' => 'Payment Collection',
-                    'route' => 'backend.payments.create',
-                    'roles' => ['Accountant', 'Admin', 'Super Admin']
-                ],
-                [
-                    'label' => 'Installments',
-                    'route' => 'payment-installments.index',
-                    'roles' => ['Accountant', 'Admin', 'Super Admin']
-                ],
-                [
-                    'label' => 'Partial Payments',
-                    'roles' => ['Accountant', 'Admin', 'Super Admin']
-                ],
-                [
-                    'label' => 'Receipts',
-                    'route' => 'receipts.index',
-                    'roles' => ['Accountant', 'Admin', 'Super Admin']
-                ],
-                [
-                    'label' => 'Outstanding Payments',
-                    'roles' => ['Accountant', 'Admin', 'Super Admin']
-                ],
+                // [
+                //     'label' => 'Invoice Generation',
+                //     'route' => 'backend.invoices.create',
+                //     'roles' => ['Accountant', 'Admin', 'Super Admin']
+                // ],
+                // [
+                //     'label' => 'Invoice List',
+                //     'route' => 'backend.invoices.index',
+                //     'roles' => ['Accountant', 'Admin', 'Super Admin']
+                // ],
+                // [
+                //     'label' => 'Payment Collection',
+                //     'route' => 'backend.payments.create',
+                //     'roles' => ['Accountant', 'Admin', 'Super Admin']
+                // ],
+                // [
+                //     'label' => 'Installments',
+                //     'route' => 'payment-installments.index',
+                //     'roles' => ['Accountant', 'Admin', 'Super Admin']
+                // ],
+                // [
+                //     'label' => 'Partial Payments',
+                //     'roles' => ['Accountant', 'Admin', 'Super Admin']
+                // ],
+                // [
+                //     'label' => 'Receipts',
+                //     'route' => 'receipts.index',
+                //     'roles' => ['Accountant', 'Admin', 'Super Admin']
+                // ],
+                // [
+                //     'label' => 'Outstanding Payments',
+                //     'roles' => ['Accountant', 'Admin', 'Super Admin']
+                // ],
                 [
                     'label' => 'Payment History',
                     'route' => 'backend.payments.index',
+                    'icon' => 'list',
                     'roles' => ['Accountant', 'Admin', 'Super Admin']
                 ],
                 [

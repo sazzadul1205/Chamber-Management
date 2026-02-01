@@ -173,17 +173,10 @@
                         </svg>
                         Make Overall Payment
                     </button>
-                    @if ($treatment->invoices->isNotEmpty())
-                        <a href="{{ route('invoices.show', $treatment->invoices->first()) }}"
-                            class="block w-full text-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition">
-                            View Invoice
-                        </a>
-                    @else
-                        <button onclick="createInvoice()"
-                            class="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium">
-                            Create Invoice
-                        </button>
-                    @endif
+                    <button onclick="window.location.href='{{ route('invoices.treatment-invoice', $treatment) }}'"
+                        class="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium">
+                        View/Download Invoice
+                    </button>
                 </div>
             </div>
         </div>
@@ -275,8 +268,7 @@
                                     <p class="text-sm font-medium text-gray-900">{{ $payment->payment_no }}</p>
                                     <p class="text-xs text-gray-500">
                                         {{ $payment->payment_date->format('M d, Y') }} •
-                                        <span
-                                            class="capitalize">{{ str_replace('_', ' ', $payment->payment_method) }}</span>
+                                        <span class="capitalize">{{ str_replace('_', ' ', $payment->payment_method) }}</span>
                                     </p>
                                 </div>
                             </div>
@@ -553,77 +545,76 @@
 
                 const progressColor =
                     item.percentage >= 100 ? 'bg-green-500' :
-                    item.percentage > 0 ? 'bg-yellow-500' :
-                    'bg-red-500';
+                        item.percentage > 0 ? 'bg-yellow-500' :
+                            'bg-red-500';
 
                 return `
-        <tr class="hover:bg-gray-50">
-            <td class="px-4 py-3 capitalize font-medium">
-                <span class="inline-flex items-center px-2 py-1 text-xs rounded ${
-                    item.type === 'session' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                }">
-                    ${item.type}
-                </span>
-            </td>
+            <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 capitalize font-medium">
+                    <span class="inline-flex items-center px-2 py-1 text-xs rounded ${item.type === 'session' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                    }">
+                        ${item.type}
+                    </span>
+                </td>
 
-            <td class="px-4 py-3">
-                <div class="font-medium text-gray-900">${item.description}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                    ${item.type === 'session' 
-                        ? `Session #${item.number}` 
+                <td class="px-4 py-3">
+                    <div class="font-medium text-gray-900">${item.description}</div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        ${item.type === 'session'
+                        ? `Session #${item.number}`
                         : `Code: ${item.code}`}
-                    • ${new Date(item.date).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                    })}
-                </div>
-            </td>
+                        • ${new Date(item.date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        })}
+                    </div>
+                </td>
 
-            <td class="px-4 py-3">
-                ${item.status ? `
-                                                                <span class="px-2 py-1 text-xs rounded font-medium ${statusColors[item.status] || 'bg-gray-100 text-gray-800'}">
-                                                                    ${item.status.replace('_', ' ')}
-                                                                </span>` : '<span class="text-gray-400">—</span>'}
-            </td>
+                <td class="px-4 py-3">
+                    ${item.status ? `
+                                                                    <span class="px-2 py-1 text-xs rounded font-medium ${statusColors[item.status] || 'bg-gray-100 text-gray-800'}">
+                                                                        ${item.status.replace('_', ' ')}
+                                                                    </span>` : '<span class="text-gray-400">—</span>'}
+                </td>
 
-            <td class="px-4 py-3 font-bold text-gray-900">
-                ৳${Number(item.cost).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-            </td>
+                <td class="px-4 py-3 font-bold text-gray-900">
+                    ৳${Number(item.cost).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </td>
 
-            <td class="px-4 py-3">
-                <div class="text-xs text-gray-600 mb-1">${item.percentage}% paid</div>
-                <div class="w-full bg-gray-200 rounded h-1.5">
-                    <div class="h-1.5 rounded ${progressColor}" style="width:${Math.min(item.percentage, 100)}%"></div>
-                </div>
-                <div class="text-xs text-gray-500 mt-1">
-                    Paid: ৳${Number(item.paid).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </div>
-            </td>
+                <td class="px-4 py-3">
+                    <div class="text-xs text-gray-600 mb-1">${item.percentage}% paid</div>
+                    <div class="w-full bg-gray-200 rounded h-1.5">
+                        <div class="h-1.5 rounded ${progressColor}" style="width:${Math.min(item.percentage, 100)}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        Paid: ৳${Number(item.paid).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </div>
+                </td>
 
-            <td class="px-4 py-3">
-                ${item.balance > 0
-                    ? `<span class="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-red-100 text-red-800">
-                                                                    ৳${Number(item.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                                                   </span>`
-                    : `<span class="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-green-100 text-green-800">
-                                                                    Paid
-                                                                   </span>`
-                }
-            </td>
+                <td class="px-4 py-3">
+                    ${item.balance > 0
+                        ? `<span class="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-red-100 text-red-800">
+                                                                        ৳${Number(item.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                                       </span>`
+                        : `<span class="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-green-100 text-green-800">
+                                                                        Paid
+                                                                       </span>`
+                    }
+                </td>
 
-            <td class="px-4 py-3">
-                ${item.balance > 0
-                    ? `<button
-                                                                    onclick="openItemPaymentModal(${item.id}, '${item.type}')"
-                                                                    class="px-3 py-1.5 bg-${item.type === 'session' ? 'blue' : 'purple'}-600 hover:bg-${item.type === 'session' ? 'blue' : 'purple'}-700 text-white rounded text-sm font-medium transition">
-                                                                    Pay Now
-                                                                   </button>`
-                    : `<span class="text-gray-400 text-sm">No balance</span>`
-                }
-            </td>
-        </tr>
-        `;
+                <td class="px-4 py-3">
+                    ${item.balance > 0
+                        ? `<button
+                                                                        onclick="openItemPaymentModal(${item.id}, '${item.type}')"
+                                                                        class="px-3 py-1.5 bg-${item.type === 'session' ? 'blue' : 'purple'}-600 hover:bg-${item.type === 'session' ? 'blue' : 'purple'}-700 text-white rounded text-sm font-medium transition">
+                                                                        Pay Now
+                                                                       </button>`
+                        : `<span class="text-gray-400 text-sm">No balance</span>`
+                    }
+                </td>
+            </tr>
+            `;
             }).join('');
         }
 
@@ -782,7 +773,7 @@
          * FORM SUBMISSION HANDLERS
          *************************************************/
         // Item Payment Form (Session/Procedure) - KEEP AS IS
-        document.getElementById('itemPaymentForm')?.addEventListener('submit', async function(e) {
+        document.getElementById('itemPaymentForm')?.addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const amount = parseFloat(document.getElementById('itemPaymentAmount').value);
@@ -858,7 +849,7 @@
         });
 
         // Overall Payment Form - SIMPLIFIED
-        document.getElementById('overallPaymentForm')?.addEventListener('submit', async function(e) {
+        document.getElementById('overallPaymentForm')?.addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const amount = parseFloat(document.getElementById('overallPaymentAmount').value);
@@ -947,11 +938,10 @@
             }
 
             const notification = document.createElement('div');
-            notification.className = `notification-toast fixed top-4 right-4 z-50 px-4 py-3 rounded shadow text-white font-medium ${
-        type === 'success' ? 'bg-green-500' : 
-        type === 'error' ? 'bg-red-500' : 
-        'bg-blue-500'
-    }`;
+            notification.className = `notification-toast fixed top-4 right-4 z-50 px-4 py-3 rounded shadow text-white font-medium ${type === 'success' ? 'bg-green-500' :
+                    type === 'error' ? 'bg-red-500' :
+                        'bg-blue-500'
+                }`;
             notification.textContent = message;
 
             document.body.appendChild(notification);
@@ -964,11 +954,11 @@
         /*************************************************
          * INITIALIZATION - FIXED
          *************************************************/
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Amount validation for item payment
             const itemAmountInput = document.getElementById('itemPaymentAmount');
             if (itemAmountInput) {
-                itemAmountInput.addEventListener('change', function() {
+                itemAmountInput.addEventListener('change', function () {
                     validateAmount('itemPaymentAmount');
                 });
             }
@@ -976,7 +966,7 @@
             // Amount validation for overall payment - SIMPLIFIED
             const overallAmountInput = document.getElementById('overallPaymentAmount');
             if (overallAmountInput) {
-                overallAmountInput.addEventListener('change', function() {
+                overallAmountInput.addEventListener('change', function () {
                     validateAmount('overallPaymentAmount');
                 });
             }

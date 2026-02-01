@@ -4,403 +4,580 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prescription Print - {{ $prescription->prescription_code }}</title>
+    <title>Prescription - {{ $prescription->prescription_code }}</title>
     <style>
-        @media print {
-            body {
-                font-family: Arial, sans-serif;
-                font-size: 14px;
-                line-height: 1.4;
-                color: #000;
-                background: #fff;
-                margin: 0;
-                padding: 20px;
-            }
-
-            .no-print {
-                display: none !important;
-            }
-
-            .page-break {
-                page-break-before: always;
-            }
-
-            .prescription-header {
-                text-align: center;
-                border-bottom: 2px solid #000;
-                padding-bottom: 10px;
-                margin-bottom: 20px;
-            }
-
-            .clinic-info {
-                text-align: center;
-                margin-bottom: 15px;
-            }
-
-            .clinic-name {
-                font-size: 24px;
-                font-weight: bold;
-                color: #1e40af;
-            }
-
-            .clinic-address {
-                font-size: 12px;
-                color: #666;
-                margin: 5px 0;
-            }
-
-            .section-title {
-                font-size: 16px;
-                font-weight: bold;
-                margin: 15px 0 10px 0;
-                padding-bottom: 5px;
-                border-bottom: 1px solid #ccc;
-            }
-
-            .patient-info {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-                margin-bottom: 20px;
-                padding: 15px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-            }
-
-            .info-row {
-                display: flex;
-                margin-bottom: 5px;
-            }
-
-            .info-label {
-                font-weight: bold;
-                min-width: 120px;
-            }
-
-            .prescription-details {
-                margin-bottom: 20px;
-            }
-
-            .medicine-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 15px 0;
-            }
-
-            .medicine-table th {
-                background: #f3f4f6;
-                font-weight: bold;
-                text-align: left;
-                padding: 8px;
-                border: 1px solid #ccc;
-            }
-
-            .medicine-table td {
-                padding: 8px;
-                border: 1px solid #ccc;
-            }
-
-            .signature-area {
-                margin-top: 50px;
-                padding-top: 20px;
-                border-top: 1px solid #000;
-            }
-
-            .signature-line {
-                width: 300px;
-                margin-top: 40px;
-                border-top: 1px solid #000;
-                text-align: center;
-                padding-top: 5px;
-            }
-
-            .footer {
-                font-size: 11px;
-                color: #666;
-                text-align: center;
-                margin-top: 30px;
-                padding-top: 10px;
-                border-top: 1px solid #ccc;
-            }
-
-            .watermark {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%) rotate(-45deg);
-                font-size: 80px;
-                color: rgba(0, 0, 0, 0.1);
-                pointer-events: none;
-                z-index: -1;
-            }
-
-            .prescription-box {
-                border: 2px solid #000;
-                padding: 20px;
-                margin: 10px 0;
-            }
-
-            .header-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 20px;
-            }
-
-            .rx-symbol {
-                font-size: 24px;
-                font-weight: bold;
-                color: #1e40af;
-            }
-
-            .urgency-stamp {
-                border: 2px solid #dc2626;
-                color: #dc2626;
-                padding: 5px 10px;
-                font-weight: bold;
-                transform: rotate(-15deg);
-                display: inline-block;
-            }
-
-            .warnings {
-                background: #fef3c7;
-                border: 1px solid #f59e0b;
-                padding: 10px;
-                margin: 15px 0;
-                border-radius: 5px;
-                font-size: 12px;
-            }
-
-            .dispensed-stamp {
-                color: #059669;
-                font-weight: bold;
-                border: 2px solid #059669;
-                padding: 5px 10px;
-                text-align: center;
-                margin: 10px 0;
-            }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-
+        
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.5;
             padding: 20px;
         }
-
-        .print-controls {
-            background: #f3f4f6;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            text-align: center;
+        
+        .prescription-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 40px;
+            position: relative;
         }
-
-        .print-button {
-            background: #1e40af;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .print-button:hover {
-            background: #1e3a8a;
-        }
-
+        
+        /* Header Section */
         .prescription-header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #10b981;
+            padding-bottom: 24px;
+            margin-bottom: 32px;
         }
-
-        .patient-info {
+        
+        .clinic-info h1 {
+            color: #065f46;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .clinic-info .tagline {
+            color: #047857;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .rx-header {
+            text-align: right;
+        }
+        
+        .rx-symbol {
+            font-size: 48px;
+            font-weight: 700;
+            color: #10b981;
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+        
+        .prescription-meta {
+            color: #64748b;
+            font-size: 14px;
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-active {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .status-expired {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .status-dispensed {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        
+        /* Info Grid */
+        .info-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            gap: 24px;
+            margin-bottom: 32px;
+            padding: 24px;
+            background: #f0fdf4;
+            border-radius: 8px;
+            border: 1px solid #bbf7d0;
         }
-
-        .info-row {
+        
+        .info-card h3 {
+            color: #065f46;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+        
+        .info-card p {
+            color: #1e293b;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        /* Prescription Details Cards */
+        .details-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        
+        .detail-card {
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .detail-card.date {
+            border-color: #60a5fa;
+            background: #eff6ff;
+        }
+        
+        .detail-card.validity {
+            border-color: #34d399;
+            background: #f0fdf4;
+        }
+        
+        .detail-card.doctor {
+            border-color: #a78bfa;
+            background: #faf5ff;
+        }
+        
+        .detail-card .value {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .detail-card .label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Section Titles */
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #065f46;
+            margin: 32px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #d1fae5;
             display: flex;
-            margin-bottom: 5px;
+            align-items: center;
+            gap: 8px;
         }
-
-        .info-label {
-            font-weight: bold;
-            min-width: 120px;
+        
+        .section-title::before {
+            content: "▸";
+            color: #10b981;
         }
-
-        .medicine-table {
+        
+        /* Medicines Table */
+        .medicines-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin-bottom: 32px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
         }
-
-        .medicine-table th {
-            background: #f3f4f6;
-            font-weight: bold;
+        
+        .medicines-table th {
+            background: #10b981;
+            color: white;
             text-align: left;
-            padding: 8px;
-            border: 1px solid #ccc;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
-
-        .medicine-table td {
-            padding: 8px;
-            border: 1px solid #ccc;
+        
+        .medicines-table td {
+            padding: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
         }
-
-        .signature-area {
-            margin-top: 50px;
-            padding-top: 20px;
-            border-top: 1px solid #000;
+        
+        .medicines-table tr:last-child td {
+            border-bottom: none;
         }
-
-        .footer {
-            font-size: 11px;
-            color: #666;
+        
+        .medicines-table tr:hover {
+            background: #f8fafc;
+        }
+        
+        .medicine-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .medicine-details {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        
+        /* Instructions Card */
+        .instructions-card {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 32px;
+        }
+        
+        .instructions-card h4 {
+            color: #92400e;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .instructions-card h4::before {
+            content: "⚠️";
+        }
+        
+        .instructions-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            list-style: none;
+        }
+        
+        .instructions-list li {
+            padding: 8px 0;
+            border-bottom: 1px dashed #fbbf24;
+            font-size: 14px;
+        }
+        
+        .instructions-list li:last-child {
+            border-bottom: none;
+        }
+        
+        /* Notes Section */
+        .notes-section {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 32px;
+        }
+        
+        .notes-section h4 {
+            color: #1e40af;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        /* Signature Section */
+        .signature-section {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            margin-top: 48px;
+            padding-top: 32px;
+            border-top: 2px solid #10b981;
+        }
+        
+        .signature-box {
             text-align: center;
-            margin-top: 30px;
-            padding-top: 10px;
-            border-top: 1px solid #ccc;
         }
+        
+        .signature-line {
+            width: 250px;
+            height: 1px;
+            background: #1e293b;
+            margin: 60px auto 10px;
+        }
+        
+        .signature-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 8px;
+        }
+        
+        .doctor-info {
+            font-size: 13px;
+            color: #475569;
+            margin-top: 4px;
+        }
+        
+        /* Footer */
+        .prescription-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 32px;
+            color: #64748b;
+            font-size: 12px;
+        }
+        
+        /* Dispensed Stamp */
+        .dispensed-stamp {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            padding: 20px 40px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            border-radius: 8px;
+            opacity: 0.1;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* Actions Bar */
+        .actions-bar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+        
+        .action-btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .action-btn.print {
+            background: #10b981;
+            color: white;
+        }
+        
+        .action-btn.print:hover {
+            background: #059669;
+        }
+        
+        .action-btn.download {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .action-btn.download:hover {
+            background: #2563eb;
+        }
+        
+        .action-btn.back {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .action-btn.back:hover {
+            background: #4b5563;
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .actions-bar {
+                display: none;
+            }
+            
+            .prescription-container {
+                box-shadow: none;
+                padding: 20px;
+            }
+            
+            .dispensed-stamp {
+                opacity: 0.15;
+            }
+        }
+        
+        /* Utility Classes */
+        .text-green-700 { color: #047857; }
+        .text-blue-700 { color: #1d4ed8; }
+        .text-red-600 { color: #dc2626; }
+        .font-bold { font-weight: 700; }
+        .capitalize { text-transform: capitalize; }
     </style>
 </head>
-
 <body>
-    <!-- Print Controls (Hidden when printing) -->
-    <div class="print-controls no-print">
-        <button class="print-button" onclick="window.print()">🖨️ Print Prescription</button>
-        <button class="print-button" onclick="window.close()" style="background: #6b7280; margin-left: 10px;">✕
-            Close</button>
-        <button class="print-button" onclick="window.history.back()" style="background: #059669; margin-left: 10px;">←
-            Back</button>
-    </div>
+    <div class="prescription-container">
+        <!-- Dispensed Stamp -->
+        @if($prescription->status === 'dispensed')
+            <div class="dispensed-stamp">DISPENSED</div>
+        @endif
 
-    <!-- Watermark -->
-    <div class="watermark">PRESCRIPTION</div>
-
-    <!-- Prescription Content -->
-    <div class="prescription-box">
-        <!-- Clinic Header -->
+        <!-- Header -->
         <div class="prescription-header">
             <div class="clinic-info">
-                <div class="clinic-name">DENTAL CLINIC</div>
-                <div class="clinic-address">123 Dental Street, City, State 12345</div>
-                <div class="clinic-address">📞 (123) 456-7890 | ✉️ info@dentalclinic.com</div>
-                <div class="clinic-address">🕒 Mon-Fri: 9AM-6PM, Sat: 9AM-1PM</div>
+                <h1>DENTAL CARE CLINIC</h1>
+                <p class="tagline">Professional Dental Healthcare Services</p>
+                <div style="margin-top: 12px; color: #64748b; font-size: 14px;">
+                    <p>📍 123 Dental Street, Healthcare City, DC 12345</p>
+                    <p>📞 (123) 456-7890 | ✉️ info@dentalclinic.com</p>
+                </div>
+            </div>
+            
+            <div class="rx-header">
+                <div class="rx-symbol">℞</div>
+                <div class="prescription-meta">
+                    <div style="font-size: 18px; font-weight: 700; color: #1e293b;">PRESCRIPTION</div>
+                    <div style="margin-top: 4px;">No: {{ $prescription->prescription_code }}</div>
+                    <div style="margin-top: 8px;">
+                        <span class="status-badge status-{{ $prescription->status }}">
+                            {{ strtoupper($prescription->status) }}
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Header with RX Symbol -->
-        <div class="header-row">
-            <div class="rx-symbol">℞</div>
-            <div>
-                <h1 style="margin: 0;">PRESCRIPTION</h1>
-                <div style="font-size: 12px; color: #666;">No: {{ $prescription->prescription_code }}</div>
-            </div>
-            <div style="text-align: right;">
-                <div style="font-size: 12px; color: #666;">Date: {{ $prescription->prescription_date->format('d/m/Y') }}
+        <!-- Patient & Doctor Info -->
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>Patient Information</h3>
+                <p style="font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #065f46;">
+                    {{ $prescription->treatment->patient->full_name }}
+                </p>
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px; margin-top: 8px;">
+                    <span style="color: #64748b;">Code:</span>
+                    <span class="font-bold">{{ $prescription->treatment->patient->patient_code }}</span>
+                    
+                    <span style="color: #64748b;">Age/Gender:</span>
+                    <span class="font-bold">
+                        {{ $prescription->treatment->patient->age ?? 'N/A' }} / 
+                        {{ ucfirst($prescription->treatment->patient->gender ?? 'N/A') }}
+                    </span>
+                    
+                    <span style="color: #64748b;">Treatment:</span>
+                    <span class="font-bold text-blue-700">{{ $prescription->treatment->treatment_code }}</span>
                 </div>
-                @if ($prescription->status === 'active')
-                    <div class="urgency-stamp">ACTIVE</div>
-                @endif
+            </div>
+            
+            <div class="info-card">
+                <h3>Prescribing Doctor</h3>
+                <p style="font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #065f46;">
+                    {{ $prescription->treatment->doctor->user->full_name ?? 'Dr. Not Assigned' }}
+                </p>
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px; margin-top: 8px;">
+                    <span style="color: #64748b;">License No:</span>
+                    <span class="font-bold">{{ $prescription->treatment->doctor->medical_license ?? 'XXXXXX' }}</span>
+                    
+                    <span style="color: #64748b;">Prescribed By:</span>
+                    <span class="font-bold">{{ $prescription->creator->full_name ?? 'System' }}</span>
+                    
+                    <span style="color: #64748b;">Specialty:</span>
+                    <span class="font-bold">Dental Surgery</span>
+                </div>
             </div>
         </div>
 
-        <!-- Patient Information -->
-        <div class="section-title">PATIENT INFORMATION</div>
-        <div class="patient-info">
-            <div class="info-row">
-                <div class="info-label">Patient Name:</div>
-                <div>{{ $prescription->treatment->patient->full_name }}</div>
+        <!-- Prescription Details Cards -->
+        <div class="details-cards">
+            <div class="detail-card date">
+                <div class="value">{{ $prescription->prescription_date->format('d M Y') }}</div>
+                <div class="label">Prescription Date</div>
             </div>
-            <div class="info-row">
-                <div class="info-label">Patient Code:</div>
-                <div>{{ $prescription->treatment->patient->patient_code }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Age/Gender:</div>
-                <div>
-                    {{ $prescription->treatment->patient->age ?? 'N/A' }} /
-                    {{ ucfirst($prescription->treatment->patient->gender ?? 'N/A') }}
+            
+            <div class="detail-card validity">
+                <div class="value">{{ $prescription->validity_days }} days</div>
+                <div class="label">Validity Period</div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                    Valid until: {{ $prescription->prescription_date->addDays($prescription->validity_days)->format('d M Y') }}
                 </div>
             </div>
-            <div class="info-row">
-                <div class="info-label">Treatment:</div>
-                <div>{{ $prescription->treatment->treatment_code }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Doctor:</div>
-                <div>{{ $prescription->treatment->doctor->user->full_name ?? 'N/A' }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Prescribed By:</div>
-                <div>{{ $prescription->creator->full_name ?? 'System' }}</div>
-            </div>
-        </div>
-
-        <!-- Prescription Details -->
-        <div class="section-title">PRESCRIPTION DETAILS</div>
-        <div class="prescription-details">
-            <div class="info-row">
-                <div class="info-label">Prescription Date:</div>
-                <div>{{ $prescription->prescription_date->format('F d, Y') }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Valid Until:</div>
-                <div>
-                    {{ $prescription->prescription_date->addDays($prescription->validity_days)->format('F d, Y') }}
-                    ({{ $prescription->validity_days }} days)
-                </div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Status:</div>
-                <div>
-                    <strong>{{ strtoupper($prescription->status) }}</strong>
+            
+            <div class="detail-card doctor">
+                <div class="value">Dr. {{ substr($prescription->treatment->doctor->user->full_name ?? 'N/A', 0, 10) }}</div>
+                <div class="label">Prescribing Doctor</div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                    {{ $prescription->treatment->doctor->qualification ?? 'Dental Surgeon' }}
                 </div>
             </div>
         </div>
 
         <!-- Prescribed Medicines -->
-        <div class="section-title">PRESCRIBED MEDICINES</div>
-        @if ($prescription->items->count() > 0)
-            <table class="medicine-table">
+        <h3 class="section-title">PRESCRIBED MEDICATIONS</h3>
+        @if($prescription->items->count() > 0)
+            <table class="medicines-table">
                 <thead>
                     <tr>
-                        <th width="30">#</th>
-                        <th width="250">Medicine</th>
-                        <th width="100">Dosage</th>
-                        <th width="120">Frequency</th>
-                        <th width="100">Duration</th>
-                        <th width="80">Qty</th>
-                        <th width="100">Route</th>
+                        <th>#</th>
+                        <th>Medication</th>
+                        <th>Dosage & Frequency</th>
+                        <th>Duration</th>
+                        <th>Route</th>
+                        <th>Quantity</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($prescription->items as $index => $item)
+                    @foreach($prescription->items as $index => $item)
                         <tr>
-                            <td>{{ $index + 1 }}</td>
+                            <td style="font-weight: 600; color: #64748b;">{{ $index + 1 }}</td>
                             <td>
-                                <strong>{{ $item->medicine->brand_name }}</strong><br>
-                                <small>{{ $item->medicine->generic_name }} ({{ $item->medicine->strength }})</small>
+                                <div class="medicine-name">{{ $item->medicine->brand_name }}</div>
+                                <div class="medicine-details">
+                                    {{ $item->medicine->generic_name }} ({{ $item->medicine->strength }})
+                                </div>
                             </td>
-                            <td>{{ $item->dosage }}</td>
-                            <td>{{ $item->frequency }}</td>
-                            <td>{{ $item->duration }}</td>
-                            <td>{{ $item->quantity }}</td>
-                            <td>{{ ucfirst($item->route) }}</td>
+                            <td>
+                                <div style="font-weight: 600; color: #1e293b;">{{ $item->dosage }}</div>
+                                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                                    {{ ucfirst($item->frequency) }}
+                                </div>
+                            </td>
+                            <td>
+                                <div style="font-weight: 600; color: #1e293b;">{{ $item->duration }}</div>
+                            </td>
+                            <td>
+                                <span style="padding: 4px 8px; background: #dbeafe; border-radius: 4px; font-size: 12px; font-weight: 600; color: #1d4ed8;">
+                                    {{ ucfirst($item->route) }}
+                                </span>
+                            </td>
+                            <td style="font-weight: 700; color: #065f46;">
+                                {{ $item->quantity }}
+                            </td>
                         </tr>
-                        @if ($item->instructions)
-                            <tr style="background: #f9fafb;">
-                                <td colspan="7">
-                                    <strong>Instructions:</strong> {{ $item->instructions }}
+                        @if($item->instructions)
+                            <tr style="background: #f8fafc;">
+                                <td colspan="6" style="padding-top: 0; border-top: none;">
+                                    <div style="padding: 12px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #10b981;">
+                                        <div style="font-size: 12px; color: #047857; font-weight: 600; margin-bottom: 4px;">
+                                            📝 Special Instructions:
+                                        </div>
+                                        <div style="font-size: 13px; color: #1e293b;">{{ $item->instructions }}</div>
+                                    </div>
                                 </td>
                             </tr>
                         @endif
@@ -408,75 +585,163 @@
                 </tbody>
             </table>
         @else
-            <p style="text-align: center; color: #666; padding: 20px;">No medicines prescribed.</p>
-        @endif
-
-        <!-- Additional Notes -->
-        @if ($prescription->notes)
-            <div class="section-title">ADDITIONAL NOTES</div>
-            <div style="padding: 15px; background: #f9fafb; border-radius: 5px; margin: 10px 0;">
-                {{ $prescription->notes }}
+            <div style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border-radius: 8px;">
+                No medications prescribed.
             </div>
         @endif
 
-        <!-- Warnings -->
-        <div class="warnings">
-            <strong>⚠️ IMPORTANT:</strong>
-            <ul style="margin: 5px 0; padding-left: 20px;">
-                <li>Take medicines exactly as prescribed</li>
-                <li>Do not share your medicines with others</li>
-                <li>Complete the full course even if you feel better</li>
-                <li>Report any side effects immediately</li>
-                <li>Store medicines properly as per instructions</li>
+        <!-- Important Instructions -->
+        <div class="instructions-card">
+            <h4>IMPORTANT MEDICATION INSTRUCTIONS</h4>
+            <ul class="instructions-list">
+                <li>✅ Take medicines exactly as prescribed by your doctor</li>
+                <li>❌ Do not share your medicines with others</li>
+                <li>✅ Complete the full course even if you feel better</li>
+                <li>⚠️ Report any side effects immediately</li>
+                <li>📦 Store medicines properly as per instructions</li>
+                <li>⏰ Take medications at the same time each day</li>
+                <li>🚫 Avoid alcohol while on medication</li>
+                <li>🏥 Contact clinic for any allergic reactions</li>
             </ul>
         </div>
 
-        <!-- Dispensed Stamp -->
-        @if ($prescription->items->where('status', 'dispensed')->count() > 0)
-            <div class="dispensed-stamp">
-                DISPENSED ON: {{ now()->format('d/m/Y h:i A') }}
+        <!-- Additional Notes -->
+        @if($prescription->notes)
+            <div class="notes-section">
+                <h4>🔔 ADDITIONAL NOTES FROM DOCTOR</h4>
+                <div style="padding: 12px; background: white; border-radius: 6px; margin-top: 8px;">
+                    {{ $prescription->notes }}
+                </div>
             </div>
         @endif
 
-        <!-- Signature Area -->
-        <div class="signature-area">
-            <div style="float: left; width: 50%;">
+        <!-- Signature Section -->
+        <div class="signature-section">
+            <div class="signature-box">
                 <div class="signature-line"></div>
-                <div style="text-align: center; font-size: 12px;">Patient's Signature</div>
-            </div>
-            <div style="float: right; width: 50%;">
-                <div class="signature-line"></div>
-                <div style="text-align: center; font-size: 12px;">
-                    Dr. {{ $prescription->treatment->doctor->user->full_name ?? 'Doctor' }}<br>
-                    Dental Surgeon<br>
-                    License No: {{ $prescription->treatment->doctor->medical_license ?? 'XXXXXX' }}
+                <div class="signature-label">Patient's Signature</div>
+                <div style="margin-top: 8px; font-size: 12px; color: #64748b;">
+                    {{ $prescription->treatment->patient->full_name }}
                 </div>
             </div>
-            <div style="clear: both;"></div>
+            
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-label">Doctor's Signature & Stamp</div>
+                <div class="doctor-info">
+                    <div>Dr. {{ $prescription->treatment->doctor->user->full_name ?? 'N/A' }}</div>
+                    <div>{{ $prescription->treatment->doctor->qualification ?? 'Dental Surgeon' }}</div>
+                    <div>License: {{ $prescription->treatment->doctor->medical_license ?? 'XXXXXX' }}</div>
+                </div>
+            </div>
         </div>
 
         <!-- Footer -->
-        <div class="footer">
-            <p>This is a computer-generated prescription. No signature required.</p>
-            <p>Generated on: {{ now()->format('F d, Y h:i A') }} | Prescription ID:
-                {{ $prescription->prescription_code }}</p>
-            <p>For any queries, contact: (123) 456-7890 | In case of emergency, call 911 immediately</p>
-            <p>© {{ date('Y') }} Dental Clinic. All rights reserved.</p>
+        <div class="prescription-footer">
+            <div>
+                <p style="margin-bottom: 4px;">🦷 This is a computer-generated prescription</p>
+                <p>Generated on: {{ now()->format('d M Y, h:i A') }}</p>
+            </div>
+            <div style="text-align: right;">
+                <p style="margin-bottom: 4px;">For queries: 📞 (123) 456-7890</p>
+                <p>Emergency: 🚨 Call 911 immediately</p>
+            </div>
         </div>
     </div>
 
+    <!-- Action Buttons -->
+    <div class="actions-bar">
+        <button onclick="window.history.back()" class="action-btn back">
+            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back
+        </button>
+        
+        <button onclick="window.print()" class="action-btn print">
+            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+            Print Prescription
+        </button>
+        
+        <button onclick="downloadPDF()" class="action-btn download">
+            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Download PDF
+        </button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <script>
+        async function downloadPDF() {
+            const prescriptionElement = document.querySelector('.prescription-container');
+            const loadingBtn = event.target;
+            const originalText = loadingBtn.innerHTML;
+            
+            // Show loading state
+            loadingBtn.innerHTML = `
+                <svg class="animate-spin" style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Generating PDF...
+            `;
+            loadingBtn.disabled = true;
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'pt', 'a4');
+                
+                // Capture the prescription as an image
+                const canvas = await html2canvas(prescriptionElement, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = pdf.internal.pageSize.getWidth() - 40;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                // Add image to PDF
+                pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
+                
+                // Save the PDF
+                pdf.save(`prescription-{{ $prescription->prescription_code }}-{{ date('Y-m-d') }}.pdf`);
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF. Please try again or use the print option.');
+            } finally {
+                // Restore button state
+                loadingBtn.innerHTML = originalText;
+                loadingBtn.disabled = false;
+            }
+        }
+
+        // Add print button functionality
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+        });
+
         // Auto-print after 1 second (optional)
         setTimeout(() => {
-            window.print();
+            // Uncomment if you want auto-print
+            // window.print();
         }, 1000);
 
-        // Close window after print (optional)
+        // Close after print (optional)
         window.onafterprint = function() {
             // Uncomment if you want to auto-close after printing
             // window.close();
         };
     </script>
 </body>
-
 </html>

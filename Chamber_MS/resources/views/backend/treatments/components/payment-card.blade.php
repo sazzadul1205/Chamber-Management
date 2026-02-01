@@ -58,39 +58,102 @@
 
         <!-- Payment Actions -->
         <div class="pt-3 space-y-3">
-
+            <!-- Payment Status Badge -->
+            <div class="text-center">
+                @if($balanceDue == 0)
+                    <span
+                        class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        <i class="fas fa-check-circle mr-1"></i> Fully Paid
+                    </span>
+                @elseif($paidAmount > 0 && $balanceDue > 0)
+                    <span
+                        class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                        <i class="fas fa-clock mr-1"></i> Partially Paid
+                    </span>
+                @else
+                    <span
+                        class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                        <i class="fas fa-exclamation-circle mr-1"></i> Payment Pending
+                    </span>
+                @endif
+            </div>
 
             <!-- Main Payment Actions -->
             <div class="space-y-2">
-                <!-- Unified Payments Page -->
+                <!-- Unified Payments Page - Always visible -->
                 <a href="{{ route('payments.treatment-payments', $treatment) }}"
                     class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
                     <i class="fas fa-list-alt"></i>
                     All Payment & History
                 </a>
 
-                <!-- Session-wise Payment -->
-                <a href="{{ route('backend.treatments.session-payments', $treatment) }}"
-                    class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
-                    <i class="fas fa-clock"></i>
-                    Session Payments
-                </a>
-
-                <!-- Procedure-wise Payment -->
-                <a href="{{ route('backend.treatments.procedure-payments', $treatment) }}"
-                    class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
-                    <i class="fas fa-teeth"></i>
-                    Procedure Payments
-                </a>
-
-                <!-- View Invoice if exists -->
-                {{-- <a href="{{ route('invoices.show', $treatment->invoices->first()) }}"
-                    class="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
+                <!-- View/Download Invoice Button - Always visible -->
+                <button onclick="window.location.href='{{ route('invoices.treatment-invoice', $treatment) }}'"
+                    class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
                     <i class="fas fa-file-invoice-dollar"></i>
-                    View Invoice
-                </a> --}}
+                    View/Download Invoice
+                </button>
 
+                <!-- Session-wise Payment - Only show if there are unpaid sessions -->
+                @php
+                    $hasUnpaidSessions = false;
+                    if (isset($sessions) && count($sessions) > 0) {
+                        foreach ($sessions as $session) {
+                            if (($session['balance'] ?? 0) > 0) {
+                                $hasUnpaidSessions = true;
+                                break;
+                            }
+                        }
+                    }
+                @endphp
+
+                @if($hasUnpaidSessions)
+                    <a href="{{ route('backend.treatments.session-payments', $treatment) }}"
+                        class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
+                        <i class="fas fa-clock"></i>
+                        Session Payments
+                    </a>
+                @endif
+
+                <!-- Procedure-wise Payment - Only show if there are unpaid procedures -->
+                @php
+                    $hasUnpaidProcedures = false;
+                    if (isset($procedures) && count($procedures) > 0) {
+                        foreach ($procedures as $procedure) {
+                            if (($procedure['balance'] ?? 0) > 0) {
+                                $hasUnpaidProcedures = true;
+                                break;
+                            }
+                        }
+                    }
+                @endphp
+
+                @if($hasUnpaidProcedures)
+                    <a href="{{ route('backend.treatments.procedure-payments', $treatment) }}"
+                        class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
+                        <i class="fas fa-teeth"></i>
+                        Procedure Payments
+                    </a>
+                @endif
+               
             </div>
+
+            <!-- Quick Payment Buttons - Only show if balance > 0 -->
+            @if($balanceDue > 0)
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="quickPayment('full')"
+                        class="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
+                        <i class="fas fa-money-bill-wave"></i>
+                        Pay Full Balance
+                    </button>
+
+                    <button onclick="quickPayment('partial')"
+                        class="w-full bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 text-white rounded-lg py-3 font-medium text-center flex items-center justify-center gap-2 transition-all">
+                        <i class="fas fa-money-check-alt"></i>
+                        Partial Payment
+                    </button>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -101,14 +164,14 @@
         // Function to open the unified payments page with modal
         function openOverallPaymentModal() {
             // Store the current balance in localStorage for the payments page
-            localStorage.setItem('quickPaymentBalance', {{ $balanceDue }});
+            localStorage.setItem('quickPaymentBalance', {{ $balanceDue ?? 0 }});
             localStorage.setItem('quickPaymentType', 'full');
 
             // Redirect to the unified payments page
             window.location.href = "{{ route('payments.treatment-payments', $treatment) }}";
         }
 
-        // Function to handle quick payments (you can customize this)
+        // Function to handle quick payments
         function quickPayment(type) {
             if (type === 'full') {
                 // For full payment, open the unified payments page
@@ -120,9 +183,8 @@
         }
 
         // Check if we should auto-open modal on page load (for the payments page)
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.location.pathname.includes('/payments') && localStorage.getItem('quickPaymentType') ===
-                'full') {
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.location.pathname.includes('/payments') && localStorage.getItem('quickPaymentType') === 'full') {
                 // This would be in the payments page - auto-open modal
                 setTimeout(() => {
                     const overallModalBtn = document.querySelector('[onclick*="openOverallPaymentModal"]');

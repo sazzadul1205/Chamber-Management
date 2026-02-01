@@ -496,4 +496,79 @@ class InvoiceController extends Controller
             'inventoryItems'
         ));
     }
+
+    /**
+     * Generate treatment-specific invoice with payment history
+     */
+    public function treatmentInvoice($treatmentId)
+    {
+        $treatment = Treatment::with([
+            'patient',
+            'doctor.user',
+            'sessions.payments',
+            'procedures.payments',
+            'invoices.items',
+            'invoices.payments'
+        ])->findOrFail($treatmentId);
+
+        // Calculate totals
+        $sessionTotalCost = $treatment->sessions->sum('cost_for_session');
+        $sessionTotalPaid = $treatment->sessions->sum(function ($session) {
+            return $session->payments->sum('amount');
+        });
+        $sessionBalance = $sessionTotalCost - $sessionTotalPaid;
+
+        $procedureTotalCost = $treatment->procedures->sum('cost');
+        $procedureTotalPaid = $treatment->procedures->sum(function ($procedure) {
+            return $procedure->payments->sum('amount');
+        });
+        $procedureBalance = $procedureTotalCost - $procedureTotalPaid;
+
+        $overallTotalCost = $sessionTotalCost + $procedureTotalCost;
+        $overallTotalPaid = $sessionTotalPaid + $procedureTotalPaid;
+        $overallBalance = $overallTotalCost - $overallTotalPaid;
+
+        // Get all payments sorted by date
+        $allPayments = collect();
+        foreach ($treatment->sessions as $session) {
+            $allPayments = $allPayments->merge($session->payments);
+        }
+        foreach ($treatment->procedures as $procedure) {
+            $allPayments = $allPayments->merge($procedure->payments);
+        }
+        if ($treatment->invoices->isNotEmpty()) {
+            foreach ($treatment->invoices as $invoice) {
+                $allPayments = $allPayments->merge($invoice->payments);
+            }
+        }
+
+        $payments = $allPayments->sortByDesc('payment_date');
+
+        // Generate invoice number if not exists
+        $invoice = $treatment->invoices->first();
+        if (!$invoice) {
+            $invoice = (object)[
+                'invoice_no' => 'TEMP-' . strtoupper(uniqid()),
+                'invoice_date' => now()->format('Y-m-d'),
+                'due_date' => now()->addDays(30)->format('Y-m-d'),
+                'status' => 'draft',
+                'notes' => 'Generated for treatment overview'
+            ];
+        }
+
+        return view('backend.invoices.treatment-invoice', compact(
+            'treatment',
+            'invoice',
+            'sessionTotalCost',
+            'sessionTotalPaid',
+            'sessionBalance',
+            'procedureTotalCost',
+            'procedureTotalPaid',
+            'procedureBalance',
+            'overallTotalCost',
+            'overallTotalPaid',
+            'overallBalance',
+            'payments'
+        ));
+    }
 }

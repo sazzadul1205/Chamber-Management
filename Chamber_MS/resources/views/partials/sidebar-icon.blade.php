@@ -133,7 +133,14 @@
     @case('medicine')
         @include('components.icons.medicine')
     @break
-
+    
+    {{-- ==============================
+    PAYMENT ICONS
+    ============================== --}}
+    @case('Payment')
+        @include('components.icons.Payment')
+    @break
+    
     {{-- ==============================
          BUTTON / ACTION ICONS
     ============================== --}}
@@ -224,9 +231,9 @@
         @include('components.icons.Pending', ['class' => $iconClass])
     @break
 
-    @case('Pending')
-        @include('components.icons.Pending', ['class' => $iconClass])
-    @break
+    {{-- ==============================
+         DEFAULT ICON
+    ============================== --}}
 
     {{-- ==============================
          DEFAULT ICON

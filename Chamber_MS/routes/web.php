@@ -34,7 +34,7 @@ use App\Http\Controllers\{
 use Illuminate\Support\Facades\Route;
 
 // Public routes
-Route::get('/', fn() => view('welcome'));
+Route::get('/', fn() => view('auth.login'));
 Route::get('/dashboard', fn() => view('backend.dashboard'))
     ->middleware(['auth', 'verified'])
     ->name('backend.dashboard');
@@ -285,6 +285,8 @@ Route::middleware(['auth'])->group(function () {
         // -----------------------------
         // Invoice Items
         // -----------------------------
+        Route::get('/invoices/treatment/{treatment}/invoice', [InvoiceController::class, 'treatmentInvoice'])->name('invoices.treatment-invoice');
+        Route::get('/invoices/treatment/{treatment}/download', [InvoiceController::class, 'downloadTreatmentInvoice'])->name('invoices.download-treatment-invoice');
         Route::resource('invoice-items', InvoiceItemController::class)->names('invoice-items');
         Route::post('invoice-items/{id}/adjust', [InvoiceItemController::class, 'adjust'])->name('invoice-items.adjust');
 

@@ -55,7 +55,7 @@ class PaymentController extends Controller
         $patients = Patient::active()->orderBy('full_name')->get();
         $invoices = Invoice::whereIn('status', ['sent', 'partial', 'overdue'])->orderByDesc('invoice_no')->limit(100)->get();
 
-        return view('payments.index', compact('payments', 'summary', 'patients', 'invoices'));
+        return view('backend.payments.index', compact('payments', 'summary', 'patients', 'invoices'));
     }
 
     /*-----------------------------------
@@ -72,7 +72,7 @@ class PaymentController extends Controller
         $paymentMethods = ['cash' => 'Cash', 'card' => 'Card', 'bank_transfer' => 'Bank Transfer', 'cheque' => 'Cheque', 'mobile_banking' => 'Mobile Banking', 'other' => 'Other'];
         $paymentTypes = ['full' => 'Full Payment', 'partial' => 'Partial Payment', 'advance' => 'Advance Payment'];
 
-        return view('payments.create', compact('patients', 'invoices', 'preSelected', 'paymentMethods', 'paymentTypes'));
+        return view('backend.payments.create', compact('patients', 'invoices', 'preSelected', 'paymentMethods', 'paymentTypes'));
     }
 
     /*-----------------------------------
@@ -139,7 +139,7 @@ class PaymentController extends Controller
             // Deduct payment from invoice
             DB::commit();
 
-            return redirect()->route('payments.show', $payment->id)->with('success', 'Payment recorded successfully.');
+            return redirect()->route('backend.payments.show', $payment->id)->with('success', 'Payment recorded successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withInput()->with('error', 'Error recording payment: ' . $e->getMessage());
@@ -162,7 +162,7 @@ class PaymentController extends Controller
             'receipt'
         ])->findOrFail($id);
 
-        return view('payments.show', compact('payment'));
+        return view('backend.payments.show', compact('payment'));
     }
 
     /*-----------------------------------
@@ -179,7 +179,7 @@ class PaymentController extends Controller
         $paymentMethods = ['cash' => 'Cash', 'card' => 'Card', 'bank_transfer' => 'Bank Transfer', 'cheque' => 'Cheque', 'mobile_banking' => 'Mobile Banking', 'other' => 'Other'];
         $paymentTypes = ['full' => 'Full Payment', 'partial' => 'Partial Payment', 'advance' => 'Advance Payment'];
 
-        return view('payments.edit', compact('payment', 'patients', 'invoices', 'installments', 'paymentMethods', 'paymentTypes'));
+        return view('backend.payments.edit', compact('payment', 'patients', 'invoices', 'installments', 'paymentMethods', 'paymentTypes'));
     }
 
     /*-----------------------------------
@@ -231,7 +231,7 @@ class PaymentController extends Controller
             $payment->processPayment();
             DB::commit();
 
-            return redirect()->route('payments.show', $payment->id)->with('success', 'Payment updated successfully.');
+            return redirect()->route('backend.payments.show', $payment->id)->with('success', 'Payment updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withInput()->with('error', 'Error updating payment: ' . $e->getMessage());
@@ -246,7 +246,7 @@ class PaymentController extends Controller
         $payment = Payment::findOrFail($id);
         $payment->delete();
 
-        return redirect()->route('payments.index')->with('success', 'Payment deleted successfully.');
+        return redirect()->route('backend.payments.index')->with('success', 'Payment deleted successfully.');
     }
 
     /*-----------------------------------
@@ -258,7 +258,7 @@ class PaymentController extends Controller
         $payment = Payment::findOrFail($id);
 
         $refundPayment = $payment->refund($request->reason);
-        return redirect()->route('payments.show', $payment->id)->with('success', 'Payment refunded: ' . $refundPayment->payment_no);
+        return redirect()->route('backend.payments.show', $payment->id)->with('success', 'Payment refunded: ' . $refundPayment->payment_no);
     }
 
     /*-----------------------------------
@@ -270,7 +270,7 @@ class PaymentController extends Controller
         $payment = Payment::findOrFail($id);
         $payment->cancel($request->reason);
 
-        return redirect()->route('payments.show', $payment->id)->with('success', 'Payment cancelled successfully.');
+        return redirect()->route('backend.payments.show', $payment->id)->with('success', 'Payment cancelled successfully.');
     }
 
     /*-----------------------------------
@@ -291,7 +291,7 @@ class PaymentController extends Controller
         // Allocate payment
         $payment->allocateToInstallment($request->installment_id, $request->amount, $request->notes);
 
-        return redirect()->route('payments.show', $payment->id)
+        return redirect()->route('backend.payments.show', $payment->id)
             ->with('success', 'Payment allocated successfully.');
     }
 
@@ -310,7 +310,7 @@ class PaymentController extends Controller
             ->get();
 
         $summary = collect($payments)->groupBy('payment_method')->map(fn($group) => $group->sum('amount'));
-        return view('payments.reports.daily', compact('payments', 'summary', 'date'));
+        return view('backend.payments.reports.daily', compact('payments', 'summary', 'date'));
     }
 
     /*-----------------------------------
