@@ -234,12 +234,12 @@
             'icon' => 'Bed',
             'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
             'items' => [
-                [
-                    'label' => 'Dashboard',
-                    'icon' => 'grid',
-                    'route' => 'backend.dental-chairs.dashboard',
-                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
-                ],
+                // [
+                //     'label' => 'Dashboard',
+                //     'icon' => 'grid',
+                //     'route' => 'backend.dental-chairs.dashboard',
+                //     'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
+                // ],
                 [
                     'label' => 'Chair List',
                     'icon' => 'Bed',
@@ -252,12 +252,12 @@
                     'route' => 'backend.dental-chairs.create',
                     'roles' => ['Admin', 'Super Admin']
                 ],
-                [
-                    'label' => 'Chair Schedule',
-                    'icon' => 'Schedule',
-                    'route' => 'backend.dental-chairs.schedule',
-                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
-                ],
+                // [
+                //     'label' => 'Chair Schedule',
+                //     'icon' => 'Schedule',
+                //     'route' => 'backend.dental-chairs.schedule',
+                //     'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
+                // ],
             ],
         ],
 
@@ -279,12 +279,12 @@
                 //     'label' => 'Prescription Templates',
                 //     'roles' => ['Super Admin', 'Admin', 'Doctor']
                 // ],
-                [
-                    'label' => 'Prescription History',
-                    'icon' => 'list',
-                    'route' => 'backend.prescriptions.index',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
-                ],
+                // [
+                //     'label' => 'Prescription History',
+                //     'icon' => 'list',
+                //     'route' => 'backend.prescriptions.index',
+                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
+                // ],
                 [
                     'label' => 'Medicine Catalog',
                     'icon' => 'medicine',

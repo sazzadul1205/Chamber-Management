@@ -67,6 +67,39 @@
                     </x-primary-button>
                 </div>
             </form>
+            <!-- Quick Login Boxes -->
+            <div class="mt-8">
+                <p class="text-center text-sm text-gray-600 mb-4 font-medium">
+                    Quick Login (Testing Only)
+                </p>
+
+                <div class="grid grid-cols-1 gap-3">
+                    <button type="button" onclick="quickLogin('Reception@gmail.com')"
+                        class="w-full py-2 rounded-md bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-semibold transition">
+                        Login as Receptionist
+                    </button>
+
+                    <button type="button" onclick="quickLogin('Doctor@gmail.com')"
+                        class="w-full py-2 rounded-md bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 font-semibold transition">
+                        Login as Doctor
+                    </button>
+
+                    <button type="button" onclick="quickLogin('admin@gmail.com')"
+                        class="w-full py-2 rounded-md bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 font-semibold transition">
+                        Login as Admin
+                    </button>
+                </div>
+            </div>
         </div>
+
+
     </div>
+
+    <script>
+        function quickLogin(email) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = 'Admin1205';
+        }
+    </script>
+
 </x-guest-layout>
