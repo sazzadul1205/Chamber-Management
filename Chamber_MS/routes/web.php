@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\{
     AppointmentController,
+    DashboardController,
     DentalChairController,
     DentalChartController,
     DiagnosisCodeController,
@@ -35,7 +36,9 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::get('/', fn() => view('auth.login'));
-Route::get('/dashboard', fn() => view('backend.dashboard'))
+// Role-based dashboard routing
+// Dashboard route
+Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('backend.dashboard');
 

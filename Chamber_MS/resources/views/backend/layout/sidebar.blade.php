@@ -10,29 +10,29 @@
     $userRoleName = $roleMap[$user->role_id] ?? null;
 
     $menu = [
-        // ===============================
-        // AUTH & DASHBOARD
-        // ===============================
         [
-            'label' => 'Main Dashboard',
-            'icon' => 'dashboard',
+            'label' => 'Dashboard',
             'route' => 'backend.dashboard',
-            'roles' => ['Super Admin', 'Admin',]
+            'icon' => 'dashboard',
+            'roles' => ['Super Admin', 'Admin']
         ],
         [
-            'label' => 'Doctor Dashboard',
+            'label' => 'Dashboard',
+            'route' => 'backend.dashboard',
             'icon' => 'dashboard',
             'roles' => ['Doctor']
         ],
         [
-            'label' => 'Reception Dashboard',
+            'label' => 'Dashboard',
+            'route' => 'backend.dashboard',
             'icon' => 'dashboard',
             'roles' => ['Receptionist']
         ],
         [
-            'label' => 'Admin Dashboard',
+            'label' => 'Dashboard',
+            'route' => 'backend.dashboard',
             'icon' => 'dashboard',
-            'roles' => ['Admin', 'Super Admin']
+            'roles' => ['Accountant']
         ],
 
         // ===============================
