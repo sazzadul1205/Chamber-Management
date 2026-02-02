@@ -2,10 +2,7 @@
 
 @section('content')
     <div class="space-y-6">
-        <!-- ==============================================
-                                                    HEADER SECTION
-                                                    Shows different titles based on context
-                                                ============================================== -->
+        <!-- HEADER SECTION -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">
@@ -32,10 +29,7 @@
             @endif
         </div>
 
-        <!-- ==============================================
-                                                    FORM CARD
-                                                    Main form for adding procedures
-                                                ============================================== -->
+        <!-- FORM CARD  -->
         <div class="bg-white rounded-lg shadow">
             <form action="{{ route('backend.treatment-procedures.store') }}" method="POST">
                 @csrf
@@ -46,13 +40,7 @@
                 @endif
 
                 <div class="p-6 space-y-6">
-                    <!-- ==============================================
-                                                                TREATMENT SELECTION SECTION
-                                                                Three scenarios:
-                                                                1. From treatment page: Show treatment info box
-                                                                2. General page with multiple treatments: Show dropdown
-                                                                3. General page with only one treatment: Show dropdown
-                                                            ============================================== -->
+                    <!-- TREATMENT SELECTION SECTION -->
 
                     <!-- SCENARIO 1: From treatment page - show info box -->
                     @if ($treatment)
@@ -70,8 +58,7 @@
                                 class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Select Treatment</option>
                                 @foreach ($treatments as $t)
-                                    <option value="{{ $t->id }}"
-                                        {{ old('treatment_id') == $t->id ? 'selected' : '' }}>
+                                    <option value="{{ $t->id }}" {{ old('treatment_id') == $t->id ? 'selected' : '' }}>
                                         {{ $t->patient->full_name ?? 'N/A' }} - {{ $t->treatment_code }}
                                     </option>
                                 @endforeach
@@ -91,8 +78,7 @@
                                 class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Select Treatment</option>
                                 @foreach ($treatments as $t)
-                                    <option value="{{ $t->id }}"
-                                        {{ old('treatment_id') == $t->id ? 'selected' : '' }}>
+                                    <option value="{{ $t->id }}" {{ old('treatment_id') == $t->id ? 'selected' : '' }}>
                                         {{ $t->patient->full_name ?? 'N/A' }} - {{ $t->treatment_code }}
                                     </option>
                                 @endforeach
@@ -103,10 +89,7 @@
                         </div>
                     @endif
 
-                    <!-- ==============================================
-                                                                PROCEDURE DETAILS SECTION
-                                                                Two-column layout for form fields
-                                                            ============================================== -->
+                    <!-- PROCEDURE DETAILS SECTION -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- LEFT COLUMN: Procedure selection and basic details -->
                         <div class="space-y-6">
@@ -142,8 +125,7 @@
                                                         class="text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 transition-colors duration-150 procedure-quick-select"
                                                         data-procedure-code="{{ $common['procedure_code'] }}"
                                                         data-procedure-name="{{ $common['procedure_name'] }}"
-                                                        data-cost="{{ $common['cost'] }}"
-                                                        data-duration="{{ $common['duration'] }}">
+                                                        data-cost="{{ $common['cost'] }}" data-duration="{{ $common['duration'] }}">
                                                         <div class="flex justify-between items-start">
                                                             <div>
                                                                 <span
@@ -230,8 +212,7 @@
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                             <option value="">Select Surface</option>
                                             @foreach (['Occlusal', 'Mesial', 'Distal', 'Buccal', 'Lingual', 'Multiple'] as $surface)
-                                                <option value="{{ $surface }}"
-                                                    {{ old('surface') == $surface ? 'selected' : '' }}>
+                                                <option value="{{ $surface }}" {{ old('surface') == $surface ? 'selected' : '' }}>
                                                     {{ $surface }}
                                                 </option>
                                             @endforeach
@@ -252,8 +233,8 @@
                                         <label for="cost" class="block text-sm font-medium text-gray-700 mb-1">
                                             Cost ($) *
                                         </label>
-                                        <input type="number" id="cost" name="cost" required step="0.01"
-                                            min="0" value="{{ old('cost') }}"
+                                        <input type="number" id="cost" name="cost" required step="0.01" min="0"
+                                            value="{{ old('cost') }}"
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                         @error('cost')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -265,8 +246,8 @@
                                         <label for="duration" class="block text-sm font-medium text-gray-700 mb-1">
                                             Duration (min) *
                                         </label>
-                                        <input type="number" id="duration" name="duration" required min="1"
-                                            max="480" value="{{ old('duration') }}"
+                                        <input type="number" id="duration" name="duration" required min="1" max="480"
+                                            value="{{ old('duration') }}"
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                         @error('duration')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -283,8 +264,7 @@
                                 <select id="status" name="status" required
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                     @foreach (\App\Models\TreatmentProcedure::statuses() as $key => $val)
-                                        <option value="{{ $key }}"
-                                            {{ old('status') == $key ? 'selected' : '' }}>
+                                        <option value="{{ $key }}" {{ old('status') == $key ? 'selected' : '' }}>
                                             {{ $val }}
                                         </option>
                                     @endforeach
@@ -309,10 +289,7 @@
                     </div>
                 </div>
 
-                <!-- ==============================================
-                    FORM ACTIONS
-                    Submit and cancel buttons
-                ============================================== -->
+                <!-- FORM ACTIONS -->
                 <div class="px-6 pb-4 bg-gray-50 border-t border-gray-200 space-x-3">
                     @if ($treatment)
                         <!-- If coming from treatment page, go back to treatment show page -->
@@ -328,21 +305,15 @@
         </div>
     </div>
 
-    <!-- ==============================================
-            JAVASCRIPT SECTION
-            Handles procedure selection, search, and form interactions
-        ============================================== -->
+    <!-- JAVASCRIPT SECTION -->
     <script>
-        // ==============================================
+
         // GLOBAL VARIABLES
-        // ==============================================
         let currentSelectedProcedure = null;
 
-        // ==============================================
         // QUICK SELECT FUNCTIONALITY
-        // ==============================================
         document.querySelectorAll('.procedure-quick-select').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function () {
                 const code = this.getAttribute('data-procedure-code');
                 const name = this.getAttribute('data-procedure-name');
                 const cost = this.getAttribute('data-cost');
@@ -367,12 +338,10 @@
             });
         });
 
-        // ==============================================
         // SEARCH FUNCTIONALITY
-        // ==============================================
         // Setup event listeners
         document.getElementById('search-btn').addEventListener('click', performSearch);
-        document.getElementById('procedure-search').addEventListener('keypress', function(e) {
+        document.getElementById('procedure-search').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 performSearch();
@@ -380,7 +349,7 @@
         });
 
         // Load popular procedures when search input is focused
-        document.getElementById('procedure-search').addEventListener('focus', function() {
+        document.getElementById('procedure-search').addEventListener('focus', function () {
             const resultsDiv = document.getElementById('catalog-results');
             const searchInput = document.getElementById('procedure-search');
 
@@ -390,12 +359,8 @@
             }
         });
 
-        // ==============================================
-        // SEARCH FUNCTIONS
-        // ==============================================
-        /**
-         * Load popular procedures (shows when search input is empty)
-         */
+
+        //  Load popular procedures (shows when search input is empty)
         function loadPopularProcedures() {
             const resultsDiv = document.getElementById('catalog-results');
             const errorDiv = document.getElementById('search-error');
@@ -423,9 +388,8 @@
                 });
         }
 
-        /**
-         * Perform search based on user input
-         */
+
+        // Perform search based on user input
         function performSearch() {
             const searchInput = document.getElementById('procedure-search');
             const search = searchInput.value.trim();
@@ -454,7 +418,7 @@
 
             // Perform search
             fetch(
-                    `{{ route('backend.treatment-procedures.get-catalog-procedures') }}?search=${encodeURIComponent(search)}`)
+                `{{ route('backend.treatment-procedures.get-catalog-procedures') }}?search=${encodeURIComponent(search)}`)
                 .then(handleResponse)
                 .then(data => {
                     if (!data || !data.length) {
@@ -475,9 +439,8 @@
             }
         }
 
-        /**
-         * Handle API response
-         */
+
+        // Handle API response
         function handleResponse(response) {
             if (!response.ok) {
                 throw new Error('Search failed');
@@ -485,34 +448,38 @@
             return response.json();
         }
 
-        // ==============================================
         // UI HELPER FUNCTIONS
-        // ==============================================
+
+        // Show loading state
         function showLoading(container) {
+            // prettier-ignore
             container.innerHTML = `
-                                                    <div class="p-4 text-center">
-                                                        <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                                                        <p class="mt-2 text-gray-500">Searching...</p>
-                                                    </div>
-                                                `;
+                                                            <div class="p-4 text-center">
+                                                                    <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                                                <p class="mt-2 text-gray-500">Searching...</p>
+                                                            </div>
+                                                        `;
             container.classList.remove('hidden');
         }
 
+        // Show no results
         function showNoResults(container, searchTerm) {
             container.innerHTML = `
-                                                    <div class="p-4 text-center">
-                                                        <div class="text-gray-500 mb-2">No procedures found for "${searchTerm}"</div>
-                                                        <div class="text-sm text-gray-400">Try searching with different keywords</div>
-                                                    </div>
-                                                `;
+                                                                                                                                                <div class="p-4 text-center">
+                                                                                                                                                    <div class="text-gray-500 mb-2">No procedures found for "${searchTerm}"</div>
+                                                                                                                                                    <div class="text-sm text-gray-400">Try searching with different keywords</div>
+                                                                                                                                                </div>
+                                                                                                                                            `;
             container.classList.remove('hidden');
         }
 
+        // Show search error
         function showSearchError(container) {
             container.innerHTML = '<div class="p-4 text-red-500 text-center">Error searching. Please try again.</div>';
             container.classList.remove('hidden');
         }
 
+        // Display popular results
         function displayPopularResults(data, container) {
             container.innerHTML = '';
 
@@ -520,12 +487,12 @@
             const header = document.createElement('div');
             header.className = 'p-3 bg-gray-50 border-b border-gray-200';
             header.innerHTML = `
-                                                    <div class="text-sm font-medium text-gray-700">Popular Procedures</div>
-                                                    ${currentSelectedProcedure ?
+                                                                                                                                                <div class="text-sm font-medium text-gray-700">Popular Procedures</div>
+                                                                                                                                                ${currentSelectedProcedure ?
                     `<div class="text-xs text-gray-500 mt-1">Currently selected: ${currentSelectedProcedure.code} - ${currentSelectedProcedure.name}</div>` :
                     ''
                 }
-                                                `;
+                                                                                                                                            `;
             container.appendChild(header);
 
             if (!data.length) {
@@ -539,6 +506,7 @@
             container.classList.remove('hidden');
         }
 
+        // Display search results
         function displaySearchResults(data, container, searchTerm) {
             container.innerHTML = '';
 
@@ -546,12 +514,12 @@
             const header = document.createElement('div');
             header.className = 'p-3 bg-gray-50 border-b border-gray-200';
             header.innerHTML = `
-                                                    <div class="text-sm font-medium text-gray-700">${data.length} result${data.length !== 1 ? 's' : ''} for "${searchTerm}"</div>
-                                                    ${currentSelectedProcedure ?
+                                                                                                                                                <div class="text-sm font-medium text-gray-700">${data.length} result${data.length !== 1 ? 's' : ''} for "${searchTerm}"</div>
+                                                                                                                                                ${currentSelectedProcedure ?
                     `<div class="text-xs text-gray-500 mt-1">Click to replace: ${currentSelectedProcedure.code} - ${currentSelectedProcedure.name}</div>` :
                     ''
                 }
-                                                `;
+                                                                                                                                            `;
             container.appendChild(header);
 
             data.forEach(proc => {
@@ -561,9 +529,8 @@
             container.classList.remove('hidden');
         }
 
-        /**
-         * Create a search result item
-         */
+
+        // Create a search result item
         function createResultItem(proc, container, isPopular) {
             const div = document.createElement('div');
             div.className =
@@ -578,28 +545,27 @@
                 currentSelectedProcedure.code === proc.code;
 
             div.innerHTML = `
-                                                    <div class="flex justify-between items-center">
-                                                        <div>
-                                                            <div class="font-medium ${isSelected ? 'text-green-600' : 'text-blue-600'}">
-                                                                ${proc.code}
-                                                                ${isSelected ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded ml-2">Selected</span>' : ''}
-                                                            </div>
-                                                            <div class="text-gray-900">${proc.name}</div>
-                                                            <div class="text-sm text-gray-600">${proc.category || ''}</div>
-                                                        </div>
-                                                        <div class="text-right">
-                                                            <div class="font-medium">$${proc.cost}</div>
-                                                            <div class="text-sm text-gray-600">${proc.duration} min</div>
-                                                        </div>
-                                                    </div>
-                                                `;
+                                                                                                                                                <div class="flex justify-between items-center">
+                                                                                                                                                    <div>
+                                                                                                                                                        <div class="font-medium ${isSelected ? 'text-green-600' : 'text-blue-600'}">
+                                                                                                                                                            ${proc.code}
+                                                                                                                                                            ${isSelected ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded ml-2">Selected</span>' : ''}
+                                                                                                                                                        </div>
+                                                                                                                                                        <div class="text-gray-900">${proc.name}</div>
+                                                                                                                                                        <div class="text-sm text-gray-600">${proc.category || ''}</div>
+                                                                                                                                                    </div>
+                                                                                                                                                    <div class="text-right">
+                                                                                                                                                        <div class="font-medium">$${proc.cost}</div>
+                                                                                                                                                        <div class="text-sm text-gray-600">${proc.duration} min</div>
+                                                                                                                                                    </div>
+                                                                                                                                                </div>
+                                                                                                                                            `;
             container.appendChild(div);
         }
 
-        // ==============================================
-        // RESULT SELECTION HANDLING
-        // ==============================================
-        document.addEventListener('click', function(e) {
+
+        //  RESULT SELECTION HANDLING
+        document.addEventListener('click', function (e) {
             // Search results selection
             if (e.target.closest('.procedure-search-result')) {
                 const div = e.target.closest('.procedure-search-result');
@@ -628,12 +594,9 @@
             }
         });
 
-        // ==============================================
+
         // FORM FIELD MANIPULATION FUNCTIONS
-        // ==============================================
-        /**
-         * Fill procedure fields (overwrites existing values)
-         */
+        // Fill procedure fields (overwrites existing values)
         function fillProcedureFields(code, name, cost, duration) {
             const codeField = document.getElementById('procedure_code');
             const nameField = document.getElementById('procedure_name');
@@ -652,9 +615,8 @@
             });
         }
 
-        /**
-         * Show visual feedback when a procedure is selected
-         */
+
+        //  Show visual feedback when a procedure is selected
         function showSelectionFeedback() {
             const codeField = document.getElementById('procedure_code');
             const nameField = document.getElementById('procedure_name');
@@ -672,32 +634,31 @@
             toast.className =
                 'fixed top-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg shadow-lg z-50';
             toast.innerHTML = `
-                                                    <div class="flex items-center">
-                                                        <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                                        </svg>
-                                                        <span>Procedure "${currentSelectedProcedure.code}" selected</span>
-                                                    </div>
-                                                `;
+                                                                                                                                                <div class="flex items-center">
+                                                                                                                                                    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                                                                                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                                                                                                                    </svg>
+                                                                                                                                                    <span>Procedure "${currentSelectedProcedure.code}" selected</span>
+                                                                                                                                                </div>
+                                                                                                                                            `;
             document.body.appendChild(toast);
             setTimeout(() => {
                 toast.remove();
             }, 3000);
         }
 
-        /**
-         * Clear selection button functionality
-         */
+
+        // Clear selection button functionality
         function addClearSelectionButton() {
             const clearBtn = document.createElement('button');
             clearBtn.type = 'button';
             clearBtn.className = 'mt-2 text-sm text-red-600 hover:text-red-800 flex items-center gap-1';
             clearBtn.innerHTML = `
-                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                    </svg>
-                                                    Clear Selection
-                                                `;
+                                                                                                                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                                                                                                                </svg>
+                                                                                                                                                Clear Selection
+                                                                                                                                            `;
             clearBtn.addEventListener('click', clearProcedureSelection);
 
             // Insert after manual entry section
@@ -707,6 +668,7 @@
             }
         }
 
+        // Clear procedure selection
         function clearProcedureSelection() {
             currentSelectedProcedure = null;
             document.getElementById('procedure_code').value = '';
@@ -719,26 +681,23 @@
             toast.className =
                 'fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-800 px-4 py-3 rounded-lg shadow-lg z-50';
             toast.innerHTML = `
-                                                    <div class="flex items-center">
-                                                        <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                                                        </svg>
-                                                        <span>Selection cleared</span>
-                                                    </div>
-                                                `;
+                                                                                                                                                <div class="flex items-center">
+                                                                                                                                                    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                                                                                                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                                                                                                                                    </svg>
+                                                                                                                                                    <span>Selection cleared</span>
+                                                                                                                                                </div>
+                                                                                                                                            `;
             document.body.appendChild(toast);
             setTimeout(() => {
                 toast.remove();
             }, 3000);
         }
 
-        // ==============================================
-        // UTILITY FUNCTIONS
-        // ==============================================
-        /**
-         * Close results when clicking outside
-         */
-        document.addEventListener('click', function(e) {
+
+        //  UTILITY FUNCTIONS
+        // Close results when clicking outside
+        document.addEventListener('click', function (e) {
             const resultsDiv = document.getElementById('catalog-results');
             const searchInput = document.getElementById('procedure-search');
             const searchBtn = document.getElementById('search-btn');
@@ -752,10 +711,8 @@
             }
         });
 
-        // ==============================================
-        // INITIALIZATION
-        // ==============================================
-        document.addEventListener('DOMContentLoaded', function() {
+        //  INITIALIZATION FUNCTIONS
+        document.addEventListener('DOMContentLoaded', function () {
             addClearSelectionButton();
         });
     </script>
