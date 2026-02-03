@@ -133,14 +133,18 @@
     @case('medicine')
         @include('components.icons.medicine')
     @break
-    
+
     {{-- ==============================
     PAYMENT ICONS
     ============================== --}}
     @case('Payment')
         @include('components.icons.Payment')
     @break
-    
+
+    @case('Referral')
+        @include('components.icons.Referral', ['class' => $iconClass])
+    @break
+
     {{-- ==============================
          BUTTON / ACTION ICONS
     ============================== --}}

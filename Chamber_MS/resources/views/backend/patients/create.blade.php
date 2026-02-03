@@ -42,7 +42,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Full Name *
                                 </label>
-                                <input type="text" name="full_name" value="{{ old('full_name') }}" required
+                                <input type="text" name="full_name" value="{{ old('full_name') }}" required placeholder="John Doe"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                             </div>
 
@@ -98,34 +98,46 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Email
                                 </label>
-                                <input type="email" name="email" value="{{ old('email') }}"
+                                <input type="email" name="email" value="{{ old('email') }}" placeholder="example@gmail.com"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                             </div>
+
 
                             <!-- Emergency Contact -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Emergency Contact
                                 </label>
-                                <input type="text" name="emergency_contact" value="{{ old('emergency_contact') }}"
-                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+
+                                <div class="flex">
+                                    <!-- Fixed country code -->
+                                    <span
+                                        class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-100 text-gray-700 text-sm select-none">
+                                        +880
+                                    </span>
+
+                                    <!-- User input -->
+                                    <input type="text" name="emergency_contact_local"
+                                        value="{{ old('emergency_contact_local') }}" placeholder="1XXXXXXXXX"
+                                        class="w-full border-gray-300 rounded-r-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <!-- Hidden full phone value -->
+                                <input type="hidden" name="emergency_contact" id="emergency_contact_full"
+                                    value="{{ old('emergency_contact') }}">
                             </div>
+
 
                             <!-- Referred By -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Referred By
                                 </label>
-                                <select name="referred_by"
-                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Select Patient</option>
-                                    @foreach ($patients as $ref)
-                                        <option value="{{ $ref->id }}" @selected(old('referred_by') == $ref->id)>
-                                            {{ $ref->patient_code }} - {{ $ref->full_name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div id="referred-by-select" data-old="{{ old('referred_by') }}"></div>
+                                <input type="hidden" name="referred_by" id="referred_by_hidden"
+                                    value="{{ old('referred_by') }}">
                             </div>
+
 
                             <!-- Status -->
                             <div>
@@ -191,18 +203,29 @@
 
     {{-- SCRIPTS --}}
     <script>
-        // Generate phone number
-        document.addEventListener('DOMContentLoaded', function () {
-            const localInput = document.querySelector('[name="phone_local"]');
-            const fullInput = document.getElementById('phone_full');
+        // Generate phone numbers
+        document.addEventListener('DOMContentLoaded', function() {
+            const phoneInput = document.querySelector('[name="phone_local"]');
+            const phoneFull = document.getElementById('phone_full');
+
+            const emergencyInput = document.querySelector('[name="emergency_contact_local"]');
+            const emergencyFull = document.getElementById('emergency_contact_full');
 
             function updatePhone() {
-                fullInput.value = '+880' + localInput.value.replace(/\D/g, '');
+                phoneFull.value = '+880' + phoneInput.value.replace(/\D/g, '');
             }
 
-            localInput.addEventListener('input', updatePhone);
+            function updateEmergency() {
+                emergencyFull.value = '+880' + emergencyInput.value.replace(/\D/g, '');
+            }
+
+            phoneInput.addEventListener('input', updatePhone);
+            emergencyInput.addEventListener('input', updateEmergency);
+
             updatePhone();
+            updateEmergency();
         });
     </script>
+
 
 @endsection

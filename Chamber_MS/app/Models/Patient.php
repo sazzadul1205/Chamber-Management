@@ -182,4 +182,28 @@ class Patient extends Model
         $next = $last ? ((int) substr($last->patient_code, 3)) + 1 : 1;
         return 'PAT' . str_pad($next, 3, '0', STR_PAD_LEFT);
     }
+
+    public function referredPatients()
+    {
+        return $this->hasMany(Patient::class, 'referred_by')->with('appointments');
+    }
+
+    // Add this method to get referral stats
+    public function getReferralStatsAttribute()
+    {
+        $referred = $this->referredPatients();
+        $completed = $referred->whereHas('appointments', function ($q) {
+            $q->where('status', 'completed');
+        })->count();
+
+        $active = $referred->where('status', 'active')->count();
+        $totalValue = $referred->withSum('invoices', 'total_amount')->get()->sum('invoices_sum_total_amount') ?? 0;
+
+        return [
+            'total_referred' => $referred->count(),
+            'completed_visits' => $completed,
+            'active_patients' => $active,
+            'total_value' => $totalValue,
+        ];
+    }
 }

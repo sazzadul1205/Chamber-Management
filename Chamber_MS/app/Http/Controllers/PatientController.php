@@ -243,4 +243,25 @@ class PatientController extends Controller
         $patient->load(['treatments.procedures', 'appointments']);
         return view('backend.patients.medical-history', compact('patient'));
     }
+
+    // =========================
+    // TOGGLE PATIENT STATUS
+    // =========================
+    public function toggleStatus(Patient $patient)
+    {
+        try {
+            // Only allow toggling between active and inactive
+            if ($patient->status === 'active') {
+                $patient->update(['status' => 'inactive']);
+            } elseif ($patient->status === 'inactive') {
+                $patient->update(['status' => 'active']);
+            } else {
+                return back()->with('error', 'Cannot toggle deceased patients');
+            }
+
+            return back()->with('success', 'Patient status updated successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to update status');
+        }
+    }
 }

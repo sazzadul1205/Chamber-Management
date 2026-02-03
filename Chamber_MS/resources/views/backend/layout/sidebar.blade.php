@@ -5,7 +5,7 @@
         2 => 'Admin',
         3 => 'Doctor',
         4 => 'Receptionist',
-        5 => 'Accountant'
+        5 => 'Accountant',
     ];
     $userRoleName = $roleMap[$user->role_id] ?? null;
 
@@ -14,25 +14,25 @@
             'label' => 'Dashboard',
             'route' => 'backend.dashboard',
             'icon' => 'dashboard',
-            'roles' => ['Super Admin', 'Admin']
+            'roles' => ['Super Admin', 'Admin'],
         ],
         [
             'label' => 'Dashboard',
             'route' => 'backend.dashboard',
             'icon' => 'dashboard',
-            'roles' => ['Doctor']
+            'roles' => ['Doctor'],
         ],
         [
             'label' => 'Dashboard',
             'route' => 'backend.dashboard',
             'icon' => 'dashboard',
-            'roles' => ['Receptionist']
+            'roles' => ['Receptionist'],
         ],
         [
             'label' => 'Dashboard',
             'route' => 'backend.dashboard',
             'icon' => 'dashboard',
-            'roles' => ['Accountant']
+            'roles' => ['Accountant'],
         ],
 
         // ===============================
@@ -47,25 +47,25 @@
                     'label' => 'Patient Registration',
                     'icon' => 'User-Plus',
                     'route' => 'backend.patients.create',
-                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor']
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
                 ],
                 [
                     'label' => 'Patient List',
                     'icon' => 'list',
                     'route' => 'backend.patients.index',
-                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
+                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Family Management',
                     'icon' => 'Family',
                     'route' => 'backend.patient-families.index',
-                    'roles' => ['Receptionist', 'Admin', 'Super Admin']
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Referral Tracking',
-                    'icon' => 'share-alt',
-                    'route' => 'backend.patients.search',
-                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
+                    'icon' => 'Referral',
+                    'route' => 'backend.referrals.index',
+                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
                 ],
             ],
         ],
@@ -82,31 +82,31 @@
                     'label' => 'Schedule Appointment',
                     'route' => 'backend.appointments.create',
                     'icon' => 'Add-Circle',
-                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor']
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
                 ],
                 [
                     'label' => 'Appointment List',
                     'route' => 'backend.appointments.index',
                     'icon' => 'list',
-                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
+                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Calendar View',
                     'route' => 'backend.appointments.calendar',
                     'icon' => 'Calendar',
-                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
+                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Appointment Reminders',
                     'route' => '',
                     'icon' => 'bell',
-                    'roles' => ['Receptionist', 'Admin', 'Super Admin']
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Queue Display (TV)',
                     'route' => 'backend.appointments.queue',
                     'icon' => 'TV',
-                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
+                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
                 ],
             ],
         ],
@@ -123,13 +123,13 @@
                     'label' => 'Doctor Registration',
                     'icon' => 'User-Plus',
                     'route' => 'backend.doctors.create',
-                    'roles' => ['Admin', 'Super Admin']
+                    'roles' => ['Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Doctor List',
                     'icon' => 'list',
                     'route' => 'backend.doctors.index',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
                 // [
                 //     'label' => 'Doctor Schedule',
@@ -158,31 +158,31 @@
                     'label' => 'Treatment Plan',
                     'icon' => 'Treatment_Plan',
                     'route' => 'backend.treatments.index',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
                 [
                     'label' => 'Treatment Sessions',
                     'icon' => 'Treatment_Session',
                     'route' => 'backend.treatment-sessions.index',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
                 [
                     'label' => 'Treatment Procedures',
                     'icon' => 'Treatment_Procedure',
                     'route' => 'backend.treatment-procedures.index',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
                 [
                     'label' => 'Procedure Catalog',
                     'icon' => 'list',
                     'route' => 'backend.procedure-catalog.index',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
                 [
                     'label' => 'Diagnosis Codes',
                     'icon' => 'Diagnostic-Code',
                     'route' => 'backend.diagnosis-codes.index',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
             ],
         ],
@@ -199,13 +199,13 @@
                     'label' => 'Add Dental Record',
                     'icon' => 'Add_Tooth',
                     'route' => 'backend.dental-charts.create',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
                 [
                     'label' => 'Dental Records',
                     'icon' => 'list',
                     'route' => 'backend.dental-charts.index',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
                 // [
                 //     'label' => 'Tooth Conditions',
@@ -244,13 +244,13 @@
                     'label' => 'Chair List',
                     'icon' => 'Bed',
                     'route' => 'backend.dental-chairs.index',
-                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin']
+                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Add New Chair',
                     'icon' => 'Add-Circle',
                     'route' => 'backend.dental-chairs.create',
-                    'roles' => ['Admin', 'Super Admin']
+                    'roles' => ['Admin', 'Super Admin'],
                 ],
                 // [
                 //     'label' => 'Chair Schedule',
@@ -273,7 +273,7 @@
                     'label' => 'Create Prescription',
                     'icon' => 'Add-Circle',
                     'route' => 'backend.prescriptions.create',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor']
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
                 // [
                 //     'label' => 'Prescription Templates',
@@ -289,7 +289,7 @@
                     'label' => 'Medicine Catalog',
                     'icon' => 'medicine',
                     'route' => 'backend.medicines.index',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor', 'Accountant']
+                    'roles' => ['Super Admin', 'Admin', 'Doctor', 'Accountant'],
                 ],
             ],
         ],
@@ -384,15 +384,15 @@
                     'label' => 'Payment History',
                     'route' => 'backend.payments.index',
                     'icon' => 'list',
-                    'roles' => ['Accountant', 'Admin', 'Super Admin']
+                    'roles' => ['Accountant', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Advance Payments',
-                    'roles' => ['Accountant', 'Admin', 'Super Admin']
+                    'roles' => ['Accountant', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Refunds',
-                    'roles' => ['Accountant', 'Admin', 'Super Admin']
+                    'roles' => ['Accountant', 'Admin', 'Super Admin'],
                 ],
             ],
         ],
@@ -452,39 +452,39 @@
                     'label' => 'User Management',
                     'icon' => 'User',
                     'route' => 'backend.user.index',
-                    'roles' => ['Super Admin', 'Admin']
+                    'roles' => ['Super Admin', 'Admin'],
                 ],
                 [
                     'label' => 'Roles & Permissions',
                     'icon' => 'key',
                     'route' => 'backend.roles.index',
-                    'roles' => ['Super Admin', 'Admin']
+                    'roles' => ['Super Admin', 'Admin'],
                 ],
                 [
                     'label' => 'System Settings',
                     'icon' => 'cog',
                     'route' => 'backend.system-settings.index',
-                    'roles' => ['Super Admin', 'Admin']
+                    'roles' => ['Super Admin', 'Admin'],
                 ],
                 [
                     'label' => 'Backup & Restore',
-                    'roles' => ['Super Admin', 'Admin']
+                    'roles' => ['Super Admin', 'Admin'],
                 ],
                 [
                     'label' => 'Audit Logs',
-                    'roles' => ['Super Admin', 'Admin']
+                    'roles' => ['Super Admin', 'Admin'],
                 ],
                 [
                     'label' => 'Notifications',
-                    'roles' => ['Super Admin', 'Admin']
+                    'roles' => ['Super Admin', 'Admin'],
                 ],
                 [
                     'label' => 'Holiday Management',
-                    'roles' => ['Super Admin', 'Admin']
+                    'roles' => ['Super Admin', 'Admin'],
                 ],
                 [
                     'label' => 'Clinic Configuration',
-                    'roles' => ['Super Admin', 'Admin']
+                    'roles' => ['Super Admin', 'Admin'],
                 ],
             ],
         ],
@@ -526,16 +526,18 @@
             @php
                 // Check if user has access to this menu item
                 $hasAccess = isset($item['roles']) && in_array($userRoleName, $item['roles']);
-                if (!$hasAccess)
+                if (!$hasAccess) {
                     continue;
+                }
 
                 $hasChildren = isset($item['items']);
                 $groupActive = false;
                 if ($hasChildren) {
                     foreach ($item['items'] as $sub) {
                         $subAccess = isset($sub['roles']) && in_array($userRoleName, $sub['roles']);
-                        if (!$subAccess)
+                        if (!$subAccess) {
                             continue;
+                        }
 
                         $subRoute = $sub['route'] ?? ($sub['link'] ?? '');
                         if ($subRoute && $subRoute === $currentRoute) {
@@ -568,7 +570,8 @@
                             </div>
                             <svg class="arrow w-4 h-4 transition-transform duration-300 {{ $groupActive ? 'rotate-180 text-blue-500' : 'text-gray-400' }}"
                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
 
@@ -580,8 +583,9 @@
                                 @foreach ($item['items'] as $sub)
                                     @php
                                         $subAccess = isset($sub['roles']) && in_array($userRoleName, $sub['roles']);
-                                        if (!$subAccess)
+                                        if (!$subAccess) {
                                             continue;
+                                        }
 
                                         $subRoute = $sub['route'] ?? ($sub['link'] ?? '');
                                         $active = $subRoute && $subRoute === $currentRoute;
@@ -589,7 +593,9 @@
                                     @endphp
                                     <a href="{{ $href }}"
                                         class="flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 {{ $active ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
-                                        @include('partials/sidebar-icon', ['name' => $sub['icon'] ?? 'default'])
+                                        @include('partials/sidebar-icon', [
+                                            'name' => $sub['icon'] ?? 'default',
+                                        ])
                                         <span>{{ $sub['label'] }}</span>
                                     </a>
                                 @endforeach
@@ -664,7 +670,7 @@
 
     // Auto open active group on load
     document.addEventListener('DOMContentLoaded', () => {
-        @if($openGroupKey !== null)
+        @if ($openGroupKey !== null)
             openGroupFn({{ $openGroupKey }});
             openGroup = {{ $openGroupKey }};
         @endif

@@ -3,26 +3,21 @@
 @section('content')
     <div class="space-y-6">
 
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-semibold">
-                Edit Patient: {{ $patient->full_name }}
-            </h2>
-
-            <a href="{{ route('backend.patients.index') }}"
-                class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-medium transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                    stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-                Back
-            </a>
+        <!-- HEADER SECTION -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Edit Patient</h1>
+                <p class="text-gray-600 mt-1">
+                    Update patient profile for <span class="font-medium">{{ $patient->full_name }}</span>
+                </p>
+            </div>
         </div>
 
-        <!-- Validation Errors -->
+        <!-- VALIDATION ERRORS -->
         @if ($errors->any())
-            <div class="p-3 bg-red-100 text-red-700 rounded">
-                <ul class="list-disc list-inside text-sm">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h3 class="text-sm font-medium text-red-800 mb-2">Please fix the following errors:</h3>
+                <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
@@ -30,124 +25,244 @@
             </div>
         @endif
 
-        <!-- Patient Info -->
-        <div class="p-4 bg-blue-50 rounded border space-y-1">
-            <p><strong>Patient Code:</strong> {{ $patient->patient_code }}</p>
-            <p><strong>Phone:</strong> {{ $patient->phone }}</p>
+        <!-- PATIENT INFO CARD -->
+        <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 space-y-2">
+            <div class="flex flex-wrap gap-4">
+                <div>
+                    <span class="text-sm font-medium text-blue-800">Patient Code:</span>
+                    <span class="ml-2 text-blue-900 font-semibold">{{ $patient->patient_code }}</span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-blue-800">Phone:</span>
+                    <span class="ml-2 text-blue-900">{{ $patient->phone }}</span>
+                </div>
+                @if ($patient->email)
+                    <div>
+                        <span class="text-sm font-medium text-blue-800">Email:</span>
+                        <span class="ml-2 text-blue-900">{{ $patient->email }}</span>
+                    </div>
+                @endif
+            </div>
         </div>
 
-        <!-- Form -->
-        <form action="{{ route('backend.patients.update', $patient->id) }}" method="POST" class="space-y-6">
-            @csrf
-            @method('PUT')
+        <!-- FORM CARD -->
+        <div class="bg-white rounded-lg shadow">
+            <form action="{{ route('backend.patients.update', $patient->id) }}" method="POST">
+                @csrf
+                @method('PUT')
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="p-6 space-y-6">
 
-                <!-- Full Name -->
-                <div>
-                    <label class="block text-sm font-medium mb-1">Full Name *</label>
-                    <input type="text" name="full_name" value="{{ old('full_name', $patient->full_name) }}"
-                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 @error('full_name') border-red-500 @enderror"
-                        required>
+                    <!-- BASIC INFORMATION -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                            <!-- Full Name -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Full Name *
+                                </label>
+                                <input type="text" name="full_name" value="{{ old('full_name', $patient->full_name) }}"
+                                    required placeholder="John Doe"
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <!-- Phone -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Phone Number *
+                                </label>
+
+                                <div class="flex">
+                                    <!-- Fixed country code -->
+                                    <span
+                                        class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-100 text-gray-700 text-sm select-none">
+                                        +880
+                                    </span>
+
+                                    <!-- User input -->
+                                    @php
+                                        $phoneLocal = old('phone_local');
+                                        if (!$phoneLocal && $patient->phone) {
+                                            $phoneLocal = substr($patient->phone, 4); // Remove +880
+                                        }
+                                    @endphp
+                                    <input type="text" name="phone_local" value="{{ $phoneLocal }}" required
+                                        placeholder="1XXXXXXXXX"
+                                        class="w-full border-gray-300 rounded-r-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+
+                            <!-- Hidden full phone value -->
+                            <input type="hidden" name="phone" id="phone_full"
+                                value="{{ old('phone', $patient->phone) }}">
+
+                            <!-- Gender -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Gender
+                                </label>
+                                <select name="gender"
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select Gender</option>
+                                    <option value="male" @selected(old('gender', $patient->gender) == 'male')>Male</option>
+                                    <option value="female" @selected(old('gender', $patient->gender) == 'female')>Female</option>
+                                    <option value="other" @selected(old('gender', $patient->gender) == 'other')>Other</option>
+                                </select>
+                            </div>
+
+                            <!-- Date of Birth -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Date of Birth
+                                </label>
+                                <input type="date" name="date_of_birth"
+                                    value="{{ old('date_of_birth', optional($patient->date_of_birth)->format('Y-m-d')) }}"
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <!-- Email -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Email
+                                </label>
+                                <input type="email" name="email" value="{{ old('email', $patient->email) }}"
+                                    placeholder="example@gmail.com"
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <!-- Emergency Contact -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Emergency Contact
+                                </label>
+
+                                <div class="flex">
+                                    <!-- Fixed country code -->
+                                    <span
+                                        class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-100 text-gray-700 text-sm select-none">
+                                        +880
+                                    </span>
+
+                                    <!-- User input -->
+                                    @php
+                                        $emergencyLocal = old('emergency_contact_local');
+                                        if (!$emergencyLocal && $patient->emergency_contact) {
+                                            $emergencyLocal = substr($patient->emergency_contact, 4); // Remove +880
+                                        }
+                                    @endphp
+                                    <input type="text" name="emergency_contact_local" value="{{ $emergencyLocal }}"
+                                        placeholder="1XXXXXXXXX"
+                                        class="w-full border-gray-300 rounded-r-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <!-- Hidden full phone value -->
+                                <input type="hidden" name="emergency_contact" id="emergency_contact_full"
+                                    value="{{ old('emergency_contact', $patient->emergency_contact) }}">
+                            </div>
+
+                            <!-- Referred By -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Referred By
+                                </label>
+                                <select name="referred_by"
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select Patient</option>
+                                    @foreach ($patients as $ref)
+                                        <option value="{{ $ref->id }}" @selected(old('referred_by', $patient->referred_by) == $ref->id)>
+                                            {{ $ref->patient_code }} - {{ $ref->full_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- Status -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Status *
+                                </label>
+                                <select name="status" required
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="active" @selected(old('status', $patient->status) == 'active')>Active</option>
+                                    <option value="inactive" @selected(old('status', $patient->status) == 'inactive')>Inactive</option>
+                                    <option value="deceased" @selected(old('status', $patient->status) == 'deceased')>Deceased</option>
+                                </select>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- ADDITIONAL DETAILS -->
+                    <div class="border-t pt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Additional Details</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                            <!-- Address -->
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Address
+                                </label>
+                                <textarea name="address" rows="2"
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">{{ old('address', $patient->address) }}</textarea>
+                            </div>
+
+                            <!-- Medical History -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Medical History
+                                </label>
+                                <textarea name="medical_history" rows="3"
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">{{ old('medical_history', $patient->medical_history) }}</textarea>
+                            </div>
+
+                            <!-- Allergies -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Allergies
+                                </label>
+                                <textarea name="allergies" rows="3"
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">{{ old('allergies', $patient->allergies) }}</textarea>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Gender -->
-                <div>
-                    <label class="block text-sm font-medium mb-1">Gender</label>
-                    <select name="gender"
-                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 @error('gender') border-red-500 @enderror">
-                        <option value="">Select Gender</option>
-                        <option value="male" {{ old('gender', $patient->gender) == 'male' ? 'selected' : '' }}>Male
-                        </option>
-                        <option value="female" {{ old('gender', $patient->gender) == 'female' ? 'selected' : '' }}>Female
-                        </option>
-                        <option value="other" {{ old('gender', $patient->gender) == 'other' ? 'selected' : '' }}>Other
-                        </option>
-                    </select>
+                <!-- FORM ACTIONS -->
+                <div class="px-6 pb-4 bg-gray-50 border-t border-gray-200">
+                    <x-back-submit-buttons back-url="{{ route('backend.patients.index') }}" submit-text="Update Patient" />
                 </div>
-
-                <!-- Date of Birth -->
-                <div>
-                    <label class="block text-sm font-medium mb-1">Date of Birth</label>
-                    <input type="date" name="date_of_birth"
-                        value="{{ old('date_of_birth', optional($patient->date_of_birth)->format('Y-m-d')) }}"
-                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">
-                </div>
-
-                <!-- Phone -->
-                <div>
-                    <label class="block text-sm font-medium mb-1">Phone *</label>
-                    <input type="text" name="phone" value="{{ old('phone', $patient->phone) }}"
-                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 @error('phone') border-red-500 @enderror"
-                        required>
-                </div>
-
-                <!-- Email -->
-                <div>
-                    <label class="block text-sm font-medium mb-1">Email</label>
-                    <input type="email" name="email" value="{{ old('email', $patient->email) }}"
-                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">
-                </div>
-
-                <!-- Emergency Contact -->
-                <div>
-                    <label class="block text-sm font-medium mb-1">Emergency Contact</label>
-                    <input type="text" name="emergency_contact"
-                        value="{{ old('emergency_contact', $patient->emergency_contact) }}"
-                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">
-                </div>
-
-                <!-- Address -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium mb-1">Address</label>
-                    <textarea name="address" rows="2" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">{{ old('address', $patient->address) }}</textarea>
-                </div>
-
-                <!-- Referred By -->
-                <div>
-                    <label class="block text-sm font-medium mb-1">Referred By</label>
-                    <select name="referred_by" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">
-                        <option value="">Select Patient</option>
-                        @foreach ($patients as $ref)
-                            <option value="{{ $ref->id }}"
-                                {{ old('referred_by', $patient->referred_by) == $ref->id ? 'selected' : '' }}>
-                                {{ $ref->patient_code }} - {{ $ref->full_name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Status -->
-                <div>
-                    <label class="block text-sm font-medium mb-1">Status *</label>
-                    <select name="status" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400"
-                        required>
-                        <option value="active" {{ old('status', $patient->status) == 'active' ? 'selected' : '' }}>Active
-                        </option>
-                        <option value="inactive" {{ old('status', $patient->status) == 'inactive' ? 'selected' : '' }}>
-                            Inactive</option>
-                        <option value="deceased" {{ old('status', $patient->status) == 'deceased' ? 'selected' : '' }}>
-                            Deceased</option>
-                    </select>
-                </div>
-
-                <!-- Medical History -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium mb-1">Medical History</label>
-                    <textarea name="medical_history" rows="3"
-                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">{{ old('medical_history', $patient->medical_history) }}</textarea>
-                </div>
-
-                <!-- Allergies -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium mb-1">Allergies</label>
-                    <textarea name="allergies" rows="3" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-400">{{ old('allergies', $patient->allergies) }}</textarea>
-                </div>
-            </div>
-
-            <!-- Submit -->
-            <x-edit-page-buttons back-url="{{ route('backend.patients.index') }}" submit-text="Update Patient"
-                submit-color="blue" />
-        </form>
+            </form>
+        </div>
     </div>
+
+    {{-- SCRIPTS --}}
+    <script>
+        // Generate phone numbers
+        document.addEventListener('DOMContentLoaded', function() {
+            const phoneInput = document.querySelector('[name="phone_local"]');
+            const phoneFull = document.getElementById('phone_full');
+
+            const emergencyInput = document.querySelector('[name="emergency_contact_local"]');
+            const emergencyFull = document.getElementById('emergency_contact_full');
+
+            function updatePhone() {
+                phoneFull.value = '+880' + phoneInput.value.replace(/\D/g, '');
+            }
+
+            function updateEmergency() {
+                emergencyFull.value = '+880' + emergencyInput.value.replace(/\D/g, '');
+            }
+
+            phoneInput.addEventListener('input', updatePhone);
+            emergencyInput.addEventListener('input', updateEmergency);
+
+            // Initialize values
+            updatePhone();
+            updateEmergency();
+        });
+    </script>
 @endsection

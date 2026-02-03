@@ -24,6 +24,7 @@ use App\Http\Controllers\{
     ProcedureCatalogController,
     ProfileController,
     ReceiptController,
+    ReferralController,
     RoleController,
     SystemSettingController,
     TreatmentController,
@@ -230,6 +231,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('backend/patients/quick-add', [PatientController::class, 'quickAdd'])->name('backend.patients.quick_add');
         Route::get('backend/patients/search/ajax', [PatientController::class, 'search'])->name('backend.patients.search');
         Route::get('backend/patients/{patient}/medical-history', [PatientController::class, 'medicalHistory'])->name('backend.patients.medical_history');
+        Route::patch('backend/patients/{patient}/toggle-status', [PatientController::class, 'toggleStatus'])->name('backend.patients.toggle-status');
 
         // Patient Families
         Route::resource('patient-families', PatientFamilyController::class)->names('backend.patient-families');
@@ -237,6 +239,13 @@ Route::middleware(['auth'])->group(function () {
         Route::post('patient-families/{patientFamily}/members', [PatientFamilyController::class, 'addMember'])->name('backend.patient-families.members.add');
         Route::delete('patient-families/{patientFamily}/members/{patient}', [PatientFamilyController::class, 'removeMember'])->name('backend.patient-families.members.remove');
         Route::post('patient-families/{patientFamily}/set-head/{patient}', [PatientFamilyController::class, 'setHead'])->name('backend.patient-families.set-head');
+
+        // Referral Tracking Routes
+        Route::prefix('referrals')->name('backend.referrals.')->group(function () {
+            Route::get('/', [ReferralController::class, 'index'])->name('index');
+            Route::get('/report', [ReferralController::class, 'report'])->name('report');
+            Route::get('/{patient}', [ReferralController::class, 'show'])->name('show');
+        });
 
         // -----------------------------
         // Appointments (Reception & Doctors)
