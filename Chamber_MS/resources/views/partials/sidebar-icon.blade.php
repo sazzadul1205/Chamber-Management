@@ -220,7 +220,7 @@
     @break
 
     @case('Schedule')
-        @include('components.icons.Schedule')
+        @include('components.icons.Schedule', ['class' => $iconClass])
     @break
 
     @case('Bed')

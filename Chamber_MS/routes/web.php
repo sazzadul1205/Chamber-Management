@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\{
     AppointmentController,
+    AppointmentReminderController,
     DashboardController,
     DentalChairController,
     DentalChartController,
@@ -232,7 +233,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('backend/patients/search/ajax', [PatientController::class, 'search'])->name('backend.patients.search');
         Route::get('backend/patients/{patient}/medical-history', [PatientController::class, 'medicalHistory'])->name('backend.patients.medical_history');
         Route::patch('backend/patients/{patient}/toggle-status', [PatientController::class, 'toggleStatus'])->name('backend.patients.toggle-status');
-
+        Route::post('/patients/quick-add', [PatientController::class, 'quickAdd'])->name('backend.patients.quick-add');
 
         // Patient Families
         Route::resource('patient-families', PatientFamilyController::class)->names('backend.patient-families');
@@ -269,6 +270,18 @@ Route::middleware(['auth'])->group(function () {
         Route::get('appointments/walk-in', [AppointmentController::class, 'walkInForm'])->name('backend.appointments.walk-in');
         Route::post('appointments/walk-in', [AppointmentController::class, 'walkInStore'])->name('backend.appointments.walk-in.store');
         Route::resource('appointments', AppointmentController::class)->names('backend.appointments');
+
+
+        // Appointment Reminders
+        Route::prefix('reminders')->name('backend.reminders.')->group(function () {
+            Route::get('/', [AppointmentReminderController::class, 'index'])->name('index');
+            Route::get('/create', [AppointmentReminderController::class, 'create'])->name('create');
+            Route::post('/', [AppointmentReminderController::class, 'store'])->name('store');
+            Route::post('/bulk-send', [AppointmentReminderController::class, 'bulkSend'])->name('bulk-send');
+            Route::post('/{reminder}/send-now', [AppointmentReminderController::class, 'sendNow'])->name('send-now');
+            Route::get('/stats', [AppointmentReminderController::class, 'stats'])->name('stats');
+            Route::delete('/{reminder}', [AppointmentReminderController::class, 'destroy'])->name('destroy');
+        });
 
         // -----------------------------
         // Dental Chairs

@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class Appointment extends Model
 {
@@ -80,6 +83,11 @@ class Appointment extends Model
     public function treatment()
     {
         return $this->hasOne(Treatment::class);
+    }
+
+    public function reminders()
+    {
+        return $this->hasMany(AppointmentReminder::class);
     }
 
     // =========================
@@ -354,5 +362,162 @@ class Appointment extends Model
             'treatment_date' => $appointment->appointment_date->format('Y-m-d'),
             'chair_id' => $appointment->chair_id,
         ]);
+    }
+
+
+    // =========================
+    // APPOINTMENT REMINDER METHODS
+    // =========================
+    public function createReminder($type, $minutesBefore = null, $customMessage = null)
+    {
+        // Default reminder times based on type
+        $defaultTimes = [
+            'sms' => 24 * 60, // 24 hours
+            'email' => 48 * 60, // 48 hours
+            'push' => 60, // 1 hour
+        ];
+
+        $minutes = $minutesBefore ?? $defaultTimes[$type] ?? 24 * 60;
+
+        // Calculate scheduled time
+        $scheduledAt = Carbon::parse("{$this->appointment_date} {$this->appointment_time}")
+            ->subMinutes($minutes);
+
+        // Create message
+        $message = $customMessage ?? $this->generateReminderMessage($type);
+
+        return AppointmentReminder::create([
+            'appointment_id' => $this->id,
+            'reminder_type' => $type,
+            'message' => $message,
+            'scheduled_at' => $scheduledAt,
+            'status' => 'pending'
+        ]);
+    }
+
+    // Generate reminder message based on type
+    private function generateReminderMessage($type)
+    {
+        $doctorName = $this->doctor->user->name ?? 'Doctor';
+        $patientName = $this->patient->name ?? 'Patient';
+        $date = Carbon::parse($this->appointment_date)->format('M d, Y');
+        $time = Carbon::parse($this->appointment_time)->format('h:i A');
+        $typeName = ucfirst($this->appointment_type);
+
+        $baseMessage = "Dear {$patientName}, this is a reminder for your {$typeName} appointment with Dr. {$doctorName} on {$date} at {$time}.";
+
+        if ($type === 'sms') {
+            return substr($baseMessage . " Location: Dental Clinic. Reply YES to confirm.", 0, 160);
+        }
+
+        if ($type === 'email') {
+            return view('emails.appointment-reminder', [
+                'appointment' => $this,
+                'doctorName' => $doctorName,
+                'patientName' => $patientName,
+                'date' => $date,
+                'time' => $time,
+                'typeName' => $typeName
+            ])->render();
+        }
+
+        return $baseMessage;
+    }
+
+    // Send due reminders
+    public function sendReminders()
+    {
+        $pendingReminders = $this->reminders()->pending()->due()->get();
+
+        foreach ($pendingReminders as $reminder) {
+            try {
+                switch ($reminder->reminder_type) {
+                    case 'sms':
+                        $this->sendSmsReminder($reminder);
+                        break;
+                    case 'email':
+                        $this->sendEmailReminder($reminder);
+                        break;
+                    case 'push':
+                        $this->sendPushReminder($reminder);
+                        break;
+                }
+
+                $reminder->markAsSent(['sent_via' => 'system']);
+            } catch (\Exception $e) {
+                $reminder->markAsFailed($e->getMessage());
+                Log::error("Failed to send reminder {$reminder->id}: " . $e->getMessage());
+            }
+        }
+    }
+
+    // SMS sending logic (using a hypothetical SMS service)
+    private function sendSmsReminder($reminder)
+    {
+        $patientPhone = $this->patient->phone;
+        if (!$patientPhone) {
+            throw new \Exception("Patient phone number not available");
+        }
+
+        // Use your SMS service (Twilio, etc.)
+        // Example with Twilio:
+        // $twilio = new Client(config('services.twilio.sid'), config('services.twilio.token'));
+        // $twilio->messages->create(
+        //     $patientPhone,
+        //     ['from' => config('services.twilio.from'), 'body' => $reminder->message]
+        // );
+
+        // For now, just log
+        Log::info("SMS sent to {$patientPhone}: {$reminder->message}");
+    }
+
+    // Email sending logic (using Laravel's Mail)
+    private function sendEmailReminder($reminder)
+    {
+        $patientEmail = $this->patient->email;
+        if (!$patientEmail) {
+            throw new \Exception("Patient email not available");
+        }
+
+        // Check if patient has email notifications enabled (optional)
+        if ($this->patient->email_notifications === false) {
+            throw new \Exception("Patient has disabled email notifications");
+        }
+
+        try {
+            Mail::to($patientEmail)->send(new \App\Mail\AppointmentReminderMail($this, $reminder->message));
+
+            // Log the email sent
+            Log::info("Appointment reminder email sent to {$patientEmail} for appointment #{$this->id}");
+        } catch (\Exception $e) {
+            Log::error("Failed to send email reminder for appointment #{$this->id}: " . $e->getMessage());
+            throw $e; // Re-throw to handle in parent method
+        }
+    }
+
+    // Push notification sending logic
+    private function sendPushReminder($reminder)
+    {
+        // Implement push notification logic
+        // This could be for a mobile app
+        Log::info("Push notification sent for appointment {$this->id}");
+    }
+
+    // Get upcoming reminders
+    public function getUpcomingReminders()
+    {
+        return $this->reminders()
+            ->where('scheduled_at', '>', now())
+            ->orderBy('scheduled_at')
+            ->get();
+    }
+
+    // Get sent reminders
+    public function getSentReminders()
+    {
+        return $this->reminders()
+            ->sent()
+            ->orderBy('sent_at', 'desc')
+            ->get();
     }
 }

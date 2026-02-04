@@ -450,8 +450,6 @@ class AppointmentController extends Controller
         return view('backend.appointments.queue', compact('appointments', 'date'));
     }
 
-
-
     // =========================
     // RESCHEDULE APPOINTMENT
     // =========================

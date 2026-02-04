@@ -191,23 +191,32 @@ class PatientController extends Controller
         $request->validate([
             'full_name' => 'required|string|max:100',
             'phone' => 'required|string|max:20|unique:patients,phone',
+            'gender' => 'nullable|in:male,female,other',
+            'date_of_birth' => 'nullable|date',
         ]);
 
-        $patient = Patient::create([
+        $patientData = [
             'patient_code' => Patient::generatePatientCode(),
             'full_name' => $request->full_name,
             'phone' => $request->phone,
+            'gender' => $request->gender,
+            'date_of_birth' => $request->date_of_birth,
             'created_by' => auth()->id(),
             'updated_by' => auth()->id(),
-        ]);
+        ];
+
+        $patient = Patient::create($patientData);
 
         return response()->json([
             'success' => true,
+            'message' => 'Patient created successfully',
             'patient' => [
                 'id' => $patient->id,
                 'code' => $patient->patient_code,
                 'name' => $patient->full_name,
                 'phone' => $patient->phone,
+                'gender' => $patient->gender,
+                'date_of_birth' => $patient->date_of_birth ? $patient->date_of_birth->format('Y-m-d') : null,
             ]
         ]);
     }
