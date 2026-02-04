@@ -35,7 +35,7 @@
          LIST & MANAGEMENT ICONS
     ============================== --}}
     @case('list')
-        @include('components.icons.list')
+        @include('components.icons.list', ['class' => $iconClass])
     @break
 
     @case('folder')
@@ -46,7 +46,7 @@
          USER / DOCTOR / PATIENT ICONS
     ============================== --}}
     @case('User')
-        @include('components.icons.User')
+        @include('components.icons.User', ['class' => $iconClass])
     @break
 
     @case('User-Plus')
@@ -92,7 +92,7 @@
     @break
 
     @case('Calendar')
-        @include('components.icons.Calendar')
+        @include('components.icons.Calendar', ['class' => $iconClass])
     @break
 
     @case('Add-Appointment')
@@ -100,11 +100,11 @@
     @break
 
     @case('Today')
-        @include('components.icons.Today')
+        @include('components.icons.Today', ['class' => $iconClass])
     @break
 
     @case('Queue')
-        @include('components.icons.Queue')
+        @include('components.icons.Queue', ['class' => $iconClass])
     @break
 
     @case('TV')
@@ -149,7 +149,7 @@
          BUTTON / ACTION ICONS
     ============================== --}}
     @case('B_View')
-        @include('components.icons.Buttons.B_View')
+        @include('components.icons.Buttons.B_View', ['class' => $iconClass])
     @break
 
     @case('B_Edit')
@@ -161,7 +161,7 @@
     @break
 
     @case('B_Add')
-        @include('components.icons.Buttons.B_Add')
+        @include('components.icons.Buttons.B_Add', ['class' => $iconClass])
     @break
 
     @case('B_Export')
@@ -169,11 +169,11 @@
     @break
 
     @case('B_Reschedule')
-        @include('components.icons.Buttons.B_Reschedule')
+        @include('components.icons.Buttons.B_Reschedule', ['class' => $iconClass])
     @break
 
     @case('B_Tick')
-        @include('components.icons.Buttons.B_Tick')
+        @include('components.icons.Buttons.B_Tick', ['class' => $iconClass])
     @break
 
     @case('B_Cross')
@@ -181,7 +181,7 @@
     @break
 
     @case('B_Play')
-        @include('components.icons.Buttons.B_Play')
+        @include('components.icons.Buttons.B_Play', ['class' => $iconClass])
     @break
 
     @case('B_Print')
@@ -206,6 +206,10 @@
 
     @case('B_Pay')
         @include('components.icons.Buttons.B_Pay', ['class' => $iconClass])
+    @break
+
+    @case('B_Refresh')
+        @include('components.icons.Buttons.B_Refresh', ['class' => $iconClass])
     @break
 
     {{-- ==============================
@@ -233,6 +237,10 @@
 
     @case('Pending')
         @include('components.icons.Pending', ['class' => $iconClass])
+    @break
+
+    @case('Waiting')
+        @include('components.icons.Waiting', ['class' => $iconClass])
     @break
 
     {{-- ==============================

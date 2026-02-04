@@ -146,13 +146,15 @@
                             </td>
 
                             <td class="px-4 py-3 text-sm">
-                                <div class="font-semibold text-blue-600">{{ $referrerStats['total_referred'] }}</div>
+                                <div class="font-semibold text-blue-600">
+                                    {{ $referrer->total_referred }}
+                                </div>
                             </td>
 
                             <td class="px-4 py-3 text-sm">
                                 <span
                                     class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    {{ $referrerStats['active_patients'] }} Active
+                                    {{ $referrer->active_patients }} Active
                                 </span>
                             </td>
 
@@ -177,8 +179,8 @@
                                         class="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs"
                                         title="Patient Profile">
                                         @include('partials.sidebar-icon', [
-                                            'name' => 'B_User',
-                                            'class' => 'w-4 h-4',
+                                            'name' => 'User',
+                                            'class' => 'w-4 h-4 text-white',
                                         ])
                                     </a>
                                 </div>

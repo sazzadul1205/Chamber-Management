@@ -162,21 +162,30 @@
                                     value="{{ old('emergency_contact', $patient->emergency_contact) }}">
                             </div>
 
+
                             <!-- Referred By -->
-                            <div>
+                            <div class="relative">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Referred By
                                 </label>
-                                <select name="referred_by"
-                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Select Patient</option>
-                                    @foreach ($patients as $ref)
-                                        <option value="{{ $ref->id }}" @selected(old('referred_by', $patient->referred_by) == $ref->id)>
-                                            {{ $ref->patient_code }} - {{ $ref->full_name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+
+                                <input type="text" id="referred_by_search"
+                                    placeholder="Search by patient name, code, or phone" autocomplete="off"
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                    value="{{ optional($patients->firstWhere('id', old('referred_by', $patient->referred_by)))->patient_code
+                                        ? optional($patients->firstWhere('id', old('referred_by', $patient->referred_by)))->patient_code .
+                                            ' - ' .
+                                            optional($patients->firstWhere('id', old('referred_by', $patient->referred_by)))->full_name
+                                        : '' }}">
+
+                                <ul id="referred_by_results"
+                                    class="absolute z-50 w-full border border-gray-300 rounded-md mt-1 bg-white max-h-60 overflow-auto hidden">
+                                </ul>
+
+                                <input type="hidden" name="referred_by" id="referred_by_id"
+                                    value="{{ old('referred_by', $patient->referred_by) }}">
                             </div>
+
 
                             <!-- Status -->
                             <div>
@@ -233,7 +242,8 @@
 
                 <!-- FORM ACTIONS -->
                 <div class="px-6 pb-4 bg-gray-50 border-t border-gray-200">
-                    <x-back-submit-buttons back-url="{{ route('backend.patients.index') }}" submit-text="Update Patient" />
+                    <x-back-submit-buttons back-url="{{ route('backend.patients.index') }}"
+                        submit-text="Update Patient" />
                 </div>
             </form>
         </div>
@@ -265,4 +275,81 @@
             updateEmergency();
         });
     </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('referred_by_search');
+            const results = document.getElementById('referred_by_results');
+            const hiddenInput = document.getElementById('referred_by_id');
+            let debounceTimer = null;
+
+            function showMessage(message) {
+                results.innerHTML = `
+            <li class="px-3 py-2 text-sm text-gray-500">
+                ${message}
+            </li>
+        `;
+                results.classList.remove('hidden');
+            }
+
+            input.addEventListener('focus', () => {
+                if (!input.value.trim()) {
+                    showMessage('Start typing to search for a patient');
+                }
+            });
+
+            input.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                const query = input.value.trim();
+
+                if (!query) {
+                    hiddenInput.value = '';
+                    showMessage('Please enter a patient name, code, or phone');
+                    return;
+                }
+
+                debounceTimer = setTimeout(() => {
+                    fetch(`/api/patients?search=${encodeURIComponent(query)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            results.innerHTML = '';
+
+                            if (!data.length) {
+                                showMessage('No matching patients found');
+                                return;
+                            }
+
+                            data.forEach(patient => {
+                                const li = document.createElement('li');
+                                li.className =
+                                    'px-3 py-2 cursor-pointer text-sm hover:bg-blue-100';
+                                li.textContent =
+                                    `${patient.patient_code} - ${patient.full_name} (${patient.phone})`;
+
+                                li.addEventListener('click', () => {
+                                    input.value =
+                                        `${patient.patient_code} - ${patient.full_name}`;
+                                    hiddenInput.value = patient.id;
+                                    results.classList.add('hidden');
+                                });
+
+                                results.appendChild(li);
+                            });
+
+                            results.classList.remove('hidden');
+                        })
+                        .catch(() => {
+                            showMessage('Unable to load patients. Please try again.');
+                        });
+                }, 300);
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!results.contains(e.target) && e.target !== input) {
+                    results.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+
 @endsection

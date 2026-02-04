@@ -42,7 +42,8 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Full Name *
                                 </label>
-                                <input type="text" name="full_name" value="{{ old('full_name') }}" required placeholder="John Doe"
+                                <input type="text" name="full_name" value="{{ old('full_name') }}" required
+                                    placeholder="John Doe"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                             </div>
 
@@ -98,7 +99,8 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Email
                                 </label>
-                                <input type="email" name="email" value="{{ old('email') }}" placeholder="example@gmail.com"
+                                <input type="email" name="email" value="{{ old('email') }}"
+                                    placeholder="example@gmail.com"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                             </div>
 
@@ -128,16 +130,22 @@
                             </div>
 
 
-                            <!-- Referred By -->
-                            <div>
+                            {{-- Referred Bys --}}
+                            <div class="relative">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Referred By
                                 </label>
-                                <div id="referred-by-select" data-old="{{ old('referred_by') }}"></div>
-                                <input type="hidden" name="referred_by" id="referred_by_hidden"
-                                    value="{{ old('referred_by') }}">
-                            </div>
+                                <input type="text" id="referred_by_search" placeholder="Search patient..."
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                    autocomplete="off">
 
+                                <!-- Dropdown -->
+                                <ul id="referred_by_results"
+                                    class="absolute left-0 right-0 mt-1 border border-gray-300 rounded-md max-h-60 overflow-auto bg-white shadow-lg hidden z-50">
+                                </ul>
+
+                                <input type="hidden" name="referred_by" id="referred_by_id">
+                            </div>
 
                             <!-- Status -->
                             <div>
@@ -224,6 +232,80 @@
 
             updatePhone();
             updateEmergency();
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('referred_by_search');
+            const results = document.getElementById('referred_by_results');
+            const hiddenInput = document.getElementById('referred_by_id');
+            let timeout = null;
+
+            function searchPatients(query) {
+                fetch(`/api/patients?search=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        results.innerHTML = '';
+
+                        if (data.length === 0) {
+                            results.innerHTML =
+                                '<li class="px-3 py-2 text-gray-500 cursor-default">No results found</li>';
+                        } else {
+                            data.forEach(patient => {
+                                const li = document.createElement('li');
+                                li.className = "px-3 py-2 cursor-pointer hover:bg-blue-100";
+                                li.textContent =
+                                    `${patient.patient_code} - ${patient.full_name} (${patient.phone})`;
+                                li.addEventListener('click', () => {
+                                    input.value =
+                                        `${patient.patient_code} - ${patient.full_name}`;
+                                    hiddenInput.value = patient.id;
+                                    results.classList.add('hidden');
+                                });
+                                results.appendChild(li);
+                            });
+                        }
+
+                        results.classList.remove('hidden');
+                    });
+            }
+
+            function showPlaceholder() {
+                results.innerHTML =
+                    '<li class="px-3 py-2 text-gray-400 italic cursor-default">Start typing a patient’s name or code...</li>';
+                results.classList.remove('hidden');
+                hiddenInput.value = '';
+            }
+
+            input.addEventListener('input', function() {
+                clearTimeout(timeout);
+                const query = input.value.trim();
+
+                if (query.length < 1) {
+                    showPlaceholder();
+                    return;
+                }
+
+                timeout = setTimeout(() => {
+                    searchPatients(query);
+                }, 300); // debounce
+            });
+
+            input.addEventListener('focus', function() {
+                if (results.innerHTML === '') {
+                    showPlaceholder();
+                } else {
+                    results.classList.remove('hidden');
+                }
+            });
+
+            // Hide dropdown if click outside
+            document.addEventListener('click', function(e) {
+                if (!results.contains(e.target) && e.target !== input) {
+                    results.classList.add('hidden');
+                }
+            });
         });
     </script>
 

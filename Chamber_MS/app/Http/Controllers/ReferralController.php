@@ -34,9 +34,14 @@ class ReferralController extends Controller
         }
 
         // Get referral stats
-        $referrers = $query->withCount(['referredPatients'])
-            ->withSum('referredPatients', 'id') // Placeholder for more stats
-            ->orderBy('referred_patients_count', 'desc')
+        $referrers = $query
+            ->withCount([
+                'referredPatients as total_referred',
+                'referredPatients as active_patients' => function ($q) {
+                    $q->where('status', 'active');
+                },
+            ])
+            ->orderByDesc('total_referred')
             ->paginate(20);
 
         // Overall stats

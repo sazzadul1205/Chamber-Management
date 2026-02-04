@@ -233,6 +233,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('backend/patients/{patient}/medical-history', [PatientController::class, 'medicalHistory'])->name('backend.patients.medical_history');
         Route::patch('backend/patients/{patient}/toggle-status', [PatientController::class, 'toggleStatus'])->name('backend.patients.toggle-status');
 
+
         // Patient Families
         Route::resource('patient-families', PatientFamilyController::class)->names('backend.patient-families');
         Route::get('patient-families/generate-code', [PatientFamilyController::class, 'generateCode'])->name('backend.patient-families.generate-code');
