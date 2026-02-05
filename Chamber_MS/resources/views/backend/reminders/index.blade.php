@@ -17,7 +17,7 @@
                 <a href="{{ route('backend.reminders.stats') }}"
                     class="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-md font-medium transition">
                     @include('partials.sidebar-icon', [
-                        'name' => 'B_Chart',
+                        'name' => 'Status',
                         'class' => 'w-4 h-4 text-white',
                     ])
                     <span>View Stats</span>

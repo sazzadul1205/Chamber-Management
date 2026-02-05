@@ -99,7 +99,7 @@
                 [
                     'label' => 'Appointment Reminders',
                     'route' => 'backend.reminders.index',
-                    'icon' => 'bell',
+                    'icon' => 'Bell',
                     'roles' => ['Receptionist', 'Admin', 'Super Admin'],
                 ],
                 [

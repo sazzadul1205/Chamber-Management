@@ -123,6 +123,14 @@
         @include('components.icons.Treatment_Procedure')
     @break
 
+    @case('Bell')
+        @include('components.icons.Bell', ['class' => $iconClass])
+    @break
+
+    @case('Status')
+        @include('components.icons.Status', ['class' => $iconClass])
+    @break
+
     {{-- ==============================
          PRESCRIPTION ICONS
     ============================== --}}
