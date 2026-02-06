@@ -62,7 +62,11 @@
     @break
 
     @case('Family')
-        @include('components.icons.Family')
+        @include('components.icons.Family', ['class' => $iconClass])
+    @break
+
+    @case('Leave')
+        @include('components.icons.Leave', ['class' => $iconClass])
     @break
 
     {{-- ==============================

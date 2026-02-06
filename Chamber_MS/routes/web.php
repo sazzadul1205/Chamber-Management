@@ -125,9 +125,33 @@ Route::middleware(['auth'])->group(function () {
         // -----------------------------
         // Doctors Management
         // -----------------------------
-        Route::resource('doctors', DoctorController::class)->names('backend.doctors');
-        Route::get('doctors/generate-code', [DoctorController::class, 'generateCode'])->name('backend.doctors.generate-code');
-        Route::get('doctors/available', [DoctorController::class, 'getAvailable'])->name('backend.doctors.available');
+        Route::prefix('doctors')->middleware('auth')->group(function () {
+            // Utilities
+            Route::get('generate-code', [DoctorController::class, 'generateCode'])->name('backend.doctors.generate-code');
+            Route::get('check-availability', [DoctorController::class, 'checkAvailability'])->name('backend.doctors.check-availability');
+
+            // Leave management
+            Route::get('leave-requests', [DoctorController::class, 'leaveRequests'])->name('backend.doctors.leave-requests');
+            Route::get('my-leaves', [DoctorController::class, 'myLeaves'])->name('backend.doctors.my-leaves');
+            Route::post('apply-leave', [DoctorController::class, 'applyLeave'])->name('backend.doctors.apply-leave');
+
+            // Leave actions (operate on LEAVE, not doctor)
+            Route::prefix('leaves')->group(function () {
+                Route::post('{leave}/process', [DoctorController::class, 'processLeave'])->name('backend.doctors.process-leave');
+                Route::post('{leave}/cancel', [DoctorController::class, 'cancelLeave'])->name('backend.doctors.cancel-leave');
+            });
+        });
+
+
+        // Doctor-specific routes (need doctor parameter)
+        Route::prefix('doctors/{doctor}')->middleware('auth')->group(function () {
+            Route::get('schedule-management', [DoctorController::class, 'scheduleManagement'])->name('backend.doctors.schedule-management');
+            Route::post('update-schedule', [DoctorController::class, 'updateSchedule'])->name('backend.doctors.update-schedule');
+            Route::get('calendar', [DoctorController::class, 'calendar'])->name('backend.doctors.calendar');
+        });
+
+        // Resource routes (CRUD)
+        Route::resource('doctors', DoctorController::class)->names('backend.doctors')->middleware('auth');
 
         // -----------------------------
         // Prescriptions (Doctors only)

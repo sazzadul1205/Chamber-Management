@@ -131,18 +131,24 @@
                     'route' => 'backend.doctors.index',
                     'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
-                // [
-                //     'label' => 'Doctor Schedule',
-                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
-                // ],
-                // [
-                //     'label' => 'Leave Management',
-                //     'roles' => ['Admin', 'Super Admin']
-                // ],
-                // [
-                //     'label' => 'Commission Reports',
-                //     'roles' => ['Admin', 'Super Admin', 'Accountant']
-                // ],
+                [
+                    'label' => 'Leave Requests',
+                    'icon' => 'Leave',
+                    'route' => 'backend.doctors.leave-requests',
+                    'roles' => ['Super Admin', 'Admin'],
+                ],
+                [
+                    'label' => 'My Leaves',
+                    'icon' => 'Vacation',
+                    'route' => 'backend.doctors.my-leaves',
+                    'roles' => ['Doctor'],
+                ],
+                [
+                    'label' => 'My Calendar',
+                    'icon' => 'Calendar',
+                    'route' => 'backend.doctors.calendar',
+                    'roles' => ['Doctor'],
+                ],
             ],
         ],
 
