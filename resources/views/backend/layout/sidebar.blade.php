@@ -56,15 +56,67 @@
                     'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
                 ],
                 [
+                    'label' => 'Edit Patient',
+                    'icon' => 'B_Edit',
+                    'route' => 'backend.patients.edit',
+                    'params' => ['patient'], // Matches {patient} in route
+                    'type' => 'current-page-indicator',
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
+                ],
+                [
+                    'label' => 'Patient Medical History',
+                    'icon' => 'B_Medical',
+                    'route' => 'backend.patients.medical_history',
+                    'params' => ['patient'], // Matches {patient} in route
+                    'type' => 'current-page-indicator',
+                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
+                ],
+                [
+                    'label' => 'Create Family',
+                    'icon' => 'B_Add',
+                    'route' => 'backend.patient-families.create',
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin'],
+                ],
+                [
                     'label' => 'Family Management',
                     'icon' => 'Family',
                     'route' => 'backend.patient-families.index',
                     'roles' => ['Receptionist', 'Admin', 'Super Admin'],
                 ],
                 [
+                    'label' => 'Edit Family',
+                    'icon' => 'B_Edit',
+                    'route' => 'backend.patient-families.edit',
+                    'params' => ['patientFamily'], // Matches {patientFamily} in route
+                    'type' => 'current-page-indicator',
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
+                ],
+                [
+                    'label' => 'View Family Details',
+                    'icon' => 'B_View',
+                    'route' => 'backend.patient-families.show',
+                    'params' => ['patientFamily'], // Matches {patientFamily} in route
+                    'type' => 'current-page-indicator',
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
+                ],
+                [
                     'label' => 'Referral Tracking',
                     'icon' => 'Referral',
                     'route' => 'backend.referrals.index',
+                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
+                ],
+                [
+                    'label' => 'View Referral Details',
+                    'icon' => 'B_View',
+                    'route' => 'backend.referrals.show',
+                    'params' => ['patient'], // Matches {patient} in referral route
+                    'type' => 'current-page-indicator',
+                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
+                ],
+                [
+                    'label' => 'Referral Report',
+                    'icon' => 'B_Report',
+                    'route' => 'backend.referrals.report',
                     'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
                 ],
             ],
@@ -497,13 +549,11 @@
     ];
 @endphp
 
-@php
-    $currentRoute = Route::currentRouteName();
-@endphp
 
 
 @php
     $currentRoute = Route::currentRouteName();
+    $currentParameters = Route::current()->parameters();
     $openGroupKey = null;
 
     foreach ($menu as $key => $item) {
@@ -511,15 +561,42 @@
             foreach ($item['items'] as $sub) {
                 if (isset($sub['roles']) && in_array($userRoleName, $sub['roles'])) {
                     $subRoute = $sub['route'] ?? ($sub['link'] ?? '');
-                    if ($subRoute && $subRoute === $currentRoute) {
-                        $openGroupKey = $key;
-                        break 2;
+
+                    // Check for current-page-indicator items
+                    if (isset($sub['type']) && $sub['type'] === 'current-page-indicator') {
+                        // For edit pages with parameters, check if route name matches
+                        if ($subRoute === $currentRoute) {
+                            // Check if we have the required parameter
+                            $hasRequiredParam = true;
+                            if (isset($sub['params'])) {
+                                $paramNames = is_array($sub['params']) ? $sub['params'] : [$sub['params']];
+                                foreach ($paramNames as $paramName) {
+                                    if (!isset($currentParameters[$paramName])) {
+                                        $hasRequiredParam = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if ($hasRequiredParam) {
+                                $openGroupKey = $key;
+                                break 2;
+                            }
+                        }
+                    } else {
+                        // Regular route check
+                        if ($subRoute && $subRoute === $currentRoute) {
+                            $openGroupKey = $key;
+                            break 2;
+                        }
                     }
                 }
             }
         }
     }
 @endphp
+
+
+
 
 
 <div class="flex flex-col h-full">
@@ -546,8 +623,31 @@
                         }
 
                         $subRoute = $sub['route'] ?? ($sub['link'] ?? '');
-                        if ($subRoute && $subRoute === $currentRoute) {
-                            $groupActive = true;
+
+                        // Check for current-page-indicator items
+                        if (isset($sub['type']) && $sub['type'] === 'current-page-indicator') {
+                            if ($subRoute === $currentRoute) {
+                                $hasRequiredParam = true;
+                                if (isset($sub['params'])) {
+                                    $paramNames = is_array($sub['params']) ? $sub['params'] : [$sub['params']];
+                                    foreach ($paramNames as $paramName) {
+                                        if (!isset($currentParameters[$paramName])) {
+                                            $hasRequiredParam = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if ($hasRequiredParam) {
+                                    $groupActive = true;
+                                    break;
+                                }
+                            }
+                        } else {
+                            // Regular route check
+                            if ($subRoute && $subRoute === $currentRoute) {
+                                $groupActive = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -594,16 +694,68 @@
                                         }
 
                                         $subRoute = $sub['route'] ?? ($sub['link'] ?? '');
-                                        $active = $subRoute && $subRoute === $currentRoute;
-                                        $href = $subRoute ? route($subRoute) : '#';
+
+                                        // NEW: Check for current-page-indicator type
+                                        if (isset($sub['type']) && $sub['type'] === 'current-page-indicator') {
+                                            // Only show if we're on the exact edit page with the right parameters
+    $shouldShow = false;
+    $isActive = false;
+
+    if ($subRoute === $currentRoute) {
+        $hasRequiredParam = true;
+        if (isset($sub['params'])) {
+            $paramNames = is_array($sub['params'])
+                ? $sub['params']
+                : [$sub['params']];
+            foreach ($paramNames as $paramName) {
+                if (!isset($currentParameters[$paramName])) {
+                    $hasRequiredParam = false;
+                    break;
+                }
+            }
+        }
+        if ($hasRequiredParam) {
+            $shouldShow = true;
+            $isActive = true;
+        }
+    }
+
+    // Skip if we shouldn't show this indicator
+                                            if (!$shouldShow) {
+                                                continue;
+                                            }
+
+                                            $href = '#';
+                                            $isDisabled = true;
+                                        } else {
+                                            // Regular menu item
+                                            $active = $subRoute && $subRoute === $currentRoute;
+                                            $href = $subRoute ? route($subRoute) : '#';
+                                            $isActive = $active;
+                                            $isDisabled = false;
+                                        }
                                     @endphp
-                                    <a href="{{ $href }}"
-                                        class="flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 {{ $active ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
-                                        @include('partials/sidebar-icon', [
-                                            'name' => $sub['icon'] ?? 'default',
-                                        ])
-                                        <span>{{ $sub['label'] }}</span>
-                                    </a>
+
+                                    @if (isset($sub['type']) && $sub['type'] === 'current-page-indicator')
+                                        <!-- Current Page Indicator (Non-clickable) -->
+                                        <div
+                                            class="flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 bg-blue-50 text-blue-600 font-semibold cursor-default opacity-75">
+                                            @include('partials/sidebar-icon', [
+                                                'name' => $sub['icon'] ?? 'default',
+                                            ])
+                                            <span>{{ $sub['label'] }}</span>
+
+                                        </div>
+                                    @else
+                                        <!-- Regular Menu Item -->
+                                        <a href="{{ $href }}"
+                                            class="flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 {{ $isActive ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
+                                            @include('partials/sidebar-icon', [
+                                                'name' => $sub['icon'] ?? 'default',
+                                            ])
+                                            <span>{{ $sub['label'] }}</span>
+                                        </a>
+                                    @endif
                                 @endforeach
                             </div>
                         </div>
@@ -624,6 +776,7 @@
         @endforeach
     </nav>
 </div>
+
 
 <!-- JS -->
 <script>

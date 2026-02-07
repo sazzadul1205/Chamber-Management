@@ -69,6 +69,10 @@
         @include('components.icons.Leave', ['class' => $iconClass])
     @break
 
+    @case('Crown')
+        @include('components.icons.Crown', ['class' => $iconClass])
+    @break
+
     {{-- ==============================
          DENTAL / TREATMENT ICONS
     ============================== --}}
@@ -153,6 +157,14 @@
         @include('components.icons.Payment')
     @break
 
+    @case('Invoice')
+        @include('components.icons.Invoice', ['class' => $iconClass])
+    @break
+
+    @case('Report')
+        @include('components.icons.Report', ['class' => $iconClass])
+    @break
+
     @case('Referral')
         @include('components.icons.Referral', ['class' => $iconClass])
     @break
@@ -165,11 +177,11 @@
     @break
 
     @case('B_Edit')
-        @include('components.icons.Buttons.B_Edit')
+        @include('components.icons.Buttons.B_Edit', ['class' => $iconClass])
     @break
 
     @case('B_Delete')
-        @include('components.icons.Buttons.B_Delete')
+        @include('components.icons.Buttons.B_Delete', ['class' => $iconClass])
     @break
 
     @case('B_Add')
@@ -189,7 +201,7 @@
     @break
 
     @case('B_Cross')
-        @include('components.icons.Buttons.B_Cross')
+        @include('components.icons.Buttons.B_Cross', ['class' => $iconClass])
     @break
 
     @case('B_Play')
@@ -201,7 +213,7 @@
     @break
 
     @case('B_Back')
-        @include('components.icons.Buttons.B_Back')
+        @include('components.icons.Buttons.B_Back', ['class' => $iconClass])
     @break
 
     @case('B_Pause')
