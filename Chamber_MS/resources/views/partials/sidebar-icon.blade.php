@@ -120,7 +120,7 @@
     @break
 
     @case('Treatment_Session')
-        @include('components.icons.Treatment_Session')
+        @include('components.icons.Treatment_Session', ['class' => $iconClass])
     @break
 
     @case('Treatment_Procedure')
