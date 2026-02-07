@@ -44,7 +44,24 @@ class TreatmentController extends Controller
         $patients = Patient::active()->get();
         $doctors = Doctor::with('user')->active()->get();
 
-        return view('backend.treatments.index', compact('treatments', 'patients', 'doctors'));
+        // Calculate stats
+        $totalCount = Treatment::count();
+        $inProgressCount = Treatment::where('status', 'in_progress')->count();
+        $completedCount = Treatment::where('status', 'completed')->count();
+
+        // Calculate total revenue from completed treatments
+        $totalRevenue = Treatment::where('status', 'completed')
+            ->sum('total_actual_cost') ?? 0;
+
+        return view('backend.treatments.index', compact(
+            'treatments',
+            'patients',
+            'doctors',
+            'totalCount',
+            'inProgressCount',
+            'completedCount',
+            'totalRevenue'
+        ));
     }
 
     // =========================
