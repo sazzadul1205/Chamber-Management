@@ -64,10 +64,10 @@
                     'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
                 ],
                 [
-                    'label' => 'Patient Medical History',
-                    'icon' => 'B_Medical',
-                    'route' => 'backend.patients.medical_history',
-                    'params' => ['patient'], // Matches {patient} in route
+                    'label' => 'Patient Details',
+                    'icon' => 'B_View',
+                    'route' => 'backend.patients.show',
+                    'params' => ['patient'],
                     'type' => 'current-page-indicator',
                     'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
                 ],
@@ -87,7 +87,7 @@
                     'label' => 'Edit Family',
                     'icon' => 'B_Edit',
                     'route' => 'backend.patient-families.edit',
-                    'params' => ['patientFamily'], // Matches {patientFamily} in route
+                    'params' => ['patient_family'],
                     'type' => 'current-page-indicator',
                     'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
                 ],
@@ -95,7 +95,7 @@
                     'label' => 'View Family Details',
                     'icon' => 'B_View',
                     'route' => 'backend.patient-families.show',
-                    'params' => ['patientFamily'], // Matches {patientFamily} in route
+                    'params' => ['patient_family'],
                     'type' => 'current-page-indicator',
                     'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
                 ],
@@ -115,7 +115,7 @@
                 ],
                 [
                     'label' => 'Referral Report',
-                    'icon' => 'B_Report',
+                    'icon' => 'Report',
                     'route' => 'backend.referrals.report',
                     'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
                 ],

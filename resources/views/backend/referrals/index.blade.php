@@ -13,7 +13,7 @@
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('backend.referrals.report') }}"
                     class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium transition">
-                    @include('partials.sidebar-icon', ['name' => 'B_Report', 'class' => 'w-4 h-4'])
+                    @include('partials.sidebar-icon', ['name' => 'Report', 'class' => 'w-4 h-4'])
                     <span>Generate Report</span>
                 </a>
             </div>

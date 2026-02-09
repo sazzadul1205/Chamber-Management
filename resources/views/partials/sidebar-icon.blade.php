@@ -209,7 +209,7 @@
     @break
 
     @case('B_Print')
-        @include('components.icons.Buttons.B_Print')
+        @include('components.icons.Buttons.B_Print', ['class' => $iconClass])
     @break
 
     @case('B_Back')

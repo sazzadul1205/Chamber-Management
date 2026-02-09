@@ -7,21 +7,18 @@
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-3">
             <div>
                 <h2 class="text-3xl font-bold text-gray-900">Referrer Details</h2>
-                <div class="flex items-center gap-2 mt-1 text-sm">
-                    <a href="{{ route('backend.referrals.index') }}" class="text-blue-600 hover:text-blue-800">
-                        <i class="fas fa-arrow-left mr-1"></i> Back to Referral Tracking
-                    </a>
-                    <span class="text-gray-400">•</span>
-                    <a href="{{ route('backend.patients.show', $patient) }}" class="text-gray-600 hover:text-gray-800">
-                        View Patient Profile
-                    </a>
-                </div>
             </div>
 
             <div class="flex flex-wrap gap-2">
+                <a href="{{ route('backend.referrals.index') }}"
+                    class="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md font-medium transition">
+                    @include('partials.sidebar-icon', ['name' => 'B_Back', 'class' => 'w-4 h-4'])
+                    <span>Back to Tracking</span>
+                </a>
+
                 <button onclick="window.print()"
                     class="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md font-medium transition">
-                    @include('partials.sidebar-icon', ['name' => 'B_Print', 'class' => 'w-4 h-4'])
+                    @include('partials.sidebar-icon', ['name' => 'B_Print', 'class' => 'w-4 h-4 text-black'])
                     <span>Print Report</span>
                 </button>
             </div>
