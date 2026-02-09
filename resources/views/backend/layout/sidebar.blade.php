@@ -526,22 +526,14 @@
                 ],
                 [
                     'label' => 'Backup & Restore',
+                    'icon' => 'Backup',
+                    'route' => 'backend.backup.index',
                     'roles' => ['Super Admin', 'Admin'],
                 ],
                 [
                     'label' => 'Audit Logs',
-                    'roles' => ['Super Admin', 'Admin'],
-                ],
-                [
-                    'label' => 'Notifications',
-                    'roles' => ['Super Admin', 'Admin'],
-                ],
-                [
-                    'label' => 'Holiday Management',
-                    'roles' => ['Super Admin', 'Admin'],
-                ],
-                [
-                    'label' => 'Clinic Configuration',
+                    'icon' => 'list',
+                    'route' => 'backend.audit.index',
                     'roles' => ['Super Admin', 'Admin'],
                 ],
             ],

@@ -9,15 +9,28 @@ use Carbon\Carbon;
 
 class AppointmentReminderController extends Controller
 {
-  // =========================
-  // REMINDERS INDEX PAGE
-  // =========================
+  /**
+   * =========================================================================
+   * REMINDERS INDEX PAGE
+   * =========================================================================
+   * 
+   * Display all appointment reminders with filtering options.
+   * Supports filtering by:
+   * - Status (pending, sent, failed)
+   * - Reminder type (sms, email, push, in_app)
+   * - Date range
+   * - Specific appointment
+   * 
+   * @param Request $request HTTP request with filter parameters
+   * @return \Illuminate\View\View Reminders index page
+   */
   public function index(Request $request)
   {
+    // Build base query with appointment relationships
     $query = AppointmentReminder::with(['appointment.patient', 'appointment.doctor.user'])
       ->orderBy('scheduled_at', 'desc');
 
-    // Filters
+    // Apply filters based on request parameters
     if ($request->filled('status')) {
       $query->where('status', $request->status);
     }
@@ -40,24 +53,36 @@ class AppointmentReminderController extends Controller
 
     $reminders = $query->paginate(50);
 
+    // Filter options for dropdowns
     $statuses = ['pending', 'sent', 'failed'];
     $types = ['sms', 'email', 'push', 'in_app'];
 
     return view('backend.reminders.index', compact('reminders', 'statuses', 'types'));
   }
 
-  // =========================
-  // CREATE REMINDER FORM
-  // =========================
+  /**
+   * =========================================================================
+   * CREATE REMINDER FORM
+   * =========================================================================
+   * 
+   * Display form for creating a new reminder.
+   * Pre-selects appointment if appointment_id is provided.
+   * Only shows future scheduled appointments.
+   * 
+   * @param Request $request HTTP request with optional appointment_id
+   * @return \Illuminate\View\View Reminder creation form
+   */
   public function create(Request $request)
   {
     $appointmentId = $request->appointment_id;
     $appointment = null;
 
+    // Load specific appointment if ID provided
     if ($appointmentId) {
       $appointment = Appointment::with(['patient', 'doctor.user'])->findOrFail($appointmentId);
     }
 
+    // Get all future scheduled appointments for dropdown
     $appointments = Appointment::with(['patient', 'doctor.user'])
       ->whereIn('status', ['scheduled'])
       ->whereDate('appointment_date', '>=', today())
@@ -65,6 +90,7 @@ class AppointmentReminderController extends Controller
       ->orderBy('appointment_time')
       ->get();
 
+    // Reminder type options with display names
     $types = [
       'sms' => 'SMS Text Message',
       'email' => 'Email',
@@ -75,59 +101,78 @@ class AppointmentReminderController extends Controller
     return view('backend.reminders.create', compact('appointments', 'appointment', 'types'));
   }
 
-  // =========================
-  // STORE NEW REMINDER
-  // =========================
+  /**
+   * =========================================================================
+   * STORE NEW REMINDER
+   * =========================================================================
+   * 
+   * Validate and store a new appointment reminder.
+   * Validates:
+   * - Appointment existence
+   * - Reminder type
+   * - Minutes before appointment (5 minutes to 7 days)
+   * - Custom message length
+   * 
+   * Calculates scheduled time based on minutes_before or sends immediately.
+   * Prevents reminders for past appointments.
+   * 
+   * @param Request $request HTTP request with reminder data
+   * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+   */
   public function store(Request $request)
   {
     $request->validate([
-      'appointment_id' => 'required|exists:appointments,id',
-      'reminder_type' => 'required|in:sms,email,push,in_app',
-      'minutes_before' => 'required|integer|min:5|max:10080', // max 7 days
-      'custom_message' => 'nullable|string|max:500',
-      'send_immediately' => 'boolean'
+      'appointment_id'    => 'required|exists:appointments,id',
+      'reminder_type'     => 'required|in:sms,email,push,in_app',
+      'minutes_before'    => 'required|integer|min:5|max:10080', // 5 minutes to 7 days (10080 minutes)
+      'custom_message'    => 'nullable|string|max:500',
+      'send_immediately'  => 'boolean'
     ]);
 
     $appointment = Appointment::findOrFail($request->appointment_id);
 
-    // Check if appointment is in the future
-    // FIX: Create proper datetime object
+    // -------------------------------
+    // VALIDATE APPOINTMENT DATE/TIME
+    // -------------------------------
+    // Create proper datetime object from appointment date and time
     $appointmentDateTime = Carbon::parse($appointment->appointment_date)
       ->setTimeFromTimeString($appointment->appointment_time);
-
-    // Alternative if appointment_time is already a time string:
-    // $appointmentDateTime = Carbon::parse($appointment->appointment_date . ' ' . $appointment->appointment_time);
 
     if ($appointmentDateTime->isPast()) {
       return back()->with('error', 'Cannot set reminders for past appointments.');
     }
 
-    // Calculate scheduled time
+    // -------------------------------
+    // CALCULATE SCHEDULED TIME
+    // -------------------------------
     if ($request->send_immediately) {
       $scheduledAt = now();
     } else {
       $scheduledAt = $appointmentDateTime->copy()->subMinutes($request->minutes_before);
     }
 
-    // Create reminder
+    // -------------------------------
+    // CREATE REMINDER RECORD
+    // -------------------------------
     $reminder = AppointmentReminder::create([
       'appointment_id' => $appointment->id,
-      'reminder_type' => $request->reminder_type,
-      'message' => $request->custom_message ?? $this->generateMessage($appointment, $request->reminder_type),
-      'status' => $request->send_immediately ? 'pending' : 'pending',
-      'scheduled_at' => $scheduledAt,
-      'meta' => [
-        'minutes_before' => $request->minutes_before,
-        'custom_message' => $request->filled('custom_message'),
-        'created_by' => auth()->id(),
-        'created_at' => now()->toDateTimeString()
+      'reminder_type'  => $request->reminder_type,
+      'message'        => $request->custom_message ?? $this->generateMessage($appointment, $request->reminder_type),
+      'status'         => 'pending',
+      'scheduled_at'   => $scheduledAt,
+      'meta'           => [
+        'minutes_before'   => $request->minutes_before,
+        'custom_message'   => $request->filled('custom_message'),
+        'created_by'       => auth()->id(),
+        'created_at'       => now()->toDateTimeString()
       ]
     ]);
 
-    // If sending immediately, trigger sending
+    // -------------------------------
+    // HANDLE IMMEDIATE SEND REQUEST
+    // -------------------------------
     if ($request->send_immediately) {
       try {
-        // Make sure we pass the reminder to send
         $appointment->sendReminders();
         return redirect()->route('backend.reminders.index')
           ->with('success', 'Reminder sent successfully.');
@@ -141,14 +186,24 @@ class AppointmentReminderController extends Controller
       ->with('success', 'Reminder scheduled successfully for ' . $scheduledAt->format('M d, Y h:i A'));
   }
 
-  // =========================
-  // SEND REMINDER MANUALLY
-  // =========================
+  /**
+   * =========================================================================
+   * SEND REMINDER MANUALLY
+   * =========================================================================
+   * 
+   * Manually trigger sending of a pending reminder.
+   * Routes to appropriate sending method based on reminder type.
+   * Updates reminder status to sent or failed.
+   * 
+   * @param AppointmentReminder $reminder Reminder model instance
+   * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+   */
   public function sendNow(AppointmentReminder $reminder)
   {
     try {
       $appointment = $reminder->appointment;
 
+      // Route to appropriate sending method
       switch ($reminder->reminder_type) {
         case 'sms':
           $appointment->sendSmsReminder($reminder);
@@ -161,7 +216,11 @@ class AppointmentReminderController extends Controller
           break;
       }
 
-      $reminder->markAsSent(['sent_manually_by' => auth()->id(), 'sent_at' => now()]);
+      // Mark as sent with metadata
+      $reminder->markAsSent([
+        'sent_manually_by' => auth()->id(),
+        'sent_at' => now()
+      ]);
 
       return back()->with('success', 'Reminder sent successfully.');
     } catch (\Exception $e) {
@@ -170,9 +229,18 @@ class AppointmentReminderController extends Controller
     }
   }
 
-  // =========================
-  // BULK SEND REMINDERS
-  // =========================
+  /**
+   * =========================================================================
+   * BULK SEND REMINDERS
+   * =========================================================================
+   * 
+   * Send multiple reminders in bulk.
+   * Only processes pending reminders.
+   * Tracks success and failure counts.
+   * 
+   * @param Request $request HTTP request with reminder IDs array
+   * @return \Illuminate\Http\RedirectResponse Redirect with summary results
+   */
   public function bulkSend(Request $request)
   {
     $request->validate([
@@ -186,10 +254,12 @@ class AppointmentReminderController extends Controller
     foreach ($request->reminder_ids as $reminderId) {
       $reminder = AppointmentReminder::find($reminderId);
 
+      // Process only pending reminders
       if ($reminder && $reminder->status === 'pending') {
         try {
           $appointment = $reminder->appointment;
 
+          // Send based on type (only SMS and email supported in bulk)
           switch ($reminder->reminder_type) {
             case 'sms':
               $appointment->sendSmsReminder($reminder);
@@ -199,7 +269,10 @@ class AppointmentReminderController extends Controller
               break;
           }
 
-          $reminder->markAsSent(['bulk_sent' => true, 'sent_by' => auth()->id()]);
+          $reminder->markAsSent([
+            'bulk_sent' => true,
+            'sent_by' => auth()->id()
+          ]);
           $sent++;
         } catch (\Exception $e) {
           $reminder->markAsFailed($e->getMessage());
@@ -211,9 +284,18 @@ class AppointmentReminderController extends Controller
     return back()->with('success', "Sent: {$sent}, Failed: {$failed}");
   }
 
-  // =========================
-  // RESCHEDULE REMINDER
-  // =========================
+  /**
+   * =========================================================================
+   * RESCHEDULE REMINDER
+   * =========================================================================
+   * 
+   * Change the scheduled time for a reminder.
+   * Resets status to pending for the new scheduled time.
+   * 
+   * @param Request $request HTTP request with new_time parameter
+   * @param AppointmentReminder $reminder Reminder model instance
+   * @return \Illuminate\Http\RedirectResponse Redirect with success message
+   */
   public function reschedule(Request $request, AppointmentReminder $reminder)
   {
     $request->validate([
@@ -228,9 +310,17 @@ class AppointmentReminderController extends Controller
     return back()->with('success', 'Reminder rescheduled successfully.');
   }
 
-  // =========================
-  // DELETE REMINDER
-  // =========================
+  /**
+   * =========================================================================
+   * DELETE REMINDER
+   * =========================================================================
+   * 
+   * Delete a reminder record.
+   * Prevents deletion of already sent reminders.
+   * 
+   * @param AppointmentReminder $reminder Reminder model instance
+   * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+   */
   public function destroy(AppointmentReminder $reminder)
   {
     if ($reminder->status === 'sent') {
@@ -242,19 +332,31 @@ class AppointmentReminderController extends Controller
     return back()->with('success', 'Reminder deleted successfully.');
   }
 
-  // =========================
-  // REMINDER STATS
-  // =========================
+  /**
+   * =========================================================================
+   * REMINDER STATISTICS
+   * =========================================================================
+   * 
+   * Display reminder statistics including:
+   * - Total counts by status
+   * - Daily statistics for past 7 days
+   * - Distribution by reminder type
+   * 
+   * @return \Illuminate\View\View Statistics dashboard
+   */
   public function stats()
   {
+    // Overall statistics
     $stats = [
-      'total' => AppointmentReminder::count(),
-      'sent' => AppointmentReminder::sent()->count(),
+      'total'   => AppointmentReminder::count(),
+      'sent'    => AppointmentReminder::sent()->count(),
       'pending' => AppointmentReminder::pending()->count(),
-      'failed' => AppointmentReminder::failed()->count(),
+      'failed'  => AppointmentReminder::failed()->count(),
     ];
 
-    // Daily stats for the past 7 days
+    // -------------------------------
+    // DAILY STATISTICS (PAST 7 DAYS)
+    // -------------------------------
     $dailyStats = AppointmentReminder::selectRaw('
                 DATE(created_at) as date,
                 COUNT(*) as total,
@@ -266,7 +368,9 @@ class AppointmentReminderController extends Controller
       ->orderBy('date')
       ->get();
 
-    // Type distribution
+    // -------------------------------
+    // TYPE DISTRIBUTION STATISTICS
+    // -------------------------------
     $typeStats = AppointmentReminder::selectRaw('
                 reminder_type,
                 COUNT(*) as total,
@@ -278,9 +382,18 @@ class AppointmentReminderController extends Controller
     return view('backend.reminders.stats', compact('stats', 'dailyStats', 'typeStats'));
   }
 
-  // =========================
-  // GENERATE MESSAGE
-  // =========================
+  /**
+   * =========================================================================
+   * GENERATE DEFAULT REMINDER MESSAGE
+   * =========================================================================
+   * 
+   * Generate a default reminder message based on appointment details
+   * and reminder type.
+   * 
+   * @param Appointment $appointment Appointment model instance
+   * @param string $type Reminder type (sms, email, push, in_app)
+   * @return string Generated message content
+   */
   private function generateMessage($appointment, $type)
   {
     $doctorName = $appointment->doctor->user->name ?? 'Doctor';
@@ -289,11 +402,13 @@ class AppointmentReminderController extends Controller
     $time = Carbon::parse($appointment->appointment_time)->format('h:i A');
     $typeName = ucfirst($appointment->appointment_type);
 
+    // Generate message based on reminder type
     if ($type === 'sms') {
       return "Reminder: {$typeName} appt with Dr. {$doctorName} on {$date} at {$time}. Reply YES to confirm.";
     }
 
     if ($type === 'email') {
+      // Return email template content
       return view('emails.appointment-reminder', [
         'appointment' => $appointment,
         'doctorName' => $doctorName,
@@ -304,6 +419,7 @@ class AppointmentReminderController extends Controller
       ])->render();
     }
 
+    // Default message for push and in-app notifications
     return "Appointment Reminder: {$typeName} with Dr. {$doctorName} on {$date} at {$time}";
   }
 }

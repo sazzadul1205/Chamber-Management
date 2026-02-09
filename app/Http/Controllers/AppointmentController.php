@@ -7,18 +7,30 @@ use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\DentalChair;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class AppointmentController extends Controller
 {
-    // =========================
-    // LIST APPOINTMENTS
-    // =========================
+    /**
+     * =========================================================================
+     * LIST APPOINTMENTS WITH FILTERS
+     * =========================================================================
+     * 
+     * Display all appointments with optional filtering options for
+     * - Search term
+     * - Appointment status
+     * - Doctor selection
+     * - Date range (defaults to today and future)
+     * - Appointment type
+     * 
+     * @param Request $request HTTP request containing filter parameters
+     * @return \Illuminate\View\View Appointments index page with filtered results
+     */
     public function index(Request $request)
     {
+        // Build base query with relationships
         $query = Appointment::with(['patient', 'doctor.user', 'chair']);
 
-        // Filters
+        // Apply filters based on request parameters
         if ($request->filled('search')) {
             $query->search($request->search);
         }
@@ -31,6 +43,7 @@ class AppointmentController extends Controller
             $query->where('doctor_id', $request->doctor_id);
         }
 
+        // Date filter (default to today and future appointments)
         if ($request->filled('date')) {
             $query->whereDate('appointment_date', $request->date);
         } else {
@@ -41,19 +54,28 @@ class AppointmentController extends Controller
             $query->where('appointment_type', $request->type);
         }
 
+        // Execute query with pagination
         $appointments = $query->orderBy('appointment_date', 'desc')
             ->orderBy('appointment_time')
             ->paginate(20);
 
+        // Get dropdown data for filters
         $doctors = Doctor::with('user')->active()->get();
         $patients = Patient::active()->get();
 
         return view('backend.appointments.index', compact('appointments', 'doctors', 'patients'));
     }
 
-    // =========================
-    // CREATE APPOINTMENT FORM
-    // =========================
+    /**
+     * =========================================================================
+     * CREATE APPOINTMENT FORM
+     * =========================================================================
+     * 
+     * Display the form for creating a new appointment.
+     * Provides dropdowns for selecting active patients, doctors, and available chairs.
+     * 
+     * @return \Illuminate\View\View Appointment creation form
+     */
     public function create()
     {
         $patients = Patient::active()->get();
@@ -63,9 +85,26 @@ class AppointmentController extends Controller
         return view('backend.appointments.create', compact('patients', 'doctors', 'chairs'));
     }
 
-    // =========================
-    // STORE NEW APPOINTMENT
-    // =========================
+    /**
+     * =========================================================================
+     * STORE NEW APPOINTMENT
+     * =========================================================================
+     * 
+     * Validate and store a new appointment with the following validations:
+     * - Patient and doctor existence
+     * - Appointment type validation
+     * - Date and time format validation
+     * - Duration limits (5-240 minutes)
+     * - Priority validation
+     * 
+     * Also handles:
+     * - Daily doctor appointment limit check
+     * - Queue number assignment
+     * - Appointment code generation
+     * 
+     * @param Request $request HTTP request with appointment data
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -87,7 +126,7 @@ class AppointmentController extends Controller
         $dailyLimitReached = Appointment::where('doctor_id', $request->doctor_id)
             ->where('appointment_date', $request->appointment_date)
             ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
-            ->count() >= 100; // adjust daily cap
+            ->count() >= 100; // adjust daily cap as needed
 
         if ($dailyLimitReached) {
             return back()->with('error', 'Doctor has reached daily patient limit.')->withInput();
@@ -110,13 +149,13 @@ class AppointmentController extends Controller
             'appointment_code'   => Appointment::generateAppointmentCode(),
             'patient_id'         => $request->patient_id,
             'doctor_id'          => $request->doctor_id,
-            'chair_id'           => $request->chair_id, // optional
+            'chair_id'           => $request->chair_id,
             'appointment_type'   => $request->appointment_type,
             'appointment_date'   => $request->appointment_date,
-            'appointment_time'   => $request->appointment_time, // approximate arrival
+            'appointment_time'   => $request->appointment_time,
             'expected_duration'  => $request->expected_duration,
             'priority'           => $request->priority,
-            'queue_no'       => $queueNumber,
+            'queue_no'           => $queueNumber,
             'status'             => 'scheduled',
             'chief_complaint'    => $request->chief_complaint,
             'notes'              => $request->notes,
@@ -128,18 +167,34 @@ class AppointmentController extends Controller
             ->with('success', "Appointment created successfully. Queue number: {$queueNumber}");
     }
 
-    // =========================
-    // SHOW APPOINTMENT DETAILS
-    // =========================
+    /**
+     * =========================================================================
+     * SHOW APPOINTMENT DETAILS
+     * =========================================================================
+     * 
+     * Display detailed view of a specific appointment.
+     * Loads all related data including patient, doctor, chair, and user information.
+     * 
+     * @param Appointment $appointment Appointment model instance
+     * @return \Illuminate\View\View Appointment details page
+     */
     public function show(Appointment $appointment)
     {
         $appointment->load(['patient', 'doctor.user', 'chair', 'creator', 'updater']);
         return view('backend.appointments.show', compact('appointment'));
     }
 
-    // =========================
-    // EDIT APPOINTMENT
-    // =========================
+    /**
+     * =========================================================================
+     * EDIT APPOINTMENT FORM
+     * =========================================================================
+     * 
+     * Display the form for editing an existing appointment.
+     * Pre-fills form with current appointment data.
+     * 
+     * @param Appointment $appointment Appointment model instance
+     * @return \Illuminate\View\View Appointment edit form
+     */
     public function edit(Appointment $appointment)
     {
         $patients = Patient::active()->get();
@@ -149,9 +204,18 @@ class AppointmentController extends Controller
         return view('backend.appointments.edit', compact('appointment', 'patients', 'doctors', 'chairs'));
     }
 
-    // =========================
-    // UPDATE APPOINTMENT
-    // =========================
+    /**
+     * =========================================================================
+     * UPDATE APPOINTMENT
+     * =========================================================================
+     * 
+     * Validate and update an existing appointment.
+     * Handles status-based timestamps and cancellation reasons.
+     * 
+     * @param Request $request HTTP request with updated appointment data
+     * @param Appointment $appointment Appointment model instance
+     * @return \Illuminate\Http\RedirectResponse Redirect with success message
+     */
     public function update(Request $request, Appointment $appointment)
     {
         $request->validate([
@@ -183,7 +247,7 @@ class AppointmentController extends Controller
             'notes'
         ]) + ['updated_by' => auth()->id()];
 
-        // Update timestamps based on status
+        // Update timestamps based on status changes
         if ($request->status == 'checked_in' && !$appointment->checked_in_time) {
             $updateData['checked_in_time'] = now();
         }
@@ -206,9 +270,17 @@ class AppointmentController extends Controller
             ->with('success', 'Appointment updated successfully.');
     }
 
-    // =========================
-    // DELETE APPOINTMENT
-    // =========================
+    /**
+     * =========================================================================
+     * DELETE APPOINTMENT
+     * =========================================================================
+     * 
+     * Soft delete an appointment. Only allowed for scheduled or cancelled appointments.
+     * Prevents deletion of appointments that have started or completed.
+     * 
+     * @param Appointment $appointment Appointment model instance
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+     */
     public function destroy(Appointment $appointment)
     {
         if (!in_array($appointment->status, ['scheduled', 'cancelled'])) {
@@ -221,9 +293,18 @@ class AppointmentController extends Controller
             ->with('success', 'Appointment deleted successfully.');
     }
 
-    // =========================
-    // CHECK-IN / START / COMPLETE / CANCEL
-    // =========================
+    /**
+     * =========================================================================
+     * APPOINTMENT STATUS MANAGEMENT METHODS
+     * =========================================================================
+     */
+
+    /**
+     * Check in a scheduled appointment
+     * 
+     * @param Appointment $appointment Appointment model instance
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+     */
     public function checkIn(Appointment $appointment)
     {
         if ($appointment->status !== 'scheduled') {
@@ -235,7 +316,12 @@ class AppointmentController extends Controller
         return back()->with('success', 'Patient added to queue');
     }
 
-
+    /**
+     * Start an appointment that has been checked in
+     * 
+     * @param Appointment $appointment Appointment model instance
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+     */
     public function start(Appointment $appointment)
     {
         if ($appointment->status != 'checked_in') {
@@ -246,6 +332,12 @@ class AppointmentController extends Controller
         return back()->with('success', 'Appointment started successfully.');
     }
 
+    /**
+     * Complete an appointment that is checked-in or in progress
+     * 
+     * @param Appointment $appointment Appointment model instance
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+     */
     public function complete(Appointment $appointment)
     {
         if (!in_array($appointment->status, ['checked_in', 'in_progress'])) {
@@ -256,6 +348,13 @@ class AppointmentController extends Controller
         return back()->with('success', 'Appointment completed successfully.');
     }
 
+    /**
+     * Cancel an appointment with a reason
+     * 
+     * @param Request $request HTTP request containing cancellation reason
+     * @param Appointment $appointment Appointment model instance
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+     */
     public function cancel(Request $request, Appointment $appointment)
     {
         $request->validate(['reason' => 'required|string']);
@@ -268,9 +367,16 @@ class AppointmentController extends Controller
         return back()->with('success', 'Appointment cancelled successfully.');
     }
 
-    // =========================
-    // TODAY'S APPOINTMENTS & STATS
-    // =========================
+    /**
+     * =========================================================================
+     * TODAY'S APPOINTMENTS & STATISTICS
+     * =========================================================================
+     * 
+     * Display all appointments for today, grouped by status.
+     * Provides statistics for each status category.
+     * 
+     * @return \Illuminate\View\View Today's appointments dashboard
+     */
     public function today()
     {
         $todayAppointments = Appointment::with(['patient', 'doctor.user', 'chair'])
@@ -290,9 +396,17 @@ class AppointmentController extends Controller
         return view('backend.appointments.today', compact('todayAppointments', 'stats'));
     }
 
-    // =========================
-    // CALENDAR / QUEUE VIEW
-    // =========================
+    /**
+     * =========================================================================
+     * CALENDAR / QUEUE VIEW
+     * =========================================================================
+     * 
+     * Display appointments in a calendar/queue view for a specific date.
+     * Supports filtering by doctor and organizes appointments by time slots.
+     * 
+     * @param Request $request HTTP request with date and doctor filters
+     * @return \Illuminate\View\View Calendar view with appointments
+     */
     public function calendar(Request $request)
     {
         $doctors = Doctor::with('user')->active()->get();
@@ -306,8 +420,8 @@ class AppointmentController extends Controller
             'chair'
         ])
             ->whereDate('appointment_date', $selectedDate)
-            ->orderBy('queue_no')        // FIFO first
-            ->orderBy('created_at');     // safety fallback
+            ->orderBy('queue_no')
+            ->orderBy('created_at');
 
         if ($selectedDoctor) {
             $appointmentsQuery->where('doctor_id', $selectedDoctor);
@@ -315,7 +429,7 @@ class AppointmentController extends Controller
 
         $appointments = $appointmentsQuery->get();
 
-        // Optional reference slots (NOT strict scheduling)
+        // Generate time slots from 9 AM to 5:30 PM (30-minute intervals)
         $timeSlots = [];
         for ($hour = 9; $hour <= 17; $hour++) {
             foreach ([0, 30] as $minute) {
@@ -336,10 +450,17 @@ class AppointmentController extends Controller
         ));
     }
 
-
-    // =========================
-    // AVAILABLE TIME SLOTS
-    // =========================
+    /**
+     * =========================================================================
+     * GET AVAILABLE TIME SLOTS
+     * =========================================================================
+     * 
+     * AJAX endpoint to get available time slots for a specific doctor on a date.
+     * Returns JSON response with available time slots.
+     * 
+     * @param Request $request HTTP request with doctor_id and date
+     * @return \Illuminate\Http\JsonResponse JSON array of available time slots
+     */
     public function getAvailableSlots(Request $request)
     {
         $request->validate([
@@ -356,6 +477,7 @@ class AppointmentController extends Controller
             ->pluck('appointment_time')
             ->toArray();
 
+        // Generate working hours (9 AM to 5:30 PM, 30-minute intervals)
         $workingHours = [];
         for ($hour = 9; $hour <= 17; $hour++) {
             for ($minute = 0; $minute < 60; $minute += 30) {
@@ -369,9 +491,17 @@ class AppointmentController extends Controller
         return response()->json(['slots' => $availableSlots]);
     }
 
-    // =========================
-    // WALK-IN FORM
-    // =========================
+    /**
+     * =========================================================================
+     * WALK-IN APPOINTMENT MANAGEMENT
+     * =========================================================================
+     */
+
+    /**
+     * Display walk-in appointment creation form
+     * 
+     * @return \Illuminate\View\View Walk-in appointment form
+     */
     public function walkInForm()
     {
         $patients = Patient::active()->get();
@@ -381,9 +511,15 @@ class AppointmentController extends Controller
         return view('backend.appointments.walk-in', compact('patients', 'doctors', 'chairs'));
     }
 
-    // =========================
-    // STORE WALK-IN APPOINTMENT
-    // =========================
+    /**
+     * Store a walk-in appointment
+     * 
+     * Creates an appointment with current date/time and auto-check-in.
+     * Uses 'walkin' as schedule_type and generates queue number.
+     * 
+     * @param Request $request HTTP request with walk-in appointment data
+     * @return \Illuminate\Http\RedirectResponse Redirect with success message
+     */
     public function walkInStore(Request $request)
     {
         $request->validate([
@@ -397,9 +533,6 @@ class AppointmentController extends Controller
             'notes'            => 'nullable|string',
         ]);
 
-        $now = now();
-
-        // Auto-assign appointment for current date/time
         Appointment::create([
             'appointment_code'  => Appointment::generateAppointmentCode(),
             'patient_id'        => $request->patient_id,
@@ -420,22 +553,28 @@ class AppointmentController extends Controller
             'updated_by'        => auth()->id(),
         ]);
 
-
         return redirect()->route('backend.appointments.index')
             ->with('success', 'Walk-in appointment registered and checked-in successfully.');
     }
 
-    // =========================
-    // QUEUE DISPLAY (TV)
-    // =========================
+    /**
+     * =========================================================================
+     * QUEUE DISPLAY (PUBLIC/CLINIC TV VIEW)
+     * =========================================================================
+     * 
+     * Display appointment queue for public viewing (clinic TV screens).
+     * Groups appointments by status and sorts by priority and queue number.
+     * 
+     * @param Request $request HTTP request with optional date parameter
+     * @return \Illuminate\View\View Queue display view
+     */
     public function queue(Request $request)
     {
-        $date = $request->date ?? now()->format('Y-m-d'); // use requested date or today
+        $date = $request->date ?? now()->format('Y-m-d');
 
-        // Fetch appointments for the given date
         $appointments = Appointment::with(['patient', 'doctor.user'])
             ->whereDate('appointment_date', $date)
-            ->whereIn('status', ['scheduled', 'checked_in', 'in_progress']) // include scheduled
+            ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
             ->orderByRaw("
             CASE priority
                 WHEN 'high' THEN 1
@@ -445,14 +584,23 @@ class AppointmentController extends Controller
         ")
             ->orderBy('queue_no')
             ->get()
-            ->groupBy('status'); // group by status for Blade columns
+            ->groupBy('status');
 
         return view('backend.appointments.queue', compact('appointments', 'date'));
     }
 
-    // =========================
-    // RESCHEDULE APPOINTMENT
-    // =========================
+    /**
+     * =========================================================================
+     * RESCHEDULE APPOINTMENT
+     * =========================================================================
+     * 
+     * Reschedule an appointment to a new date and time.
+     * Resets status to 'scheduled' and checks daily doctor limit.
+     * 
+     * @param Request $request HTTP request with new date and time
+     * @param Appointment $appointment Appointment model instance
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+     */
     public function reschedule(Request $request, Appointment $appointment)
     {
         $request->validate([
@@ -460,7 +608,7 @@ class AppointmentController extends Controller
             'appointment_time' => 'required|date_format:H:i',
         ]);
 
-        // Optionally: Check if doctor has daily limit
+        // Check daily limit for the new date
         $dailyLimitReached = Appointment::where('doctor_id', $appointment->doctor_id)
             ->where('appointment_date', $request->appointment_date)
             ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
@@ -470,11 +618,10 @@ class AppointmentController extends Controller
             return back()->with('error', 'Doctor has reached daily patient limit on this day.');
         }
 
-        // Update appointment and reset status to scheduled
         $appointment->update([
             'appointment_date' => $request->appointment_date,
             'appointment_time' => $request->appointment_time,
-            'status' => 'scheduled', // reset status
+            'status' => 'scheduled',
             'updated_by' => auth()->id(),
         ]);
 
@@ -482,13 +629,19 @@ class AppointmentController extends Controller
             ->with('success', 'Appointment rescheduled successfully and status reset to Scheduled.');
     }
 
-
-    // =========================
-    // MARK APPOINTMENT AS NO SHOW
-    // =========================
+    /**
+     * =========================================================================
+     * MARK APPOINTMENT AS NO SHOW
+     * =========================================================================
+     * 
+     * Mark a scheduled or checked-in appointment as 'no show'.
+     * Prevents marking appointments that are already in progress or completed.
+     * 
+     * @param Appointment $appointment Appointment model instance
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+     */
     public function noShow(Appointment $appointment)
     {
-        // Only allow marking scheduled or checked-in appointments as no-show
         if (!in_array($appointment->status, ['scheduled', 'checked_in'])) {
             return redirect()->back()->with('error', 'Cannot mark this appointment as No Show.');
         }
