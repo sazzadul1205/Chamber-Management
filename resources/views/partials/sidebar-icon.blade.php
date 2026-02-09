@@ -150,7 +150,7 @@
     PAYMENT ICONS
     ============================== --}}
     @case('Payment')
-        @include('components.icons.Payment')
+        @include('components.icons.Payment', ['class' => $iconClass])
     @break
 
     @case('Referral')
@@ -253,6 +253,10 @@
 
     @case('Waiting')
         @include('components.icons.Waiting', ['class' => $iconClass])
+    @break
+
+    @case('Backup')
+        @include('components.icons.Backup', ['class' => $iconClass])
     @break
 
     {{-- ==============================

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     AppointmentController,
     AppointmentReminderController,
+    AuditLogController,
     BackupController,
     DashboardController,
     DentalChairController,
@@ -514,6 +515,19 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/restore/{backupName}', [BackupController::class, 'restoreBackup'])->name('restore');
             Route::delete('/delete/{backupName}', [BackupController::class, 'deleteBackup'])->name('delete');
             Route::get('/system-info', [BackupController::class, 'systemInfo'])->name('system-info');
+            Route::get('/check-requirements', [BackupController::class, 'checkRequirements'])->name('check-requirements');
+        });
+    });
+
+    // Audit Log Routes
+    Route::middleware(['role:Super Admin,Admin'])->group(function () {
+        Route::prefix('audit-logs')->name('backend.audit.')->group(function () {
+            Route::get('/', [AuditLogController::class, 'index'])->name('index');
+            Route::get('/{id}', [AuditLogController::class, 'show'])->name('show');
+            Route::get('/export', [AuditLogController::class, 'export'])->name('export');
+            Route::post('/clear', [AuditLogController::class, 'clearOldLogs'])->name('clear');
+            Route::get('/stats', [AuditLogController::class, 'getStats'])->name('stats');
+            Route::post('/search', [AuditLogController::class, 'search'])->name('search');
         });
     });
 });

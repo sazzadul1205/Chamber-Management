@@ -30,7 +30,7 @@ return [
         ],
         
         'cleanup' => [
-            'strategy' => \Spatie\Backup\Tasks\Cleanup\Strategies\DefaultStrategy::class,
+            // 'strategy' => \Spatie\Backup\Tasks\Cleanup\Strategies\DefaultStrategy::class,
             'default_strategy' => [
                 'keep_all_backups_for_days' => 7,
                 'keep_daily_backups_for_days' => 16,
