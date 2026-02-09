@@ -21,16 +21,33 @@
                 </div>
             </div>
             <div class="flex space-x-2">
+                <!-- Manage Schedule Button -->
                 <a href="{{ route('backend.doctors.schedule-management', $doctor) }}"
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 border border-transparent rounded-md text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 border border-transparent rounded-md text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
+                    @include('partials.sidebar-icon', [
+                        'name' => 'Calendar',
+                        'class' => 'w-4 h-4',
+                    ])
                     Manage Schedule
                 </a>
+
+                <!-- Edit Profile Button -->
                 <a href="{{ route('backend.doctors.edit', $doctor) }}"
-                    class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 border border-transparent rounded-md text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                    class="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 border border-transparent rounded-md text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition">
+                    @include('partials.sidebar-icon', [
+                        'name' => 'B_Edit',
+                        'class' => 'w-4 h-4',
+                    ])
                     Edit Profile
                 </a>
+
+                <!-- Back to List Button -->
                 <a href="{{ route('backend.doctors.index') }}"
-                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
+                    @include('partials.sidebar-icon', [
+                        'name' => 'list',
+                        'class' => 'w-4 h-4',
+                    ])
                     Back to List
                 </a>
             </div>

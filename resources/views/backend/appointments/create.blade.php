@@ -19,7 +19,7 @@
                         'name' => 'B_Add',
                         'class' => 'w-4 h-4',
                     ])
-                    New Patient
+                    Quick Add New Patient
                 </button>
             </div>
 

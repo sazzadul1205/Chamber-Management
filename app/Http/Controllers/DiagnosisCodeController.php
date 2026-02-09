@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DiagnosisCode;
+use App\Models\Treatment;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -117,9 +118,13 @@ class DiagnosisCodeController extends Controller
     public function show(DiagnosisCode $diagnosisCode)
     {
         // Load related treatments to show usage
-        $diagnosisCode->load('treatments');
+        // Load treatments that have this diagnosis code in their diagnosis text
+        $treatments = Treatment::where('diagnosis', 'like', '%' . $diagnosisCode->code . '%')
+            ->orWhere('diagnosis', 'like', '%' . $diagnosisCode->description . '%')
+            ->with(['patient', 'doctor'])
+            ->get();
 
-        return view('backend.diagnosis_codes.show', compact('diagnosisCode'));
+        return view('backend.diagnosis_codes.show', compact('diagnosisCode', 'treatments'));
     }
 
     /**
