@@ -4,55 +4,89 @@ namespace App\Http\Controllers;
 
 use App\Models\DiagnosisCode;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DiagnosisCodeController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Index / Listing
-    |--------------------------------------------------------------------------
-    */
+    /**
+     * =========================================================================
+     * INDEX / LIST DIAGNOSIS CODES
+     * =========================================================================
+     * 
+     * Display all diagnosis codes with filtering and pagination.
+     * Supports filtering by:
+     * - Search term (code or description)
+     * - Category
+     * - Status (active/inactive)
+     * 
+     * Provides category list for filter dropdowns.
+     * 
+     * @param Request $request HTTP request with filter parameters
+     * @return \Illuminate\View\View Diagnosis codes index page
+     */
     public function index(Request $request)
     {
+        // Build base query
         $query = DiagnosisCode::query();
 
-        // Search filter
+        // -------------------------------
+        // APPLY FILTERS
+        // -------------------------------
+        // Search filter (assuming search scope is defined in model)
         if ($request->filled('search')) {
             $query->search($request->search);
         }
 
-        // Category filter
+        // Category filter (exclude 'all' option)
         if ($request->filled('category') && $request->category !== 'all') {
             $query->byCategory($request->category);
         }
 
-        // Status filter
+        // Status filter (exclude 'all' option)
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
+        // Execute query with pagination and preserve query string
         $diagnosisCodes = $query
             ->orderBy('category')
             ->orderBy('code')
             ->paginate(12)
             ->withQueryString();
 
+        // Get categories for filter dropdown
         $categories = DiagnosisCode::categories();
 
         return view('backend.diagnosis_codes.index', compact('diagnosisCodes', 'categories'));
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Create
-    |--------------------------------------------------------------------------
-    */
+    /**
+     * =========================================================================
+     * CREATE DIAGNOSIS CODE FORM
+     * =========================================================================
+     * 
+     * Display form for creating a new diagnosis code.
+     * Provides category dropdown for selection.
+     * 
+     * @return \Illuminate\View\View Diagnosis code creation form
+     */
     public function create()
     {
         $categories = DiagnosisCode::categories();
         return view('backend.diagnosis_codes.create', compact('categories'));
     }
 
+    /**
+     * =========================================================================
+     * STORE NEW DIAGNOSIS CODE
+     * =========================================================================
+     * 
+     * Validate and store a new diagnosis code.
+     * Ensures code uniqueness and validates category selection.
+     * 
+     * @param Request $request HTTP request with diagnosis code data
+     * @return \Illuminate\Http\RedirectResponse Redirect with success message
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -69,30 +103,54 @@ class DiagnosisCodeController extends Controller
             ->with('success', 'Diagnosis code added successfully.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Show
-    |--------------------------------------------------------------------------
-    */
+    /**
+     * =========================================================================
+     * SHOW DIAGNOSIS CODE DETAILS
+     * =========================================================================
+     * 
+     * Display detailed view of a specific diagnosis code.
+     * Loads related treatments for reference.
+     * 
+     * @param DiagnosisCode $diagnosisCode Diagnosis code model instance
+     * @return \Illuminate\View\View Diagnosis code details page
+     */
     public function show(DiagnosisCode $diagnosisCode)
     {
-        // Load related treatments (must exist or fail loudly)
+        // Load related treatments to show usage
         $diagnosisCode->load('treatments');
 
         return view('backend.diagnosis_codes.show', compact('diagnosisCode'));
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Edit / Update
-    |--------------------------------------------------------------------------
-    */
+    /**
+     * =========================================================================
+     * EDIT DIAGNOSIS CODE FORM
+     * =========================================================================
+     * 
+     * Display form for editing an existing diagnosis code.
+     * Pre-fills form with current code data.
+     * 
+     * @param DiagnosisCode $diagnosisCode Diagnosis code model instance
+     * @return \Illuminate\View\View Diagnosis code edit form
+     */
     public function edit(DiagnosisCode $diagnosisCode)
     {
         $categories = DiagnosisCode::categories();
         return view('backend.diagnosis_codes.edit', compact('diagnosisCode', 'categories'));
     }
 
+    /**
+     * =========================================================================
+     * UPDATE DIAGNOSIS CODE
+     * =========================================================================
+     * 
+     * Validate and update an existing diagnosis code.
+     * Ensures code uniqueness (excluding current record).
+     * 
+     * @param Request $request HTTP request with updated diagnosis code data
+     * @param DiagnosisCode $diagnosisCode Diagnosis code model instance
+     * @return \Illuminate\Http\RedirectResponse Redirect with success message
+     */
     public function update(Request $request, DiagnosisCode $diagnosisCode)
     {
         $validated = $request->validate([
@@ -109,14 +167,20 @@ class DiagnosisCodeController extends Controller
             ->with('success', 'Diagnosis code updated successfully.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Delete
-    |--------------------------------------------------------------------------
-    */
+    /**
+     * =========================================================================
+     * DELETE DIAGNOSIS CODE
+     * =========================================================================
+     * 
+     * Delete a diagnosis code record.
+     * Prevents deletion if code is used in treatments.
+     * 
+     * @param DiagnosisCode $diagnosisCode Diagnosis code model instance
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error message
+     */
     public function destroy(DiagnosisCode $diagnosisCode)
     {
-        // Do not allow deletion if already used
+        // Check if diagnosis code is used in any treatments
         if ($diagnosisCode->treatments()->exists()) {
             return redirect()
                 ->route('backend.diagnosis-codes.index')
@@ -130,15 +194,23 @@ class DiagnosisCodeController extends Controller
             ->with('success', 'Diagnosis code deleted successfully.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | API: Autocomplete
-    |--------------------------------------------------------------------------
-    */
+    /**
+     * =========================================================================
+     * API: AUTOCOMPLETE SEARCH
+     * =========================================================================
+     * 
+     * AJAX endpoint for diagnosis code autocomplete search.
+     * Searches by code or description.
+     * Returns formatted results for dropdown selection.
+     * 
+     * @param Request $request HTTP request with search query
+     * @return \Illuminate\Http\JsonResponse JSON array of matching diagnosis codes
+     */
     public function autocomplete(Request $request)
     {
         $query = $request->get('query');
 
+        // Search active diagnosis codes
         $codes = DiagnosisCode::active()
             ->where(
                 fn($q) =>
@@ -158,11 +230,18 @@ class DiagnosisCodeController extends Controller
         return response()->json($codes);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Quick Add (AJAX Modal)
-    |--------------------------------------------------------------------------
-    */
+    /**
+     * =========================================================================
+     * QUICK ADD DIAGNOSIS CODE (AJAX MODAL)
+     * =========================================================================
+     * 
+     * AJAX endpoint for quickly adding diagnosis codes from modal forms.
+     * Automatically sets status to active.
+     * Used for rapid data entry in treatment forms.
+     * 
+     * @param Request $request HTTP request with minimal diagnosis code data
+     * @return \Illuminate\Http\JsonResponse JSON response with created record
+     */
     public function quickAdd(Request $request)
     {
         $validated = $request->validate([
@@ -184,25 +263,34 @@ class DiagnosisCodeController extends Controller
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Export CSV
-    |--------------------------------------------------------------------------
-    */
-    public function export()
+    /**
+     * =========================================================================
+     * EXPORT DIAGNOSIS CODES TO CSV
+     * =========================================================================
+     * 
+     * Export all diagnosis codes to CSV file.
+     * Includes all fields with formatted dates.
+     * Provides downloadable file with timestamp in filename.
+     * 
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse Streamed file download
+     */
+    public function export(): StreamedResponse
     {
-        $diagnosisCodes = DiagnosisCode::orderBy('category')->orderBy('code')->get();
+        $diagnosisCodes = DiagnosisCode::orderBy('category')
+            ->orderBy('code')
+            ->get();
 
         return response()->stream(function () use ($diagnosisCodes) {
             $file = fopen('php://output', 'w');
 
+            // CSV headers
             fputcsv($file, ['Code', 'Description', 'Category', 'Status', 'Created At']);
 
             foreach ($diagnosisCodes as $code) {
                 fputcsv($file, [
                     $code->code,
                     $code->description,
-                    $code->category_name,
+                    $code->category_name, // accessor
                     $code->status,
                     $code->created_at->format('Y-m-d'),
                 ]);
