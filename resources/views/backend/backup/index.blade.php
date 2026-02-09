@@ -159,7 +159,7 @@
                                 <td class="px-4 py-3">
                                     <span
                                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                                {{ $backup['type'] === 'full' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
+                                                        {{ $backup['type'] === 'full' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
                                         {{ ucfirst($backup['type']) }}
                                     </span>
                                 </td>
@@ -652,107 +652,107 @@
                 const data = await response.json();
 
                 let html = `
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="space-y-4">
-                                <div>
-                                    <h4 class="font-medium text-gray-900 mb-2 flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
-                                        </svg>
-                                        Application Info
-                                    </h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Laravel Version:</span>
-                                            <span class="font-medium">${data.laravel_version}</span>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 mb-2 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                                            </svg>
+                                            Application Info
+                                        </h4>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Laravel Version:</span>
+                                                <span class="font-medium">${data.laravel_version}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">PHP Version:</span>
+                                                <span class="font-medium">${data.php_version}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Environment:</span>
+                                                <span class="font-medium">${data.environment}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Timezone:</span>
+                                                <span class="font-medium">${data.timezone}</span>
+                                            </div>
                                         </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">PHP Version:</span>
-                                            <span class="font-medium">${data.php_version}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Environment:</span>
-                                            <span class="font-medium">${data.environment}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Timezone:</span>
-                                            <span class="font-medium">${data.timezone}</span>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 mb-2 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd" />
+                                            </svg>
+                                            Database
+                                        </h4>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Type:</span>
+                                                <span class="font-medium">${data.database}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <h4 class="font-medium text-gray-900 mb-2 flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd" />
-                                        </svg>
-                                        Database
-                                    </h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Type:</span>
-                                            <span class="font-medium">${data.database}</span>
+                                <div class="space-y-4">
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 mb-2 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                                            </svg>
+                                            Backup Status
+                                        </h4>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Total Backups:</span>
+                                                <span class="font-medium">${data.backup_count}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Last Backup:</span>
+                                                <span class="font-medium">${data.last_backup}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 mb-2 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                                            </svg>
+                                            Storage Status
+                                        </h4>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Used Space:</span>
+                                                <span class="font-medium">${data.storage_used || 'N/A'}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Available:</span>
+                                                <span class="font-medium">${data.storage_available || 'N/A'}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="space-y-4">
-                                <div>
-                                    <h4 class="font-medium text-gray-900 mb-2 flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                                        </svg>
-                                        Backup Status
-                                    </h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Total Backups:</span>
-                                            <span class="font-medium">${data.backup_count}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Last Backup:</span>
-                                            <span class="font-medium">${data.last_backup}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h4 class="font-medium text-gray-900 mb-2 flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
-                                        </svg>
-                                        Storage Status
-                                    </h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Used Space:</span>
-                                            <span class="font-medium">${data.storage_used || 'N/A'}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Available:</span>
-                                            <span class="font-medium">${data.storage_available || 'N/A'}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                                <p class="text-sm text-blue-800">
+                                    <strong>Note:</strong> System information is for diagnostic purposes. 
+                                    Contact your system administrator for any issues.
+                                </p>
                             </div>
-                        </div>
-
-                        <div class="mt-6 p-4 bg-blue-50 rounded-lg">
-                            <p class="text-sm text-blue-800">
-                                <strong>Note:</strong> System information is for diagnostic purposes. 
-                                Contact your system administrator for any issues.
-                            </p>
-                        </div>
-                    `;
+                        `;
 
                 content.innerHTML = html;
             } catch (error) {
                 content.innerHTML = `
-                        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <p class="text-red-700">Failed to load system information: ${error.message}</p>
-                        </div>
-                    `;
+                            <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <p class="text-red-700">Failed to load system information: ${error.message}</p>
+                            </div>
+                        `;
             }
         }
     </script>
