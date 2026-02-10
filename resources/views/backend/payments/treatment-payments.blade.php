@@ -907,7 +907,7 @@
                             allocationDetails += `\nCredit Balance: ৳${result.remaining_credit.toFixed(2)}`;
                         }
                         setTimeout(() => {
-                            alert(allocationDetails);
+                           
                         }, 500);
                     }
 

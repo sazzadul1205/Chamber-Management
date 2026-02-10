@@ -273,7 +273,7 @@
                                                         class="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
                                                         title="Complete Appointment">
                                                         @include('partials.sidebar-icon', [
-                                                            'name' => 'B_Check',
+                                                            'name' => 'B_Tick',
                                                             'class' => 'w-5 h-5',
                                                         ])
                                                     </button>

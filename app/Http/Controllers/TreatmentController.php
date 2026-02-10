@@ -200,7 +200,7 @@ class TreatmentController extends Controller
             'medicalFiles.uploadedBy'
         ]);
 
-        // Calculate session costs - FIXED with null-safe operator
+        // Calculate session costs
         $sessionCosts = $treatment->sessions->map(function ($session) {
             $sessionPaid = optional($session->payments)->sum('amount') ?? 0;
             $sessionBalance = max(0, ($session->cost_for_session ?? 0) - $sessionPaid);
@@ -219,7 +219,7 @@ class TreatmentController extends Controller
             ];
         });
 
-        // Calculate procedure costs - FIXED with null-safe operator
+        // Calculate procedure costs
         $procedureCosts = $treatment->procedures->map(function ($procedure) {
             $procedurePaid = optional($procedure->payments)->sum('amount') ?? 0;
             $procedureBalance = max(0, ($procedure->cost ?? 0) - $procedurePaid);
@@ -258,38 +258,46 @@ class TreatmentController extends Controller
         // Use whichever is greater (in case there are direct payments)
         $totalPaid = max($totalPaid, $totalPaidFromItems);
 
+        // Calculate estimated cost as sum of session + procedure costs
+        $estimatedCost = $subtotal;
+
         // Calculate treatment final cost
         $finalActualCost = max(
             $subtotal - ($treatment->discount ?? 0),
             ($treatment->total_actual_cost ?? 0) - ($treatment->discount ?? 0)
         );
 
+        // Calculate balance due and payment percentage
+        $balanceDue = max(0, $finalActualCost - $totalPaid);
+        $paymentPercentage = $finalActualCost > 0 ? round(($totalPaid / $finalActualCost) * 100, 2) : 0;
+
+        // Create paidAmount variable (same as totalPaid)
+        $paidAmount = $totalPaid;
+
         // Treatment cost breakdown
         $costBreakdown = [
-            'estimated_cost' => $treatment->total_estimated_cost,
+            'estimated_cost' => $estimatedCost, // Calculated from sessions + procedures
             'actual_cost' => $treatment->total_actual_cost,
             'session_costs' => $totalSessionCost,
             'session_paid' => $totalSessionPaid,
             'procedure_costs' => $totalProceduresCost,
             'procedure_paid' => $totalProceduresPaid,
             'discount' => $treatment->discount ?? 0,
-            'final_estimated' => ($treatment->total_estimated_cost ?? 0) - ($treatment->discount ?? 0),
-            'final_actual' => $finalActualCost
+            'final_estimated' => ($estimatedCost ?? 0) - ($treatment->discount ?? 0),
+            'final_actual' => $finalActualCost,
+            'total_paid' => $totalPaid,
+            'balance_due' => $balanceDue,
+            'payment_percentage' => $paymentPercentage
         ];
-
-        // Payment calculations
-        $paidAmount = $totalPaid;
-        $balanceDue = max(0, $finalActualCost - $totalPaid);
-        $paymentPercentage = $finalActualCost > 0 ? round(($totalPaid / $finalActualCost) * 100, 2) : 0;
 
         return view('backend.treatments.show', compact(
             'treatment',
             'sessionCosts',
             'procedureCosts',
             'costBreakdown',
-            'subtotal',
-            'paidAmount',
             'balanceDue',
+            'paidAmount',
+            'totalPaid',
             'paymentPercentage'
         ));
     }

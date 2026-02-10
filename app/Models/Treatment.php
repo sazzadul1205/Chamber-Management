@@ -101,9 +101,9 @@ class Treatment extends Model
     }
 
     public function medicalFiles()
-{
-    return $this->hasMany(MedicalFile::class);
-}
+    {
+        return $this->hasMany(MedicalFile::class);
+    }
 
     // Scopes
     public function scopeSearch($query, $search)
@@ -196,10 +196,24 @@ class Treatment extends Model
         return '<span class="badge bg-' . $this->status_color . '">' . $this->status_text . '</span>';
     }
 
+    // Progress Calculation Methods
     public function getProgressPercentageAttribute()
     {
-        if ($this->estimated_sessions == 0) return 0;
-        return min(100, round(($this->completed_sessions / $this->estimated_sessions) * 100));
+        // If treatment is completed, return 100%
+        if ($this->status === 'completed') {
+            return 100;
+        }
+
+        // If estimated sessions is 0, return 0%
+        if ($this->estimated_sessions <= 0) {
+            return 0;
+        }
+
+        // Calculate percentage based on completed sessions
+        $percentage = ($this->completed_sessions / $this->estimated_sessions) * 100;
+
+        // Return the percentage, capped at 100%
+        return min(100, $percentage);
     }
 
     public function getProgressBarAttribute()

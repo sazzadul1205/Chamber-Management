@@ -132,24 +132,39 @@
                                     <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Financial
                                         Details</h4>
                                     <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Estimated Cost:</span>
-                                            <span class="font-medium">{{ $treatment->formatted_estimated_cost }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Actual Cost:</span>
-                                            <span class="font-medium">{{ $treatment->formatted_actual_cost }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Discount:</span>
-                                            <span class="font-medium text-red-600">-৳
-                                                {{ number_format($treatment->discount, 2) }}</span>
-                                        </div>
-                                        <!-- ADD THIS LINE: -->
-                                        <div class="flex justify-between pt-2 border-t border-gray-200">
-                                            <span class="text-gray-600 font-semibold">Total Session Costs:</span>
+                                        <!-- Session Costs -->
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-gray-600">Total Session Costs:</span>
                                             <span class="font-bold text-blue-700">৳
                                                 {{ number_format($costBreakdown['session_costs'] ?? 0, 2) }}</span>
+                                        </div>
+
+                                        <!-- Procedure Costs -->
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-gray-600">Total Procedure Costs:</span>
+                                            <span class="font-bold text-purple-700">৳
+                                                {{ number_format($costBreakdown['procedure_costs'] ?? 0, 2) }}</span>
+                                        </div>
+
+                                        <!-- Subtotal (Session + Procedure) -->
+                                        <div class="flex justify-between items-center pt-2 border-t border-gray-200">
+                                            <span class="text-gray-600 font-semibold">Subtotal (Session + Procedure):</span>
+                                            <span class="font-bold text-gray-800">৳
+                                                {{ number_format($costBreakdown['estimated_cost'] ?? 0, 2) }}</span>
+                                        </div>
+
+                                        <!-- Discount -->
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-gray-600">Discount:</span>
+                                            <span class="font-medium text-red-600">-৳
+                                                {{ number_format($costBreakdown['discount'] ?? 0, 2) }}</span>
+                                        </div>
+
+                                        <!-- Final Subtotal -->
+                                        <div class="flex justify-between items-center pt-2 border-t border-gray-200">
+                                            <span class="text-gray-700 font-semibold">Final Subtotal:</span>
+                                            <span class="font-bold text-green-700">৳
+                                                {{ number_format($costBreakdown['final_estimated'] ?? 0, 2) }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -160,11 +175,35 @@
                         <div class="mt-6">
                             <div class="flex justify-between mb-2">
                                 <span class="text-sm font-medium text-gray-700">Treatment Progress</span>
-                                <span class="text-sm font-bold text-blue-600">{{ $treatment->progress_percentage }}%</span>
+                                <span class="text-sm font-bold text-blue-600">
+                                    {{ min($treatment->progress_percentage, 100) }}%
+                                </span>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-3">
-                                <div class="bg-{{ $treatment->status_color }} h-3 rounded-full transition-all duration-500"
-                                    style="width: {{ $treatment->progress_percentage }}%"></div>
+                            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                @php
+                                    // Ensure percentage is between 0 and 100
+                                    $percentage = min($treatment->progress_percentage, 100);
+                                    $percentage = max($percentage, 0);
+
+                                    // Map status to actual CSS colors
+                                    $colorMap = [
+                                        'gray' => 'bg-gray-500',
+                                        'blue' => 'bg-blue-500',
+                                        'green' => 'bg-green-500',
+                                        'red' => 'bg-red-500',
+                                        'yellow' => 'bg-yellow-500',
+                                    ];
+
+                                    $colorClass = $colorMap[$treatment->status_color] ?? 'bg-blue-500';
+                                @endphp
+                                <div class="{{ $colorClass }} h-3 rounded-full transition-all duration-500"
+                                    style="width: {{ $percentage }}%">
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>{{ $treatment->completed_sessions ?? 0 }} of
+                                    {{ $treatment->estimated_sessions ?? 0 }} sessions</span>
+                                <span>{{ $treatment->status_text }}</span>
                             </div>
                         </div>
                     </div>
@@ -318,7 +357,7 @@
                 <!-- Payment Card -->
                 @include('backend.treatments.Components.payment-card')
 
-          
+
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                     <div class="bg-gradient-to-r from-teal-50 to-cyan-50 px-6 py-4 border-b">
                         <div class="flex justify-between items-center">
