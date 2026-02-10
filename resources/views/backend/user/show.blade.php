@@ -87,7 +87,7 @@
             ($user->role_id == 3 ? 'bg-green-100 text-green-800' :
                 ($user->role_id == 4 ? 'bg-yellow-100 text-yellow-800' :
                     'bg-gray-100 text-gray-800'))) }}">
-                                        {{ $user->getRoleName() }}
+                                        {{ $roleName = $user->role_name }}
                                     </span>
                                 </div>
                             </div>

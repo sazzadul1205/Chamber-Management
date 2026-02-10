@@ -332,7 +332,7 @@
                                 <div class="space-y-3 text-sm">
                                     <div class="flex justify-between items-center">
                                         <span class="text-gray-600">Current Role:</span>
-                                        <span class="font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{{ $user->getRoleName() }}</span>
+                                        <span class="font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{{ $roleName = $user->role_name }}</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-gray-600">Blood Group:</span>
