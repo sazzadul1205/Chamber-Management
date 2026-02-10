@@ -16,12 +16,8 @@ class User extends Authenticatable
     // Mass Assignable Fields
     // =======================
     protected $fillable = [
-        'role_id',
-        'full_name',
-        'phone',
-        'email',
-        'password',
-        'status',
+        'full_name', 'phone', 'email', 'password', 'role_id', 'status',
+        'last_login_at', 'last_login_device_id', 'current_session_id', 'blood_group',
     ];
 
     // =======================
@@ -36,9 +32,8 @@ class User extends Authenticatable
     // Attribute Casting
     // =======================
     protected $casts = [
+        'last_login_at' => 'datetime',
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'deleted_at' => 'datetime',
     ];
 
     // =======================
@@ -168,8 +163,8 @@ class User extends Authenticatable
 
         $color = $badges[$this->status] ?? 'gray';
 
-        return '<span class="bg-' . $color . '-100 text-' . $color . '-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">'
-            . ucfirst($this->status)
-            . '</span>';
+        return '<span class="bg-'.$color.'-100 text-'.$color.'-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">'
+            .ucfirst($this->status)
+            .'</span>';
     }
 }

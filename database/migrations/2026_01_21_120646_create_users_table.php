@@ -20,6 +20,12 @@ return new class extends Migration
             $table->string('email', 100)->unique()->nullable();
             $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
 
+            // New fields
+            $table->timestamp('last_login_at')->nullable()->comment('Last login timestamp');
+            $table->string('last_login_device_id', 100)->nullable()->comment('Device ID from last login session');
+            $table->string('current_session_id', 100)->nullable()->comment('Current active session ID');
+            $table->enum('blood_group', ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])->nullable()->comment('User blood group');
+
             // Add role_id with default 1
             $table->foreignId('role_id')
                 ->nullable(false)
@@ -34,8 +40,11 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            // Indexes
             $table->index('role_id');
             $table->index('status');
+            $table->index('last_login_at');
+            $table->index('blood_group');
         });
 
         // Insert default super admin user
@@ -47,6 +56,7 @@ return new class extends Migration
                 'email' => 'admin@gmail.com',
                 'password' => Hash::make('Admin1205'),
                 'status' => 'active',
+                'blood_group' => 'O+',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -57,6 +67,7 @@ return new class extends Migration
                 'email' => 'admin2@gmail.com',
                 'password' => Hash::make('Admin1205'),
                 'status' => 'active',
+                'blood_group' => 'A+',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -67,6 +78,7 @@ return new class extends Migration
                 'email' => 'doctor@gmail.com',
                 'password' => Hash::make('Admin1205'),
                 'status' => 'active',
+                'blood_group' => 'B+',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -77,6 +89,7 @@ return new class extends Migration
                 'email' => 'reception@gmail.com',
                 'password' => Hash::make('Admin1205'),
                 'status' => 'active',
+                'blood_group' => 'AB+',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -87,6 +100,7 @@ return new class extends Migration
                 'email' => 'accountant@gmail.com',
                 'password' => Hash::make('Admin1205'),
                 'status' => 'active',
+                'blood_group' => 'O-',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

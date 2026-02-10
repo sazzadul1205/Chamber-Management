@@ -2,21 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
     /**
      * Display a listing of users with search, role, and status filters
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -44,11 +43,47 @@ class UserController extends Controller
             $query->where('status', $request->status);
         }
 
+        // Filter by blood group
+        if ($request->filled('blood_group')) {
+            $query->where('blood_group', $request->blood_group);
+        }
+
+        // Apply sorting
+        switch ($request->get('sort', 'newest')) {
+            case 'oldest':
+                $query->oldest();
+                break;
+            case 'name_asc':
+                $query->orderBy('full_name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('full_name', 'desc');
+                break;
+            case 'last_login':
+                $query->orderBy('last_login_at', 'desc');
+                break;
+            default:
+                $query->latest();
+        }
+
         // Paginate results
-        $users = $query->orderBy('created_at', 'desc')->paginate(20);
+        $users = $query->paginate(20);
         $roles = Role::all();
 
-        return view('backend.user.index', compact('users', 'roles'));
+        // Statistics
+        $totalUsers = User::count();
+        $activeUsers = User::where('status', 'active')->count();
+        $onlineUsers = User::where('last_login_at', '>=', now()->subMinutes(5))->count();
+        $recentLogins = User::where('last_login_at', '>=', now()->subDay())->count();
+
+        return view('backend.user.index', compact(
+            'users',
+            'roles',
+            'totalUsers',
+            'activeUsers',
+            'onlineUsers',
+            'recentLogins'
+        ));
     }
 
     /**
@@ -59,13 +94,13 @@ class UserController extends Controller
     public function create()
     {
         $roles = Role::all();
+
         return view('backend.user.create', compact('roles'));
     }
 
     /**
      * Store a newly created user in storage
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -78,11 +113,12 @@ class UserController extends Controller
             'email' => 'nullable|email|max:100|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
             'status' => 'required|in:active,inactive,suspended',
+            'blood_group' => 'nullable|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
         ]);
 
         // Start database transaction
         DB::beginTransaction();
-        
+
         try {
             // Create new user
             $user = User::create([
@@ -92,22 +128,23 @@ class UserController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'status' => $request->status,
+                'blood_group' => $request->blood_group,
             ]);
 
             // Commit transaction
             DB::commit();
 
             // Log the action
-            Log::info("User created: {$user->id} by user ID: " . auth()->id());
+            Log::info("User created: {$user->id} by user ID: ".auth()->id());
 
             return redirect()->route('backend.user.index')
                 ->with('success', 'User created successfully.');
-                
+
         } catch (\Exception $e) {
             // Rollback transaction on error
             DB::rollBack();
-            
-            return back()->with('error', 'Failed to create user: ' . $e->getMessage())
+
+            return back()->with('error', 'Failed to create user: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -115,32 +152,30 @@ class UserController extends Controller
     /**
      * Display the specified user
      *
-     * @param  \App\Models\User  $user
      * @return \Illuminate\View\View
      */
     public function show(User $user)
     {
         $user->load('role');
+
         return view('backend.user.show', compact('user'));
     }
 
     /**
      * Show the form for editing the specified user
      *
-     * @param  \App\Models\User  $user
      * @return \Illuminate\View\View
      */
     public function edit(User $user)
     {
         $roles = Role::all();
+
         return view('backend.user.edit', compact('user', 'roles'));
     }
 
     /**
      * Update the specified user in storage
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\User  $user
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, User $user)
@@ -152,16 +187,19 @@ class UserController extends Controller
             'phone' => ['required', 'string', 'max:20', Rule::unique('users')->ignore($user->id)],
             'email' => ['nullable', 'email', 'max:100', Rule::unique('users')->ignore($user->id)],
             'status' => 'required|in:active,inactive,suspended',
+            'blood_group' => 'nullable|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
         ]);
 
         // Validate password if provided
         if ($request->filled('password')) {
-            $request->validate(['password' => 'string|min:6|confirmed']);
+            $request->validate([
+                'password' => 'string|min:6|confirmed',
+            ]);
         }
 
         // Start database transaction
         DB::beginTransaction();
-        
+
         try {
             // Store old data for logging
             $oldData = $user->toArray();
@@ -173,6 +211,7 @@ class UserController extends Controller
                 'phone' => $request->phone,
                 'email' => $request->email,
                 'status' => $request->status,
+                'blood_group' => $request->blood_group,
             ];
 
             // Update password only if provided
@@ -186,19 +225,19 @@ class UserController extends Controller
             DB::commit();
 
             // Log the action with changes
-            Log::info("User updated: {$user->id} by user ID: " . auth()->id(), [
+            Log::info("User updated: {$user->id} by user ID: ".auth()->id(), [
                 'old_data' => $oldData,
-                'new_data' => $user->toArray()
+                'new_data' => $user->toArray(),
             ]);
 
             return redirect()->route('backend.user.index')
                 ->with('success', 'User updated successfully.');
-                
+
         } catch (\Exception $e) {
             // Rollback transaction on error
             DB::rollBack();
-            
-            return back()->with('error', 'Failed to update user: ' . $e->getMessage())
+
+            return back()->with('error', 'Failed to update user: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -206,8 +245,6 @@ class UserController extends Controller
     /**
      * Toggle user status between active and inactive
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\User  $user
      * @return \Illuminate\Http\RedirectResponse
      */
     public function toggleStatus(Request $request, User $user)
@@ -236,39 +273,45 @@ class UserController extends Controller
 
         // Start database transaction
         DB::beginTransaction();
-        
+
         try {
             // Store old status for logging
             $oldStatus = $user->status;
 
             // Determine new status
             $newStatus = $user->status === 'active' ? 'inactive' : 'active';
-            
-            // Update user status
-            $user->update(['status' => $newStatus]);
+
+            // Clear current session if deactivating
+            if ($newStatus === 'inactive') {
+                $user->update([
+                    'status' => $newStatus,
+                    'current_session_id' => null, // Clear active session
+                ]);
+            } else {
+                $user->update(['status' => $newStatus]);
+            }
 
             // Commit transaction
             DB::commit();
 
             // Log the action
-            Log::info("User status toggled: {$user->id} from '{$oldStatus}' to '{$newStatus}' by user ID: " . auth()->id());
+            Log::info("User status toggled: {$user->id} from '{$oldStatus}' to '{$newStatus}' by user ID: ".auth()->id());
 
             return redirect()->route('backend.user.index')
-                ->with('success', "User {$user->full_name} status changed to " . ucfirst($newStatus));
-                
+                ->with('success', "User {$user->full_name} status changed to ".ucfirst($newStatus));
+
         } catch (\Exception $e) {
             // Rollback transaction on error
             DB::rollBack();
-            
+
             return redirect()->route('backend.user.index')
-                ->with('error', 'Failed to change user status: ' . $e->getMessage());
+                ->with('error', 'Failed to change user status: '.$e->getMessage());
         }
     }
 
     /**
      * Soft delete the specified user
      *
-     * @param  \App\Models\User  $user
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(User $user)
@@ -287,26 +330,30 @@ class UserController extends Controller
 
         // Start database transaction
         DB::beginTransaction();
-        
+
         try {
+            // Clear session before deletion
+            $user->current_session_id = null;
+            $user->save();
+
             // Soft delete user
             $user->delete();
-            
+
             // Commit transaction
             DB::commit();
 
             // Log the action
-            Log::info("User deleted: {$user->id} by user ID: " . auth()->id());
+            Log::info("User deleted: {$user->id} by user ID: ".auth()->id());
 
             return redirect()->route('backend.user.index')
                 ->with('success', 'User deleted successfully.');
-                
+
         } catch (\Exception $e) {
             // Rollback transaction on error
             DB::rollBack();
-            
+
             return redirect()->route('backend.user.index')
-                ->with('error', 'Failed to delete user: ' . $e->getMessage());
+                ->with('error', 'Failed to delete user: '.$e->getMessage());
         }
     }
 
@@ -322,7 +369,7 @@ class UserController extends Controller
         $user = User::withTrashed()->findOrFail($id);
 
         // Check authorization (only Admins/Super Admins)
-        if (!in_array(auth()->user()->role_id, [1, 2])) {
+        if (! in_array(auth()->user()->role_id, [1, 2])) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -330,7 +377,7 @@ class UserController extends Controller
         $user->restore();
 
         // Log the action
-        Log::info("User restored: {$user->id} by user ID: " . auth()->id());
+        Log::info("User restored: {$user->id} by user ID: ".auth()->id());
 
         return redirect()->route('backend.user.index')
             ->with('success', 'User restored successfully.');
@@ -348,7 +395,7 @@ class UserController extends Controller
         $user = User::withTrashed()->findOrFail($id);
 
         // Check authorization (only Admins/Super Admins)
-        if (!in_array(auth()->user()->role_id, [1, 2])) {
+        if (! in_array(auth()->user()->role_id, [1, 2])) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -362,7 +409,7 @@ class UserController extends Controller
         $user->forceDelete();
 
         // Log the action
-        Log::info("User permanently deleted: {$user->id} by user ID: " . auth()->id());
+        Log::info("User permanently deleted: {$user->id} by user ID: ".auth()->id());
 
         return redirect()->route('backend.user.index')
             ->with('success', 'User permanently deleted.');
@@ -371,7 +418,6 @@ class UserController extends Controller
     /**
      * Reset or change user password
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
@@ -395,7 +441,7 @@ class UserController extends Controller
 
         // Verify current password if user is changing their own password
         if (Auth::id() == $user->id) {
-            if (!Hash::check($request->current_password, $user->password)) {
+            if (! Hash::check($request->current_password, $user->password)) {
                 return back()->withErrors(['current_password' => 'Current password is incorrect']);
             }
         }
@@ -405,12 +451,80 @@ class UserController extends Controller
         $user->save();
 
         // Log the action and return appropriate success message
-        Log::info("Password reset for user: {$user->id} by user ID: " . auth()->id());
-        
+        Log::info("Password reset for user: {$user->id} by user ID: ".auth()->id());
+
         if (Auth::id() == $user->id) {
             return back()->with('success', 'Password changed successfully');
         } else {
             return back()->with('success', 'Password reset successfully');
         }
+    }
+
+    /**
+     * Bulk actions on users
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function bulkActions(Request $request)
+    {
+        $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id',
+            'action' => 'required|in:activate,deactivate,delete',
+        ]);
+
+        $userIds = $request->user_ids;
+        $action = $request->action;
+        $count = 0;
+
+        foreach ($userIds as $userId) {
+            $user = User::find($userId);
+
+            // Skip if user doesn't exist
+            if (! $user) {
+                continue;
+            }
+
+            // Skip Super Admin for any action
+            if ($user->isSuperAdmin()) {
+                continue;
+            }
+
+            // Skip own account for delete/deactivate
+            if ($user->id === auth()->id() && in_array($action, ['deactivate', 'delete'])) {
+                continue;
+            }
+
+            try {
+                switch ($action) {
+                    case 'activate':
+                        $user->update(['status' => 'active']);
+                        $count++;
+                        break;
+                    case 'deactivate':
+                        $user->update([
+                            'status' => 'inactive',
+                            'current_session_id' => null,
+                        ]);
+                        $count++;
+                        break;
+                    case 'delete':
+                        $user->delete();
+                        $count++;
+                        break;
+                }
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        $message = match ($action) {
+            'activate' => "$count user(s) activated successfully.",
+            'deactivate' => "$count user(s) deactivated successfully.",
+            'delete' => "$count user(s) deleted successfully.",
+            default => 'Action completed.',
+        };
+
+        return redirect()->route('backend.user.index')->with('success', $message);
     }
 }
