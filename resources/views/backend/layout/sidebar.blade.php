@@ -493,20 +493,32 @@
                     'route' => 'backend.prescriptions.edit',
                     'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
-                // [
-                //     'label' => 'Prescription Templates',
-                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
-                // ],
-                // [
-                //     'label' => 'Prescription History',
-                //     'icon' => 'list',
-                //     'route' => 'backend.prescriptions.index',
-                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
-                // ],
+                [
+                    'label' => 'Create Medicine',
+                    'icon' => 'Add-Circle',
+                    'route' => 'backend.medicines.create',
+                    'roles' => ['Super Admin', 'Admin', 'Doctor', 'Accountant'],
+                ],
                 [
                     'label' => 'Medicine Catalog',
                     'icon' => 'medicine',
                     'route' => 'backend.medicines.index',
+                    'roles' => ['Super Admin', 'Admin', 'Doctor', 'Accountant'],
+                ],
+                [
+                    'label' => 'View Medicine Details',
+                    'icon' => 'B_View',
+                    'param' => ['medicine'],
+                    'type' => 'current-page-indicator',
+                    'route' => 'backend.medicines.show',
+                    'roles' => ['Super Admin', 'Admin', 'Doctor', 'Accountant'],
+                ],
+                [
+                    'label' => 'Edit Medicine',
+                    'icon' => 'B_Edit',
+                    'param' => ['medicine'],
+                    'type' => 'current-page-indicator',
+                    'route' => 'backend.medicines.edit',
                     'roles' => ['Super Admin', 'Admin', 'Doctor', 'Accountant'],
                 ],
             ],

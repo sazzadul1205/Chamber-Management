@@ -128,44 +128,45 @@ class Medicine extends Model
     public function inferCategory(): string
     {
         $generic = strtolower($this->generic_name ?? '');
+        $genericWords = explode(' ', $generic);
 
-        if ($this->strContainsAny($generic, ['paracetamol', 'ibuprofen', 'diclofenac', 'aceclofenac', 'tramadol'])) {
-            return 'analgesic';
-        }
-        if ($this->strContainsAny($generic, ['amoxicillin', 'metronidazole', 'clarithromycin', 'doxycycline', 'cefixime'])) {
-            return 'antibiotic';
-        }
-        if ($this->strContainsAny($generic, ['lidocaine', 'articaine'])) {
-            return 'local_anesthetic';
-        }
-        if ($this->strContainsAny($generic, ['chlorhexidine', 'povidone', 'fluoride'])) {
-            return 'mouthwash';
-        }
-        if ($this->strContainsAny($generic, ['gel', 'ointment', 'paste'])) {
-            return 'topical';
-        }
-        if ($this->strContainsAny($generic, ['chlorzoxazone', 'tizanidine'])) {
-            return 'muscle_relaxant';
-        }
-        if ($this->strContainsAny($generic, ['fluconazole', 'nystatin'])) {
-            return 'antifungal';
-        }
-        if ($this->strContainsAny($generic, ['dexamethasone', 'prednisolone', 'triamcinolone'])) {
-            return 'corticosteroid';
-        }
-        if ($this->strContainsAny($generic, ['pantoprazole', 'omeprazole', 'ranitidine'])) {
-            return 'gi_medicine';
-        }
-        if ($this->strContainsAny($generic, ['epinephrine', 'chlorpheniramine'])) {
-            return 'emergency';
-        }
-        if ($this->strContainsAny($generic, ['tranexamic', 'hydrogen', 'saline'])) {
-            return 'dental_specific';
+        $analgesics = ['paracetamol', 'ibuprofen', 'diclofenac', 'aceclofenac', 'tramadol', 'naproxen'];
+        $antibiotics = ['amoxicillin', 'metronidazole', 'clarithromycin', 'doxycycline', 'cefixime', 'azithromycin'];
+        $anesthetics = ['lidocaine', 'articaine', 'mepivacaine', 'bupivacaine'];
+        $mouthwash = ['chlorhexidine', 'povidone', 'fluoride', 'hexetidine'];
+        $topicals = ['gel', 'ointment', 'paste', 'cream', 'lotion'];
+        $muscleRelaxants = ['chlorzoxazone', 'tizanidine', 'methocarbamol'];
+        $antifungals = ['fluconazole', 'nystatin', 'clotrimazole'];
+        $corticosteroids = ['dexamethasone', 'prednisolone', 'triamcinolone', 'hydrocortisone'];
+        $giMedicines = ['pantoprazole', 'omeprazole', 'ranitidine', 'domperidone'];
+        $emergency = ['epinephrine', 'adrenaline', 'chlorpheniramine'];
+        $dental = ['tranexamic', 'hydrogen', 'saline', 'iodine', 'formocresol'];
+
+        // Check each category
+        foreach (
+            [
+                'analgesic' => $analgesics,
+                'antibiotic' => $antibiotics,
+                'local_anesthetic' => $anesthetics,
+                'mouthwash' => $mouthwash,
+                'topical' => $topicals,
+                'muscle_relaxant' => $muscleRelaxants,
+                'antifungal' => $antifungals,
+                'corticosteroid' => $corticosteroids,
+                'gi_medicine' => $giMedicines,
+                'emergency' => $emergency,
+                'dental_specific' => $dental,
+            ] as $category => $keywords
+        ) {
+            foreach ($keywords as $keyword) {
+                if (str_contains($generic, $keyword)) {
+                    return $category;
+                }
+            }
         }
 
         return 'other';
     }
-
 
     public function getCategoryAttribute(): string
     {
