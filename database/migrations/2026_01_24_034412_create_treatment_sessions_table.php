@@ -40,31 +40,6 @@ return new class extends Migration
 
             $table->unique(['treatment_id', 'session_number']);
         });
-
-        // Insert sample session for the first treatment
-        DB::table('treatment_sessions')->insert([
-            [
-                'treatment_id' => 1,
-                'session_number' => 1,
-                'session_title' => 'Initial Consultation & Examination',
-                'appointment_id' => 1,
-                'scheduled_date' => now()->format('Y-m-d'),
-                'actual_date' => now()->format('Y-m-d'),
-                'chair_id' => 1,
-                'status' => 'completed',
-                'procedure_details' => '1. Oral examination\n2. X-ray of tooth 16\n3. Diagnosis of caries\n4. Treatment planning',
-                'materials_used' => 'X-ray film, mouth mirror, explorer',
-                'doctor_notes' => 'Patient has deep caries in tooth 16. Recommended composite filling.',
-                'assistant_notes' => 'Patient anxious but cooperative. Explained procedure in detail.',
-                'duration_planned' => 45,
-                'duration_actual' => 40,
-                'cost_for_session' => 500.00,
-                'created_by' => 1,
-                'updated_by' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        ]);
     }
 
     public function down()

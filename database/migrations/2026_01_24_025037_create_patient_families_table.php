@@ -19,24 +19,6 @@ return new class extends Migration
             $table->index('family_code');
             $table->index('head_patient_id');
         });
-
-        // Insert sample families
-        DB::table('patient_families')->insert([
-            [
-                'family_code' => 'FAM001',
-                'family_name' => 'Karim Family',
-                'head_patient_id' => 1, // Abdul Karim
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'family_code' => 'FAM002',
-                'family_name' => 'Rahman Family',
-                'head_patient_id' => 2, // Fatema Begum
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        ]);
     }
 
     public function down()

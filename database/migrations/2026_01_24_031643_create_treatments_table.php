@@ -42,29 +42,6 @@ return new class extends Migration
             $table->index('status');
             $table->index('treatment_date');
         });
-
-        // Insert sample treatment
-        DB::table('treatments')->insert([
-            [
-                'treatment_code' => 'TRT001',
-                'patient_id' => 1, // Abdul Karim
-                'doctor_id' => 1, // Dr. Mohammad Rahman
-                'appointment_id' => 1, // First appointment
-                'treatment_type' => 'single_visit',
-                'estimated_sessions' => 1,
-                'completed_sessions' => 1,
-                'treatment_date' => now()->format('Y-m-d'),
-                'diagnosis' => 'Dental caries in tooth 16, requiring filling',
-                'treatment_plan' => '1. Local anesthesia\n2. Caries removal\n3. Composite filling',
-                'total_estimated_cost' => 1500.00,
-                'total_actual_cost' => 1500.00,
-                'status' => 'completed',
-                'created_by' => 1,
-                'updated_by' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        ]);
     }
 
     public function down()

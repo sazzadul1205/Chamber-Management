@@ -49,10 +49,49 @@ return new class extends Migration
                 'status' => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
+            [
+                'role_id' => 2, // Admin
+                'full_name' => 'Admin User',
+                'phone' => '+8801000000002',
+                'email' => 'admin2@gmail.com',
+                'password' => Hash::make('Admin1205'),
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'role_id' => 3, // Doctor
+                'full_name' => 'Doctor User',
+                'phone' => '+8801000000003',
+                'email' => 'doctor@gmail.com',
+                'password' => Hash::make('Admin1205'),
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'role_id' => 4, // Receptionist
+                'full_name' => 'Receptionist User',
+                'phone' => '+8801000000004',
+                'email' => 'reception@gmail.com',
+                'password' => Hash::make('Admin1205'),
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'role_id' => 5, // Accountant
+                'full_name' => 'Accountant User',
+                'phone' => '+8801000000005',
+                'email' => 'accountant@gmail.com',
+                'password' => Hash::make('Admin1205'),
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
     }
-
 
     /**
      * Reverse the migrations.

@@ -25,21 +25,6 @@ return new class extends Migration
             $table->index('prescription_date');
             $table->index('status');
         });
-
-        // Insert sample prescription
-        DB::table('prescriptions')->insert([
-            [
-                'prescription_code' => 'RX001',
-                'treatment_id' => 1,
-                'prescription_date' => now()->format('Y-m-d'),
-                'validity_days' => 7,
-                'notes' => 'Take after food. Complete full course.',
-                'status' => 'active',
-                'created_by' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        ]);
     }
 
     public function down()

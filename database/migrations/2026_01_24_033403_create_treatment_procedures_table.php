@@ -29,25 +29,6 @@ return new class extends Migration
             $table->index('status');
             $table->index('tooth_number');
         });
-
-        // Insert sample procedure for the first treatment
-        DB::table('treatment_procedures')->insert([
-            [
-                'treatment_id' => 1,
-                'procedure_code' => 'FILL-001',
-                'procedure_name' => 'Composite Filling',
-                'tooth_number' => '16',
-                'surface' => 'occlusal',
-                'cost' => 1500.00,
-                'duration' => 45,
-                'status' => 'completed',
-                'notes' => 'Patient reported sensitivity to cold, used desensitizer before filling',
-                'completed_at' => now(),
-                'completed_by' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        ]);
     }
 
     public function down()
