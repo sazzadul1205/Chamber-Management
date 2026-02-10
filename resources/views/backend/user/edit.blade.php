@@ -92,6 +92,35 @@
                                 <p class="text-xs text-gray-500 mt-1">Optional - For notifications and login</p>
                             </div>
 
+                            <!-- Blood Group -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Blood Group
+                                </label>
+                                <select name="blood_group"
+                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select Blood Group</option>
+                                    <option value="A+" {{ old('blood_group', $user->blood_group) == 'A+' ? 'selected' : '' }}>A+</option>
+                                    <option value="A-" {{ old('blood_group', $user->blood_group) == 'A-' ? 'selected' : '' }}>A-</option>
+                                    <option value="B+" {{ old('blood_group', $user->blood_group) == 'B+' ? 'selected' : '' }}>B+</option>
+                                    <option value="B-" {{ old('blood_group', $user->blood_group) == 'B-' ? 'selected' : '' }}>B-</option>
+                                    <option value="AB+" {{ old('blood_group', $user->blood_group) == 'AB+' ? 'selected' : '' }}>AB+</option>
+                                    <option value="AB-" {{ old('blood_group', $user->blood_group) == 'AB-' ? 'selected' : '' }}>AB-</option>
+                                    <option value="O+" {{ old('blood_group', $user->blood_group) == 'O+' ? 'selected' : '' }}>O+</option>
+                                    <option value="O-" {{ old('blood_group', $user->blood_group) == 'O-' ? 'selected' : '' }}>O-</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Optional - Medical information</p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- ROLE & STATUS -->
+                    <div class="border-t pt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Role & Status</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
                             <!-- Role -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -107,109 +136,8 @@
                                         </option>
                                     @endforeach
                                 </select>
+                                <p class="text-xs text-gray-500 mt-1">Determines user permissions and access</p>
                             </div>
-
-                        </div>
-                    </div>
-
-                    <!-- ADMIN PASSWORD RESET (Only for Admin/Super Admin) -->
-                    @if (Auth::user()->role_id <= 2 && Auth::id() != $user->id)
-                        <div class="border-t pt-6">
-                            <h3 class="text-lg font-medium text-gray-900 mb-4">Admin Password Reset</h3>
-
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <div class="flex items-start gap-3">
-                                    <div class="flex-shrink-0">
-                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                        </svg>
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-sm text-blue-800 font-medium">
-                                            You can reset this user's password (Admin privilege)
-                                        </p>
-                                        <p class="text-xs text-blue-600 mt-1">
-                                            Leave blank to keep current password
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <!-- Password -->
-                                    <div>
-                                        <div class="flex justify-between items-center mb-1">
-                                            <label class="block text-sm font-medium text-gray-700">
-                                                New Password
-                                            </label>
-                                            <button type="button" id="generatePassword"
-                                                class="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                                                Generate Random
-                                            </button>
-                                        </div>
-                                        <div class="relative">
-                                            <input type="password" name="password" id="passwordField"
-                                                class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 pr-10"
-                                                minlength="6" placeholder="Enter new password">
-                                            <button type="button" id="togglePassword"
-                                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    id="eyeIcon">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                </svg>
-                                                <svg class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    id="eyeOffIcon">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                        <div class="mt-2 flex items-center gap-2">
-                                            <div id="passwordStrength" class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                <div id="strengthBar" class="h-full w-0 transition-all duration-300"></div>
-                                            </div>
-                                            <span id="strengthText" class="text-xs font-medium text-gray-500">Weak</span>
-                                        </div>
-                                        <p class="text-xs text-gray-500 mt-1">Minimum 6 characters. Click "Generate Random" for a secure password.</p>
-                                    </div>
-
-                                    <!-- Password Strength Info -->
-                                    <div class="bg-gray-50 p-4 rounded-lg">
-                                        <h4 class="text-sm font-medium text-gray-700 mb-2">Password Requirements</h4>
-                                        <ul class="text-xs text-gray-600 space-y-1">
-                                            <li class="flex items-center gap-1">
-                                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                                </svg>
-                                                Minimum 6 characters
-                                            </li>
-                                            <li class="flex items-center gap-1">
-                                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                                </svg>
-                                                Stronger passwords include mixed case
-                                            </li>
-                                            <li class="flex items-center gap-1">
-                                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                                </svg>
-                                                Include numbers and special characters
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-
-                    <!-- STATUS -->
-                    <div class="border-t pt-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Status & Permissions</h3>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                             <!-- Status -->
                             <div>
@@ -244,27 +172,226 @@
                                 </div>
                             </div>
 
+                        </div>
+                    </div>
+
+                    <!-- ADMIN PASSWORD RESET (Only for Admin/Super Admin) -->
+                    @if (Auth::user()->role_id <= 2 && Auth::id() != $user->id)
+                        <div class="border-t pt-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-900">Password Reset</h3>
+                                @if($user->current_session_id)
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
+                                    Currently Logged In
+                                </span>
+                                @endif
+                            </div>
+
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm text-blue-800 font-medium">
+                                            You can reset this user's password (Admin privilege)
+                                        </p>
+                                        <p class="text-xs text-blue-600 mt-1">
+                                            Leave blank to keep current password
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <!-- New Password -->
+                                        <div>
+                                            <div class="flex justify-between items-center mb-1">
+                                                <label class="block text-sm font-medium text-gray-700">
+                                                    New Password
+                                                </label>
+                                                <button type="button" id="generatePassword"
+                                                    class="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                                                    Generate Random
+                                                </button>
+                                            </div>
+                                            <div class="relative">
+                                                <input type="password" name="password" id="passwordField"
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 pr-10"
+                                                    minlength="6" placeholder="Enter new password">
+                                                <button type="button" id="togglePassword"
+                                                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                        id="eyeIcon">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    <svg class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                        id="eyeOffIcon">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            <div class="mt-2 flex items-center gap-2">
+                                                <div id="passwordStrength" class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div id="strengthBar" class="h-full w-0 transition-all duration-300"></div>
+                                                </div>
+                                                <span id="strengthText" class="text-xs font-medium text-gray-500">Weak</span>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-1">Minimum 6 characters. Click "Generate Random" for a secure password.</p>
+                                        </div>
+
+                                        <!-- Confirm Password -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                Confirm Password
+                                            </label>
+                                            <div class="relative">
+                                                <input type="password" name="password_confirmation" id="confirmPasswordField"
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 pr-10"
+                                                    minlength="6" placeholder="Confirm new password">
+                                                <button type="button" id="toggleConfirmPassword"
+                                                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                        id="confirmEyeIcon">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    <svg class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                        id="confirmEyeOffIcon">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            <div id="passwordMatch" class="mt-2 hidden">
+                                                <p class="text-xs font-medium text-green-600 flex items-center gap-1">
+                                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Passwords match
+                                                </p>
+                                            </div>
+                                            <div id="passwordMismatch" class="mt-2 hidden">
+                                                <p class="text-xs font-medium text-red-600 flex items-center gap-1">
+                                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Passwords do not match
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Password Strength Info -->
+                                    <div class="bg-gray-50 p-4 rounded-lg">
+                                        <h4 class="text-sm font-medium text-gray-700 mb-2">Password Requirements</h4>
+                                        <ul class="text-xs text-gray-600 space-y-1">
+                                            <li class="flex items-center gap-1">
+                                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                </svg>
+                                                Minimum 6 characters
+                                            </li>
+                                            <li class="flex items-center gap-1">
+                                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                </svg>
+                                                Stronger passwords include mixed case
+                                            </li>
+                                            <li class="flex items-center gap-1">
+                                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                </svg>
+                                                Include numbers and special characters
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- USER INFO & ACTIVITY -->
+                    <div class="border-t pt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">User Information & Activity</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- User Info Card -->
                             <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                <h4 class="text-sm font-medium text-gray-700 mb-2">Current User Info</h4>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Role:</span>
-                                        <span class="font-medium">{{ $user->getRoleName() }}</span>
+                                <h4 class="text-sm font-medium text-gray-700 mb-3">Current User Info</h4>
+                                <div class="space-y-3 text-sm">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-600">Current Role:</span>
+                                        <span class="font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{{ $roleName = $user->role_name }}</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">Last Login:</span>
+                                        <span class="text-gray-600">Blood Group:</span>
                                         <span class="font-medium">
-                                            {{ $user->last_login_at ? $user->last_login_at->format('d/m/Y H:i') : 'Never' }}
+                                            {!! $user->blood_group ? $user->blood_group_display : '<span class="text-gray-400">Not set</span>' !!}
                                         </span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">Created:</span>
-                                        <span class="font-medium">{{ $user->created_at->format('d/m/Y') }}</span>
+                                        <span class="text-gray-600">Status:</span>
+                                        <span>{!! $user->status_badge !!}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Account Created:</span>
+                                        <span class="font-medium">{{ $user->created_at->format('d M Y') }}</span>
                                     </div>
                                 </div>
                             </div>
 
+                            <!-- Activity Card -->
+                            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-3">Recent Activity</h4>
+                                <div class="space-y-3 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Last Login:</span>
+                                        <span class="font-medium">
+                                            @if($user->last_login_at)
+                                                {{ $user->last_login_at->format('d M Y H:i') }}
+                                                <span class="text-xs text-gray-500 block">({{ $user->last_login_human }})</span>
+                                            @else
+                                                <span class="text-gray-400">Never</span>
+                                            @endif
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Login Status:</span>
+                                        <span class="font-medium">
+                                            @if($user->is_online)
+                                                <span class="inline-flex items-center text-green-600">
+                                                    <span class="w-2 h-2 bg-green-500 rounded-full mr-1.5"></span>
+                                                    Online
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center text-gray-500">
+                                                    <span class="w-2 h-2 bg-gray-400 rounded-full mr-1.5"></span>
+                                                    Offline
+                                                </span>
+                                            @endif
+                                        </span>
+                                    </div>
+                                    @if($user->last_login_device_id)
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Last Device:</span>
+                                        <span class="font-medium text-xs text-gray-600 truncate max-w-[150px]" title="{{ $user->last_login_device_id }}">
+                                            {{ Str::limit($user->last_login_device_id, 30) }}
+                                        </span>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -284,12 +411,18 @@
         document.addEventListener('DOMContentLoaded', () => {
             const phoneInput = document.getElementById('phone');
             const passwordField = document.getElementById('passwordField');
+            const confirmPasswordField = document.getElementById('confirmPasswordField');
             const generatePasswordBtn = document.getElementById('generatePassword');
             const togglePasswordBtn = document.getElementById('togglePassword');
+            const toggleConfirmPasswordBtn = document.getElementById('toggleConfirmPassword');
             const eyeIcon = document.getElementById('eyeIcon');
             const eyeOffIcon = document.getElementById('eyeOffIcon');
+            const confirmEyeIcon = document.getElementById('confirmEyeIcon');
+            const confirmEyeOffIcon = document.getElementById('confirmEyeOffIcon');
             const strengthBar = document.getElementById('strengthBar');
             const strengthText = document.getElementById('strengthText');
+            const passwordMatch = document.getElementById('passwordMatch');
+            const passwordMismatch = document.getElementById('passwordMismatch');
             const form = document.getElementById('userEditForm');
 
             // Phone number formatting
@@ -318,23 +451,30 @@
                 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
                 let password = '';
                 
-                // Ensure password has at least 8 characters
-                for (let i = 0; i < 10; i++) {
+                // Generate a strong password
+                for (let i = 0; i < 12; i++) {
                     password += chars.charAt(Math.floor(Math.random() * chars.length));
                 }
                 
                 passwordField.value = password;
-                passwordField.type = 'text'; // Show the generated password
+                confirmPasswordField.value = password;
+                
+                // Show both passwords
+                passwordField.type = 'text';
+                confirmPasswordField.type = 'text';
                 
                 // Update icons
                 eyeIcon.classList.add('hidden');
                 eyeOffIcon.classList.remove('hidden');
+                confirmEyeIcon.classList.add('hidden');
+                confirmEyeOffIcon.classList.remove('hidden');
                 
                 // Check password strength
                 checkPasswordStrength(password);
+                checkPasswordMatch();
                 
                 // Show success message
-                showToast('Password generated successfully!');
+                showToast('Strong password generated! Both fields have been filled.', 'success');
             });
 
             // Toggle password visibility
@@ -350,10 +490,27 @@
                 }
             });
 
+            // Toggle confirm password visibility
+            toggleConfirmPasswordBtn?.addEventListener('click', () => {
+                if (confirmPasswordField.type === 'password') {
+                    confirmPasswordField.type = 'text';
+                    confirmEyeIcon.classList.add('hidden');
+                    confirmEyeOffIcon.classList.remove('hidden');
+                } else {
+                    confirmPasswordField.type = 'password';
+                    confirmEyeIcon.classList.remove('hidden');
+                    confirmEyeOffIcon.classList.add('hidden');
+                }
+            });
+
             // Check password strength in real-time
             passwordField?.addEventListener('input', () => {
                 checkPasswordStrength(passwordField.value);
+                checkPasswordMatch();
             });
+
+            // Check password match in real-time
+            confirmPasswordField?.addEventListener('input', checkPasswordMatch);
 
             // Check password strength function
             function checkPasswordStrength(password) {
@@ -365,7 +522,7 @@
                 if (/[0-9]/.test(password)) strength++;
                 if (/[^A-Za-z0-9]/.test(password)) strength++;
                 
-                const width = strength * 20;
+                const width = Math.min(strength * 20, 100);
                 strengthBar.style.width = `${width}%`;
                 
                 let color, text;
@@ -401,18 +558,46 @@
                 strengthText.className = `text-xs font-medium ${color.replace('bg-', 'text-')}`;
             }
 
+            // Check if passwords match
+            function checkPasswordMatch() {
+                const password = passwordField.value;
+                const confirmPassword = confirmPasswordField.value;
+
+                if (!confirmPassword) {
+                    passwordMatch.classList.add('hidden');
+                    passwordMismatch.classList.add('hidden');
+                    return;
+                }
+
+                if (password === confirmPassword) {
+                    passwordMatch.classList.remove('hidden');
+                    passwordMismatch.classList.add('hidden');
+                } else {
+                    passwordMatch.classList.add('hidden');
+                    passwordMismatch.classList.remove('hidden');
+                }
+            }
+
             // Show toast notification
-            function showToast(message) {
+            function showToast(message, type = 'success') {
                 // Remove existing toast
                 const existingToast = document.getElementById('passwordToast');
                 if (existingToast) {
                     existingToast.remove();
                 }
                 
+                // Determine color based on type
+                const colors = {
+                    success: 'bg-green-500',
+                    error: 'bg-red-500',
+                    warning: 'bg-yellow-500',
+                    info: 'bg-blue-500'
+                };
+                
                 // Create toast element
                 const toast = document.createElement('div');
                 toast.id = 'passwordToast';
-                toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transform transition-transform duration-300 translate-x-full z-50';
+                toast.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg transform transition-transform duration-300 translate-x-full z-50`;
                 toast.textContent = message;
                 
                 // Add to DOM
@@ -441,7 +626,7 @@
                 // Validate phone format for Bangladesh
                 if (phone && !/^(\+88)?01[3-9]\d{8}$/.test(phone.replace('+', ''))) {
                     e.preventDefault();
-                    alert('Please enter a valid Bangladeshi phone number (e.g., +8801712345678)');
+                    showToast('Please enter a valid Bangladeshi phone number (e.g., +8801712345678)', 'error');
                     phoneInput.focus();
                     return;
                 }
@@ -450,10 +635,37 @@
                 const password = passwordField?.value;
                 if (password && password.length < 6) {
                     e.preventDefault();
-                    alert('Password must be at least 6 characters long.');
+                    showToast('Password must be at least 6 characters long.', 'error');
                     passwordField.focus();
+                    return;
+                }
+
+                // Check if passwords match when provided
+                const confirmPassword = confirmPasswordField?.value;
+                if (password && password !== confirmPassword) {
+                    e.preventDefault();
+                    showToast('Passwords do not match. Please check and try again.', 'error');
+                    confirmPasswordField.focus();
+                    return;
+                }
+
+                // Check password strength warning (but allow submission)
+                if (password) {
+                    const passwordStrength = strengthText.textContent.toLowerCase();
+                    if (passwordStrength === 'very weak' || passwordStrength === 'weak') {
+                        if (!confirm('Your password is weak. Are you sure you want to update the user with this password?')) {
+                            e.preventDefault();
+                            return;
+                        }
+                    }
                 }
             });
+
+            // Initial checks
+            if (passwordField?.value) {
+                checkPasswordStrength(passwordField.value);
+                checkPasswordMatch();
+            }
         });
     </script>
 @endsection

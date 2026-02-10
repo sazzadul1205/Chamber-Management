@@ -1,50 +1,52 @@
 <?php
 
+use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\AppointmentReminderController;
+use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\BackupController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DentalChairController;
+use App\Http\Controllers\DentalChartController;
+use App\Http\Controllers\DiagnosisCodeController;
+use App\Http\Controllers\DoctorController;
+use App\Http\Controllers\InventoryItemController;
+use App\Http\Controllers\InventoryStockController;
+use App\Http\Controllers\InventoryTransactionController;
+use App\Http\Controllers\InventoryUsageController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\InvoiceItemController;
+use App\Http\Controllers\MedicalFileController;
+use App\Http\Controllers\MedicineController;
+use App\Http\Controllers\PatientController;
+use App\Http\Controllers\PatientFamilyController;
+use App\Http\Controllers\PaymentAllocationController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PaymentInstallmentController;
+use App\Http\Controllers\PrescriptionController;
+use App\Http\Controllers\ProcedureCatalogController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReceiptController;
+use App\Http\Controllers\ReferralController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SystemSettingController;
+use App\Http\Controllers\TreatmentController;
+use App\Http\Controllers\TreatmentProcedureController;
+use App\Http\Controllers\TreatmentSessionController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\{
-    AppointmentController,
-    AppointmentReminderController,
-    AuditLogController,
-    BackupController,
-    DashboardController,
-    DentalChairController,
-    DentalChartController,
-    DiagnosisCodeController,
-    DoctorController,
-    InventoryItemController,
-    InventoryStockController,
-    InventoryTransactionController,
-    InventoryUsageController,
-    InvoiceController,
-    InvoiceItemController,
-    MedicalFileController,
-    MedicineController,
-    PatientController,
-    PatientFamilyController,
-    PaymentAllocationController,
-    PaymentController,
-    PaymentInstallmentController,
-    PrescriptionController,
-    ProcedureCatalogController,
-    ProfileController,
-    ReceiptController,
-    ReferralController,
-    RoleController,
-    SystemSettingController,
-    TreatmentController,
-    TreatmentProcedureController,
-    TreatmentSessionController,
-    UserController,
-};
 
 // =============================================================================
 // PUBLIC ROUTES
 // =============================================================================
-Route::get('/', fn() => view('auth.login'));
+Route::get('/', fn () => view('auth.login'));
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('backend.dashboard');
+
+Route::get('/account-deactivated', function () {
+    return view('auth.account-deactivated');
+})->name('account.deactivated');
 
 // =============================================================================
 // AUTHENTICATED ROUTES
@@ -532,4 +534,4 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

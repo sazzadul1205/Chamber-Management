@@ -27,22 +27,6 @@ return new class extends Migration
             $table->index('status');
         });
 
-        // Insert sample prescription item
-        DB::table('prescription_items')->insert([
-            [
-                'prescription_id' => 1,
-                'medicine_id' => 1,
-                'dosage' => '500mg',
-                'frequency' => 'Twice daily',
-                'duration' => '5 days',
-                'route' => 'oral',
-                'instructions' => 'Take after food',
-                'quantity' => 10,
-                'status' => 'pending',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        ]);
     }
 
     public function down()

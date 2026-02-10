@@ -42,50 +42,6 @@ return new class extends Migration
             $table->index('patient_id');
             $table->index('doctor_id');
         });
-
-        // Insert sample appointments
-        DB::table('appointments')->insert([
-            [
-                'appointment_code' => 'APT001',
-                'patient_id' => 1, // Abdul Karim
-                'doctor_id' => 1, // Dr. Mohammad Rahman
-                'chair_id' => 1,
-                'appointment_type' => 'consultation',
-                'schedule_type' => 'fixed',
-                'appointment_date' => now()->addDays(1)->format('Y-m-d'),
-                'appointment_time' => '09:00:00',
-                'expected_duration' => 30,
-                'queue_no' => 1,
-                'status' => 'scheduled',
-                'priority' => 'normal',
-                'chief_complaint' => 'Tooth pain in upper left molar',
-                'notes' => 'Patient reported sensitivity to cold drinks',
-                'created_by' => 1,
-                'updated_by' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'appointment_code' => 'APT002',
-                'patient_id' => 2, // Fatema Begum
-                'doctor_id' => 1,
-                'chair_id' => 2,
-                'appointment_type' => 'checkup',
-                'schedule_type' => 'fixed',
-                'appointment_date' => now()->addDays(2)->format('Y-m-d'),
-                'appointment_time' => '10:30:00',
-                'expected_duration' => 45,
-                'queue_no' => 1,
-                'status' => 'scheduled',
-                'priority' => 'normal',
-                'chief_complaint' => 'Regular dental checkup',
-                'notes' => 'Patient due for routine cleaning',
-                'created_by' => 1,
-                'updated_by' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        ]);
     }
 
     public function down()

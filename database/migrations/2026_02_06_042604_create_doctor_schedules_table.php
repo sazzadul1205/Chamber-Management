@@ -41,32 +41,6 @@ return new class extends Migration
             $table->index(['doctor_id', 'status']);
             $table->index('leave_date');
         });
-
-        // Add sample schedules for the existing doctor
-        DB::table('doctor_schedules')->insert([
-            [
-                'doctor_id' => 1,
-                'day_of_week' => 'thursday',
-                'start_time' => '10:00:00',
-                'end_time' => '22:00:00',
-                'is_active' => true,
-                'max_appointments' => 20,
-                'slot_duration' => 30,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'doctor_id' => 1,
-                'day_of_week' => 'friday',
-                'start_time' => '10:00:00',
-                'end_time' => '22:00:00',
-                'is_active' => true,
-                'max_appointments' => 20,
-                'slot_duration' => 30,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
     }
 
     public function down()

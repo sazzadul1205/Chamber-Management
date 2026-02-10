@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->softDeletes();
             $table->timestamps();
-            
+
             // Indexes for better performance
             $table->index('type');
             $table->index('created_at');
