@@ -8,16 +8,21 @@ use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(): Response
     {
-        return view('auth.login');
+        return Inertia::render('Auth/Login', [
+            'canResetPassword' => Route::has('password.request'),
+            'status' => session('status'),
+        ]);
     }
 
     /**
@@ -27,29 +32,6 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        // Get the authenticated user
-        $user = Auth::user();
-
-        // Check if user status is inactive
-        if ($user->status === 'inactive') {
-            // Logout the user immediately
-            Auth::guard('web')->logout();
-
-            // Invalidate session
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            // Redirect to deactivated account page
-            return redirect()->route('account.deactivated');
-        }
-
-        // Update last login information
-        $user->last_login_at = now();
-        $user->last_login_device_id = $request->header('User-Agent') ?? 'Unknown';
-        $user->current_session_id = $request->session()->getId();
-        $user->save();
-
-        // If user is active, proceed normally
         $request->session()->regenerate();
 
         return redirect()->intended(RouteServiceProvider::HOME);
@@ -60,13 +42,6 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        // Clear current session ID before logout
-        $user = Auth::user();
-        if ($user) {
-            $user->current_session_id = null;
-            $user->save();
-        }
-
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

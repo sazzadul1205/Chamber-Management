@@ -33,43 +33,20 @@ use App\Http\Controllers\TreatmentController;
 use App\Http\Controllers\TreatmentProcedureController;
 use App\Http\Controllers\TreatmentSessionController;
 use App\Http\Controllers\UserController;
-    
-// React Controllers    
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
+// =============================================================================
+// PUBLIC ROUTES
+// =============================================================================
+Route::get('/', fn () => view('auth.login'));
 
-// Welcome Page
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
-
-// Backend Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('backend.dashboard');
 
-// Account Deactivated Page
 Route::get('/account-deactivated', function () {
     return view('auth.account-deactivated');
 })->name('account.deactivated');
-
 
 // =============================================================================
 // AUTHENTICATED ROUTES
@@ -557,4 +534,4 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
