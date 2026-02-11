@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AppointmentReminderController;
 use App\Http\Controllers\AuditLogController;
@@ -33,7 +34,7 @@ use App\Http\Controllers\TreatmentController;
 use App\Http\Controllers\TreatmentProcedureController;
 use App\Http\Controllers\TreatmentSessionController;
 use App\Http\Controllers\UserController;
-
+use App\Models\PageConfig;
 // React Controllers    
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -50,15 +51,27 @@ use Inertia\Inertia;
 |
 */
 
-// Welcome Page
 Route::get('/', function () {
+    $config = PageConfig::getHomeConfig();
+
+    // Make sure we always have a valid config array
+    $pageConfig = $config instanceof PageConfig
+        ? ($config->layout_config ?? ['sections' => []])
+        : ($config['layout_config'] ?? ['sections' => []]);
+
     return Inertia::render('Home/Home', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
+        'pageConfig' => $pageConfig
     ]);
-});
+})->name('home');
+
+Route::get('/page-builder', [PageController::class, 'edit'])->name('admin.page-builder');
+Route::post('/page-builder', [PageController::class, 'update'])->name('admin.page-builder.update');
+
+
 
 // Backend Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])
