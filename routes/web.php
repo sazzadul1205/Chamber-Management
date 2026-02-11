@@ -33,7 +33,7 @@ use App\Http\Controllers\TreatmentController;
 use App\Http\Controllers\TreatmentProcedureController;
 use App\Http\Controllers\TreatmentSessionController;
 use App\Http\Controllers\UserController;
-    
+
 // React Controllers    
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -52,7 +52,7 @@ use Inertia\Inertia;
 
 // Welcome Page
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
+    return Inertia::render('Home/Home', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
