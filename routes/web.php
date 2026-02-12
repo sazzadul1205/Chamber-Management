@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ComponentController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AppointmentReminderController;
@@ -70,6 +71,13 @@ Route::get('/', function () {
 
 Route::get('/page-builder', [PageController::class, 'edit'])->name('admin.page-builder');
 Route::post('/page-builder', [PageController::class, 'update'])->name('admin.page-builder.update');
+Route::get('/page-builder/custom', [PageController::class, 'custom'])->name('admin.page-builder.custom');
+
+// Component Builder routes
+Route::post('admin/check-custom-folder', [ComponentController::class, 'checkCustomFolder']);
+Route::post('admin/save-component', [ComponentController::class, 'saveComponent']);
+Route::get('admin/custom-components', [ComponentController::class, 'getCustomComponents']);
+Route::delete('admin/delete-component/{name}', [ComponentController::class, 'deleteComponent']);
 
 
 

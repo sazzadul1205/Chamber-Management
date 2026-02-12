@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PageConfig;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\File;
 
 class PageController extends Controller
 {
@@ -13,7 +14,7 @@ class PageController extends Controller
     {
         $config = PageConfig::getHomeConfig();
 
-        return Inertia::render('Admin/PageBuilder', [
+        return Inertia::render('Admin/PageBuilder/index', [
             'sections' => config('sections.sections'),
             'layoutConfig' => $config['layout_config'] ?? [],
             'sectionSettings' => $config['section_settings'] ?? [],
@@ -42,5 +43,30 @@ class PageController extends Controller
         );
 
         return redirect()->back()->with('success', 'Page configuration updated successfully!');
+    }
+
+    public function custom()
+    {
+        // Get custom components from the Custom folder
+        $customPath = resource_path('js/Pages/Home/Custom');
+        $savedComponents = [];
+
+        if (File::exists($customPath)) {
+            $files = File::files($customPath);
+            foreach ($files as $file) {
+                if ($file->getExtension() === 'jsx') {
+                    $savedComponents[] = [
+                        'name' => $file->getFilenameWithoutExtension(),
+                        'path' => 'js/Pages/Home/Custom/' . $file->getFilename(),
+                        'modified' => $file->getMTime(),
+                    ];
+                }
+            }
+        }
+
+        return Inertia::render('Admin/CustomComponentBuilder', [
+            'availableComponents' => config('sections.sections', []),
+            'savedComponents' => $savedComponents,
+        ]);
     }
 }
