@@ -1,4 +1,6 @@
 import { useState, Suspense, useEffect } from 'react';
+
+// Icons
 import {
   MdOutlinePreview,
   MdOutlineVisibility,
@@ -11,10 +13,11 @@ import {
   HiOutlineColorSwatch,
   HiOutlineCube,
 } from "react-icons/hi";
-import { FiRefreshCw } from "react-icons/fi";
 import { componentMap } from './constants';
 
 export function PreviewPanel({ sections, activeSections, customComponentCache, setCustomComponentCache }) {
+
+  // State to manage full screen mode and loading states for custom components
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [loadingComponents, setLoadingComponents] = useState({});
 
@@ -28,7 +31,7 @@ export function PreviewPanel({ sections, activeSections, customComponentCache, s
       setLoadingComponents(prev => ({ ...prev, [name]: true }));
 
       // Dynamically import the component
-      const module = await import(`../../Pages/Home/Custom/${name}.jsx`);
+      const module = await import(`../../Home/Custom/${name}.jsx`);
 
       setCustomComponentCache(prev => ({
         ...prev,
@@ -59,7 +62,7 @@ export function PreviewPanel({ sections, activeSections, customComponentCache, s
     loadCustomComponents();
   }, [activeSections]);
 
-  // Sort sections by order and filter visible ones
+  // CRITICAL: Sort sections by order and filter visible ones
   const sortedSections = [...activeSections]
     .filter(section => section.settings?.is_visible !== false)
     .sort((a, b) => a.order - b.order);
@@ -71,7 +74,7 @@ export function PreviewPanel({ sections, activeSections, customComponentCache, s
   // If no sections, show empty state
   if (sortedSections.length === 0) {
     return (
-      <div className={`bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden ${!isFullScreen ? 'sticky top-8' : ''}`}>
+      <div className={`bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden min-h-screen ${!isFullScreen ? 'sticky top-8' : ''}`}>
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center">
             <MdOutlinePreview className="w-5 h-5 mr-2 text-purple-500" />
@@ -134,7 +137,7 @@ export function PreviewPanel({ sections, activeSections, customComponentCache, s
       </div>
 
       {/* Scrollable Preview Content */}
-      <div className="overflow-y-auto" style={{ maxHeight: isFullScreen ? 'calc(100vh - 120px)' : '600px' }}>
+      <div className="overflow-y-auto" style={{ maxHeight: isFullScreen ? 'calc(100vh - 120px)' : 'calc(100vh - 220px)' }}>
         <div className="divide-y divide-gray-100">
           <Suspense fallback={
             <div className="flex items-center justify-center min-h-[200px]">
@@ -275,7 +278,7 @@ export function PreviewPanel({ sections, activeSections, customComponentCache, s
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden sticky top-8 flex flex-col">
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden sticky top-8 flex flex-col min-h-screen">
       {previewContent}
     </div>
   );

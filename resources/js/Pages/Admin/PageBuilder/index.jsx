@@ -1,47 +1,47 @@
 import { useState, useEffect } from 'react';
 import { useForm, router } from '@inertiajs/react';
+
+// sweetalert2 
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+
+
+// Import icons
+import { HiOutlineTemplate, HiOutlineInformationCircle, HiOutlineViewGrid, HiOutlineCube } from "react-icons/hi";
+import { MdOutlineVisibility } from "react-icons/md";
+
+// Other imports
 import axios from 'axios';
-import {
-  HiOutlineTemplate,
-  HiOutlineInformationCircle,
-  HiOutlineViewGrid,
-  HiOutlineCube,
-} from "react-icons/hi";
-import {
-  MdOutlineVisibility,
-} from "react-icons/md";
+import { arrayMove } from '@dnd-kit/sortable';
 
 // Import components
 import { LoadingScreen } from './LoadingScreen';
 import { AvailableSections } from './AvailableSections';
 import { LayoutBuilder } from './LayoutBuilder';
 import { PreviewPanel } from './PreviewPanel';
-import {
-  componentMap,
-  generateUniqueId,
-  DEFAULT_VARIANTS,
-  preloadComponents,
-  preloadCustomComponents
-} from './constants';
+import { generateUniqueId, preloadComponents, preloadCustomComponents } from './constants';
 
 const MySwal = withReactContent(Swal);
 
 export default function PageBuilder({ sections, layoutConfig, sectionSettings }) {
   const [isPreloaded, setIsPreloaded] = useState(false);
+
+  // CRITICAL: Ensure every section has a unique ID and correct is_custom flag on initial load
   const [activeSections, setActiveSections] = useState(() => {
     if (layoutConfig?.sections?.length) {
       return layoutConfig.sections.map(section => ({
         ...section,
         id: section.id || generateUniqueId(),
-        // Ensure is_custom flag is preserved
-        is_custom: section.is_custom || false
+        // CRITICAL: Explicitly set is_custom based on either:
+        // 1. The existing is_custom flag
+        // 2. Check if the section type doesn't exist in the sections object (prebuilt sections)
+        is_custom: section.is_custom === true || !sections[section.type]
       }));
     }
     return generateDefaultSections(sections);
   });
 
+  // Debug log to verify initial state
   const { data, setData, post, processing } = useForm({
     layout_config: {
       sections: activeSections
@@ -49,12 +49,13 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
     section_settings: sectionSettings || {}
   });
 
-  const [customComponents, setCustomComponents] = useState([]);
-  const [customComponentCache, setCustomComponentCache] = useState({});
-  const [loadingCustom, setLoadingCustom] = useState(false);
-  const [openSections, setOpenSections] = useState({});
-  const [openCustomSection, setOpenCustomSection] = useState(false);
+  // Load custom components when activeSections change
   const [searchTerm, setSearchTerm] = useState('');
+  const [openSections, setOpenSections] = useState({});
+  const [loadingCustom, setLoadingCustom] = useState(false);
+  const [customComponents, setCustomComponents] = useState([]);
+  const [openCustomSection, setOpenCustomSection] = useState(false);
+  const [customComponentCache, setCustomComponentCache] = useState({});
 
   // Preload all components before rendering
   useEffect(() => {
@@ -159,7 +160,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
       const reorderedItems = arrayMove(activeSections, oldIndex, newIndex);
       const updatedItems = reorderedItems.map((item, index) => ({
         ...item,
-        order: index + 1
+        order: index + 1 // CRITICAL: Update order based on new position
       }));
 
       setActiveSections(updatedItems);
@@ -171,7 +172,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
       id: generateUniqueId(),
       type,
       variant,
-      order: activeSections.length + 1,
+      order: activeSections.length + 1, // Always add to the bottom
       is_custom: false,
       settings: {
         is_visible: true,
@@ -180,7 +181,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
       }
     };
 
-    const updatedSections = [...activeSections, newSection];
+    const updatedSections = [...activeSections, newSection]; // Add to end of array
     setActiveSections(updatedSections);
 
     MySwal.fire({
@@ -211,7 +212,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
       id: generateUniqueId(),
       type: componentName,
       variant: componentName,
-      order: activeSections.length + 1,
+      order: activeSections.length + 1, // Always add to the bottom
       is_custom: true,
       settings: {
         is_visible: true,
@@ -220,7 +221,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
       }
     };
 
-    const updatedSections = [...activeSections, newSection];
+    const updatedSections = [...activeSections, newSection]; // Add to end of array
     setActiveSections(updatedSections);
 
     MySwal.fire({
@@ -351,10 +352,11 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
+          {/* Title & Subtitle */}
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center">
               <HiOutlineTemplate className="w-8 h-8 mr-3 text-blue-600" />
@@ -365,15 +367,22 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
               Drag and drop sections to build your page layout. Preview changes in real-time.
             </p>
           </div>
+
+          {/* Information & Buttons */}
           <div className="flex items-center space-x-3">
+            {/* Active Sections */}
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
               <HiOutlineViewGrid className="w-4 h-4 mr-1" />
               {activeSections.length} {activeSections.length === 1 ? 'Section' : 'Sections'}
             </span>
+
+            {/* Visible Sections */}
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
               <MdOutlineVisibility className="w-4 h-4 mr-1" />
               {activeSections.filter(s => s.settings?.is_visible).length} Visible
             </span>
+
+            {/* Custom Components Count */}
             {activeCustomCount > 0 && (
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
                 <HiOutlineCube className="w-4 h-4 mr-1" />
@@ -381,6 +390,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
               </span>
             )}
 
+            {/* Create Custom Component */}
             <button
               type="button"
               onClick={() => router.get(route('admin.page-builder.custom'))}
@@ -393,8 +403,8 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <form onSubmit={handleSubmit} className='overflow-y-hidden'>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Available Sections - 3 columns */}
             <div className="lg:col-span-3">
               <AvailableSections
@@ -445,7 +455,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
   );
 }
 
-// Default section generator with guaranteed unique IDs
+// Also update the generateDefaultSections function:
 function generateDefaultSections(sections) {
   const defaultSections = [];
   let order = 1;
@@ -455,9 +465,9 @@ function generateDefaultSections(sections) {
     defaultSections.push({
       id: `${timestamp}-${index}-${order}-${Math.random().toString(36).substr(2, 9)}`,
       type: key,
-      variant: section.default,
+      variant: section.default || 'basic',
       order: order++,
-      is_custom: false,
+      is_custom: false, // Explicitly false for prebuilt sections
       settings: {
         is_visible: true,
         title: section.name,

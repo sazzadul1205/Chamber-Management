@@ -1,23 +1,17 @@
-import { useState } from 'react';
+// AvailableSections.jsx
+
+// React & Inertia
+import React from 'react';
 import { router } from '@inertiajs/react';
-import {
-  HiOutlineViewGrid,
-  HiOutlineCube,
-  HiOutlinePhotograph,
-  HiOutlineColorSwatch,
-} from "react-icons/hi";
-import {
-  FiSearch,
-  FiX,
-  FiChevronDown,
-  FiPlus,
-  FiRefreshCw,
-} from "react-icons/fi";
-import { DEFAULT_VARIANTS } from './constants';
+
+// Import icons
+import { HiOutlineViewGrid, HiOutlineCube, HiOutlinePhotograph, HiOutlineColorSwatch } from "react-icons/hi";
+import { FiSearch, FiX, FiChevronDown, FiPlus, FiRefreshCw } from "react-icons/fi";
+
+// Import components
 import { CustomComponentCard } from './CustomComponentCard';
 
 export function AvailableSections({
-  sections,
   customComponents,
   loadingCustom,
   openCustomSection,
@@ -33,13 +27,16 @@ export function AvailableSections({
   filteredSections
 }) {
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden sticky top-8">
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden sticky top-8 min-h-screen flex flex-col">
       {/* Header */}
       <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+        {/* Header Title */}
         <h2 className="text-lg font-semibold text-gray-900 flex items-center">
           <HiOutlineViewGrid className="w-5 h-5 mr-2 text-blue-500" />
           Available Sections
         </h2>
+
+        {/* Search Input */}
         <div className="mt-4 relative">
           <input
             type="text"
@@ -62,20 +59,24 @@ export function AvailableSections({
       </div>
 
       {/* Available Sections */}
-      <div className="p-5 max-h-[calc(100vh-12rem)] overflow-y-auto">
+      <div className="p-5 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: "calc(100vh - 220px)" }}>
         {/* Custom Components Section */}
         <div className="mb-4 bg-purple-50 rounded-xl border border-purple-200 overflow-hidden">
+          {/* Header */}
           <button
             type="button"
             onClick={() => setOpenCustomSection(!openCustomSection)}
             className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all"
           >
+            {/* Title */}
             <div className="flex items-center space-x-2">
               <div className="w-7 h-7 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
                 <HiOutlineCube className="w-4 h-4 text-white" />
               </div>
               <span className="font-medium text-white text-sm">Custom Components</span>
             </div>
+
+            {/* Count */}
             <div className="flex items-center space-x-2">
               <span className="text-xs bg-white/30 text-white px-2 py-0.5 rounded-full">
                 {customComponents.length}
@@ -87,17 +88,24 @@ export function AvailableSections({
             </div>
           </button>
 
+          {/* Custom Components */}
           {openCustomSection && (
             <div className="p-3 bg-purple-50/50">
               {loadingCustom ? (
+                // Loading indicator
                 <div className="flex items-center justify-center py-4">
                   <FiRefreshCw className="w-5 h-5 text-purple-600 animate-spin" />
                   <span className="ml-2 text-sm text-purple-600">Loading...</span>
                 </div>
               ) : filteredCustomComponents.length === 0 ? (
+                // No custom components found
                 <div className="text-center py-6">
+                  {/* No custom components */}
                   <HiOutlineCube className="w-10 h-10 mx-auto text-purple-300" />
+                  {/* Create your first component */}
                   <p className="mt-2 text-sm text-purple-600">No custom components found</p>
+
+                  {/* Create your first component */}
                   <button
                     type="button"
                     onClick={() => router.get(route('admin.page-builder.custom'))}
@@ -107,6 +115,7 @@ export function AvailableSections({
                   </button>
                 </div>
               ) : (
+                // List of custom components
                 <div className="space-y-1.5">
                   {filteredCustomComponents.map((component) => (
                     <CustomComponentCard
@@ -124,9 +133,13 @@ export function AvailableSections({
 
         {/* Regular Sections */}
         {filteredSections.length === 0 ? (
+          // No sections found
           <div className="text-center py-8">
+            {/* icon */}
             <HiOutlinePhotograph className="w-12 h-12 mx-auto text-gray-400" />
+            {/* message */}
             <p className="mt-4 text-gray-500">No sections found</p>
+            {/* clear search */}
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}

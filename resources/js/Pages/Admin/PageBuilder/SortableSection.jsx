@@ -36,15 +36,20 @@ export function SortableSection({
     transition,
   };
 
+  // CRITICAL: Force isCustom to be a boolean and check multiple conditions
+  const isCustomSection = isCustom === true ||
+    section.is_custom === true ||
+    (section.type && !sections[section.type]);
+
   // Get section name safely
   const getSectionName = () => {
-    if (isCustom) return section.type;
+    if (isCustomSection) return section.type;
     return sections[section.type]?.name || section.type;
   };
 
   // Get variant name safely
   const getVariantName = () => {
-    if (isCustom) return `Custom: ${section.variant}`;
+    if (isCustomSection) return `Custom: ${section.variant}`;
     return sections[section.type]?.variants?.[section.variant] || section.variant;
   };
 
@@ -53,10 +58,10 @@ export function SortableSection({
       ref={setNodeRef}
       style={style}
       className={`bg-white rounded-xl border-2 transition-all ${isDragging
-          ? 'border-blue-400 shadow-2xl rotate-1 scale-[1.02] opacity-50'
-          : isCustom
-            ? 'border-purple-300 hover:border-purple-400 hover:shadow-lg bg-gradient-to-r from-purple-50/30 to-pink-50/30'
-            : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'
+        ? 'border-blue-400 shadow-2xl rotate-1 scale-[1.02] opacity-50'
+        : isCustomSection
+          ? 'border-purple-300 hover:border-purple-400 hover:shadow-lg bg-gradient-to-r from-purple-50/30 to-pink-50/30'
+          : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'
         }`}
     >
       <div className="p-4">
@@ -74,28 +79,40 @@ export function SortableSection({
             {/* Section Info */}
             <div className="flex-1">
               <div className="flex items-center space-x-2">
-                <div className={`w-6 h-6 rounded-lg ${isCustom
-                    ? 'bg-gradient-to-br from-purple-500 to-pink-600'
-                    : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                {/* Section Number - Different gradient for custom sections */}
+                <div className={`w-6 h-6 rounded-lg ${isCustomSection
+                  ? 'bg-gradient-to-br from-purple-500 to-pink-600'
+                  : 'bg-gradient-to-br from-blue-500 to-purple-600'
                   } flex items-center justify-center text-white font-semibold text-xs shadow-sm`}>
                   {index + 1}
                 </div>
-                <div>
+
+                {/* Section Name */}
+                <div className='flex items-center justify-between'>
                   <h3 className="font-semibold text-gray-900 text-sm">
                     {getSectionName()}
                   </h3>
+                  {/* Add custom badge inline for better visibility */}
+                  {isCustomSection && (
+                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-800">
+                      <HiOutlineCube className="w-2.5 h-2.5 mr-0.5" />
+                      Custom
+                    </span>
+                  )}
                 </div>
               </div>
 
+              {/* Variants */}
               <div className="flex items-center space-x-2 mt-1 ml-8">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isCustom
-                    ? 'bg-purple-100 text-purple-800'
-                    : 'bg-blue-100 text-blue-800'
+                {/* Variant Name */}
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isCustomSection
+                  ? 'bg-purple-100 text-purple-800'
+                  : 'bg-blue-100 text-blue-800'
                   }`}>
-                  {isCustom ? (
+                  {isCustomSection ? (
                     <>
                       <HiOutlineCube className="w-3 h-3 mr-1" />
-                      {getVariantName()}
+                      {section.variant}
                     </>
                   ) : (
                     <>
@@ -105,6 +122,7 @@ export function SortableSection({
                   )}
                 </span>
 
+                {/* Visibility */}
                 {!section.settings?.is_visible && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
                     <HiOutlineEyeOff className="w-3 h-3 mr-1" />
@@ -116,7 +134,8 @@ export function SortableSection({
 
             {/* Controls */}
             <div className="flex items-center space-x-1">
-              {!isCustom && sections[section.type] && (
+              {/* Variant Selector - ONLY show for non-custom components that exist in sections */}
+              {!isCustomSection && sections[section.type] && (
                 <div className="relative">
                   <select
                     value={section.variant}
@@ -132,12 +151,13 @@ export function SortableSection({
                 </div>
               )}
 
+              {/* Visibility Toggle */}
               <button
                 type="button"
                 onClick={() => onToggleVisibility(section.id)}
                 className={`p-1.5 rounded-lg transition-all ${section.settings?.is_visible
-                    ? 'text-green-600 hover:bg-green-50'
-                    : 'text-gray-400 hover:bg-gray-100'
+                  ? 'text-green-600 hover:bg-green-50'
+                  : 'text-gray-400 hover:bg-gray-100'
                   }`}
                 title={section.settings?.is_visible ? 'Visible' : 'Hidden'}
               >
@@ -148,6 +168,7 @@ export function SortableSection({
                 )}
               </button>
 
+              {/* Remove Button */}
               <button
                 type="button"
                 onClick={() => onRemove(section.id)}
