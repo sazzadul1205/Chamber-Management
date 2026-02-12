@@ -71,7 +71,7 @@ export function PreviewPanel({ sections, activeSections, customComponentCache, s
   // If no sections, show empty state
   if (sortedSections.length === 0) {
     return (
-      <div className={`bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden ${!isFullScreen ? 'sticky top-8' : ''}`}>
+      <div className={`bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden min-h-screen ${!isFullScreen ? 'sticky top-8' : ''}`}>
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center">
             <MdOutlinePreview className="w-5 h-5 mr-2 text-purple-500" />
@@ -134,7 +134,7 @@ export function PreviewPanel({ sections, activeSections, customComponentCache, s
       </div>
 
       {/* Scrollable Preview Content */}
-      <div className="overflow-y-auto" style={{ maxHeight: isFullScreen ? 'calc(100vh - 120px)' : '600px' }}>
+      <div className="overflow-y-auto" style={{ maxHeight: isFullScreen ? 'calc(100vh - 120px)' : 'calc(100vh - 220px)' }}>
         <div className="divide-y divide-gray-100">
           <Suspense fallback={
             <div className="flex items-center justify-center min-h-[200px]">
@@ -275,7 +275,7 @@ export function PreviewPanel({ sections, activeSections, customComponentCache, s
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden sticky top-8 flex flex-col">
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden sticky top-8 flex flex-col min-h-screen">
       {previewContent}
     </div>
   );

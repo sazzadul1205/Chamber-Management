@@ -44,7 +44,7 @@ export function LayoutBuilder({
   );
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-5">
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-5 min-h-screen flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center">
           <MdOutlineViewQuilt className="w-5 h-5 mr-2 text-purple-500" />
@@ -57,8 +57,9 @@ export function LayoutBuilder({
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={activeSections.map(s => s.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3 min-h-[400px] max-h-[600px] overflow-y-auto pr-1">
+        <div className="flex-1 min-h-0">
+          <SortableContext items={activeSections.map(s => s.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3 min-h-[400px] overflow-y-auto pr-1 flex-1" style={{ maxHeight: "calc(100vh - 280px)" }}>
             {activeSections.length === 0 ? (
               <div className="text-center py-12 px-4 border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50">
                 <HiOutlineFolder className="w-12 h-12 mx-auto text-gray-400" />
@@ -79,8 +80,9 @@ export function LayoutBuilder({
                 />
               ))
             )}
-          </div>
-        </SortableContext>
+            </div>
+          </SortableContext>
+        </div>
       </DndContext>
 
       {/* Save Button */}

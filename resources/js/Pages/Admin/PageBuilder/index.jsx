@@ -351,7 +351,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-y-hidden">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -393,7 +393,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="overflow-y-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Available Sections - 3 columns */}
             <div className="lg:col-span-3">
