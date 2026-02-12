@@ -33,7 +33,7 @@ export function AvailableSections({
   filteredSections
 }) {
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden sticky top-8">
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden sticky top-8 min-h-screen flex flex-col">
       {/* Header */}
       <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -62,7 +62,7 @@ export function AvailableSections({
       </div>
 
       {/* Available Sections */}
-      <div className="p-5 max-h-[calc(100vh-12rem)] overflow-y-auto">
+      <div className="p-5 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: "calc(100vh - 220px)" }}>
         {/* Custom Components Section */}
         <div className="mb-4 bg-purple-50 rounded-xl border border-purple-200 overflow-hidden">
           <button
