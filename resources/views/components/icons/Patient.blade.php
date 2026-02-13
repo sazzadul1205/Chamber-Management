@@ -1,4 +1,4 @@
-<svg fill="#000000" class="w-5 h-5" viewBox="0 0 32 32"
+<svg fill="currentColor" class="{{ $class ?? 'w-5 h-5' }}" viewBox="0 0 32 32"
     style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;" version="1.1"
     xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:serif="http://www.serif.com/"
     xmlns:xlink="http://www.w3.org/1999/xlink">

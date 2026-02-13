@@ -39,7 +39,7 @@
     @break
 
     @case('folder')
-        @include('components.icons.folder')
+        @include('components.icons.folder', ['class' => $iconClass])
     @break
 
     {{-- ==============================
@@ -50,15 +50,15 @@
     @break
 
     @case('User-Plus')
-        @include('components.icons.User-Plus')
+        @include('components.icons.User-Plus', ['class' => $iconClass])
     @break
 
     @case('Doctor')
-        @include('components.icons.Doctor')
+        @include('components.icons.Doctor', ['class' => $iconClass])
     @break
 
     @case('Patient')
-        @include('components.icons.Patient')
+        @include('components.icons.Patient', ['class' => $iconClass])
     @break
 
     @case('Family')
@@ -77,26 +77,26 @@
          DENTAL / TREATMENT ICONS
     ============================== --}}
     @case('Tooth')
-        @include('components.icons.Tooth')
+        @include('components.icons.Tooth', ['class' => $iconClass])
     @break
 
     @case('Add_Tooth')
-        @include('components.icons.Add_Tooth')
+        @include('components.icons.Add_Tooth', ['class' => $iconClass])
     @break
 
     @case('Treatment')
-        @include('components.icons.Treatment')
+        @include('components.icons.Treatment', ['class' => $iconClass])
     @break
 
     @case('Diagnostic-Code')
-        @include('components.icons.Diagnostic-Code')
+        @include('components.icons.Diagnostic-Code', ['class' => $iconClass])
     @break
 
     {{-- ==============================
          APPOINTMENT ICONS
     ============================== --}}
     @case('Appointment')
-        @include('components.icons.Appointment')
+        @include('components.icons.Appointment', ['class' => $iconClass])
     @break
 
     @case('Calendar')
@@ -104,7 +104,7 @@
     @break
 
     @case('Add-Appointment')
-        @include('components.icons.Add-Appointment')
+        @include('components.icons.Add-Appointment', ['class' => $iconClass])
     @break
 
     @case('Today')
