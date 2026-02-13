@@ -16,19 +16,19 @@
          SYSTEM / SETTINGS ICONS
     ============================== --}}
     @case('key')
-        @include('components.icons.key')
+        @include('components.icons.key', ['class' => $iconClass])
     @break
 
     @case('cog')
-        @include('components.icons.cog')
+        @include('components.icons.cog', ['class' => $iconClass])
     @break
 
     @case('Settings')
-        @include('components.icons.Settings')
+        @include('components.icons.Settings', ['class' => $iconClass])
     @break
 
     @case('grid')
-        @include('components.icons.grid')
+        @include('components.icons.grid', ['class' => $iconClass])
     @break
 
     {{-- ==============================

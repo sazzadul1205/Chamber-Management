@@ -169,6 +169,19 @@ class Patient extends Model
         return $this->appointments()->where('status', 'completed')->count();
     }
 
+    // Total Patient Count
+    public static function totalCount(): int
+    {
+        return static::count();
+    }
+
+    // Today's patient count
+    public static function todayCount(): int
+    {
+        return static::whereDate('created_at', today())->count();
+    }
+
+
     // Total unpaid invoice balance
     public function getTotalPendingAmountAttribute()
     {

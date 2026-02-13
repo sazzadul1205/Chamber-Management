@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useForm, router } from '@inertiajs/react';
+import { useForm, router, Head } from '@inertiajs/react';
 
 // sweetalert2 
 import Swal from 'sweetalert2';
@@ -368,6 +368,9 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
 
   return (
     <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 text-black overflow-hidden">
+
+      <Head title="Page Builder" />
+
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">

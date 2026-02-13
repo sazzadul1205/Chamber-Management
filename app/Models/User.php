@@ -16,15 +16,15 @@ class User extends Authenticatable
     // Mass Assignable Fields
     // =======================
     protected $fillable = [
-        'full_name', 
-        'phone', 
-        'email', 
-        'password', 
-        'role_id', 
+        'full_name',
+        'phone',
+        'email',
+        'password',
+        'role_id',
         'status',
-        'last_login_at', 
-        'last_login_device_id', 
-        'current_session_id', 
+        'last_login_at',
+        'last_login_device_id',
+        'current_session_id',
         'blood_group',
     ];
 
@@ -78,6 +78,14 @@ class User extends Authenticatable
     public function doctor()
     {
         return $this->hasOne(Doctor::class);
+    }
+
+    /**
+     * total count of users (for dashboard stats)
+     */
+    public static function totalCount(): int
+    {
+        return static::count();
     }
 
     /**
@@ -223,7 +231,7 @@ class User extends Authenticatable
         if (!$this->relationLoaded('role')) {
             $this->load('role.permissions');
         }
-        
+
         return $this->role->permissions->contains('name', $permission);
     }
 
@@ -260,7 +268,7 @@ class User extends Authenticatable
         if (!$this->last_login_at) {
             return false;
         }
-        
+
         return $this->last_login_at->diffInMinutes(now()) < 5;
     }
 
@@ -286,10 +294,10 @@ class User extends Authenticatable
 
         $config = $badges[$this->status] ?? $badges['inactive'];
 
-        return '<span class="bg-'.$config['color'].'-100 text-'.$config['color'].'-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded inline-flex items-center">'
-            .'<span class="mr-1">'.$config['icon'].'</span>'
-            .ucfirst($this->status)
-            .'</span>';
+        return '<span class="bg-' . $config['color'] . '-100 text-' . $config['color'] . '-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded inline-flex items-center">'
+            . '<span class="mr-1">' . $config['icon'] . '</span>'
+            . ucfirst($this->status)
+            . '</span>';
     }
 
     /**
@@ -325,7 +333,7 @@ class User extends Authenticatable
         if ($this->isSuperAdmin()) {
             return false;
         }
-        
+
         // Users cannot deactivate themselves
         return auth()->id() !== $this->id;
     }
@@ -358,7 +366,7 @@ class User extends Authenticatable
         if (!$this->current_session_id) {
             return true; // No active session
         }
-        
+
         return $this->current_session_id === ($sessionId ?? session()->getId());
     }
 }

@@ -315,4 +315,9 @@ class Payment extends Model
             ($notes ? ' - ' . $notes : '');
         $this->save();
     }
+
+    public function totalPayments()
+    {
+        return $this->amount;
+    }
 }

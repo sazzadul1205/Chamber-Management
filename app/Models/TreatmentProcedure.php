@@ -55,6 +55,8 @@ class TreatmentProcedure extends Model
             ->where('payable_type', 'App\Models\TreatmentProcedure');
     }
 
+    
+
     // =========================
     // SCOPES
     // =========================

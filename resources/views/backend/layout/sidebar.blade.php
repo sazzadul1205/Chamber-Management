@@ -713,8 +713,6 @@
     ];
 @endphp
 
-
-
 @php
     $currentRoute = Route::currentRouteName();
     $currentParameters = Route::current()->parameters();
@@ -726,11 +724,8 @@
                 if (isset($sub['roles']) && in_array($userRoleName, $sub['roles'])) {
                     $subRoute = $sub['route'] ?? ($sub['link'] ?? '');
 
-                    // Check for current-page-indicator items
                     if (isset($sub['type']) && $sub['type'] === 'current-page-indicator') {
-                        // For edit pages with parameters, check if route name matches
                         if ($subRoute === $currentRoute) {
-                            // Check if we have the required parameter
                             $hasRequiredParam = true;
                             if (isset($sub['params'])) {
                                 $paramNames = is_array($sub['params']) ? $sub['params'] : [$sub['params']];
@@ -747,7 +742,6 @@
                             }
                         }
                     } else {
-                        // Regular route check
                         if ($subRoute && $subRoute === $currentRoute) {
                             $openGroupKey = $key;
                             break 2;
@@ -759,13 +753,12 @@
     }
 @endphp
 
-
-
-
-
-<div class="flex flex-col h-full">
+<div class="flex flex-col h-full" id="sidebarContainer">
     <!-- Brand -->
-    <img class="mx-auto h-16 w-auto p-4" src="{{ asset('assets/Website_Logo.png') }}" alt="Logo">
+    <div class="flex items-center justify-center p-4">
+        <img class="brand-full h-16 w-auto" src="{{ asset('assets/Website_Logo.png') }}" alt="Logo">
+        <img class="brand-icon h-10 w-auto hidden" src="{{ asset('assets/favicon.png') }}" alt="Logo Icon">
+    </div>
 
     <!-- Menu -->
     <nav class="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-none">
@@ -788,7 +781,6 @@
 
                         $subRoute = $sub['route'] ?? ($sub['link'] ?? '');
 
-                        // Check for current-page-indicator items
                         if (isset($sub['type']) && $sub['type'] === 'current-page-indicator') {
                             if ($subRoute === $currentRoute) {
                                 $hasRequiredParam = true;
@@ -807,7 +799,6 @@
                                 }
                             }
                         } else {
-                            // Regular route check
                             if ($subRoute && $subRoute === $currentRoute) {
                                 $groupActive = true;
                                 break;
@@ -829,26 +820,29 @@
                 @endphp
 
                 @if ($hasVisibleChildren)
-                    <div class="relative">
+                    <div class="relative sidebar-group" data-group-key="{{ $key }}">
                         <!-- Group Button -->
-                        <button
+                        <button onclick="handleGroupClick({{ $key }})"
                             class="group-btn w-full flex items-center justify-between px-3 py-2 rounded transition-all duration-300 ease-in-out text-gray-700 hover:bg-gray-100 {{ $groupActive ? 'bg-blue-50 text-blue-600' : '' }}"
                             data-group="{{ $key }}">
                             <div class="flex items-center gap-2 font-semibold">
-                                @include('partials/sidebar-icon', ['name' => $item['icon'] ?? 'default'])
-                                <span>{{ $item['title'] }}</span>
+                                @include('partials/sidebar-icon', [
+                                    'name' => $item['icon'] ?? 'default',
+                                    'class' => 'icon-only',
+                                ])
+                                <span class="sidebar-text">{{ $item['title'] }}</span>
                             </div>
-                            <svg class="arrow w-4 h-4 transition-transform duration-300 {{ $groupActive ? 'rotate-180 text-blue-500' : 'text-gray-400' }}"
+                            <svg class="arrow w-4 h-4 transition-transform duration-300 sidebar-text {{ $groupActive ? 'rotate-180 text-blue-500' : 'text-gray-400' }}"
                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
 
-                        <!-- Submenu -->
+                        <!-- Submenu (Expanded Mode) -->
                         <div id="group-{{ $key }}"
-                            class="submenu overflow-hidden max-h-0 opacity-0 transition-all duration-300 ease-in-out {{ $groupActive ? 'open' : '' }}"
-                            style="{{ $groupActive ? 'max-height: 500px; opacity: 1;' : '' }}">
+                            class="submenu overflow-hidden transition-all duration-300 ease-in-out"
+                            style="max-height: {{ $groupActive ? '500px' : '0' }}; opacity: {{ $groupActive ? '1' : '0' }};">
                             <div class="mt-2 space-y-1 ml-1">
                                 @foreach ($item['items'] as $sub)
                                     @php
@@ -859,32 +853,29 @@
 
                                         $subRoute = $sub['route'] ?? ($sub['link'] ?? '');
 
-                                        // NEW: Check for current-page-indicator type
                                         if (isset($sub['type']) && $sub['type'] === 'current-page-indicator') {
-                                            // Only show if we're on the exact edit page with the right parameters
-    $shouldShow = false;
-    $isActive = false;
+                                            $shouldShow = false;
+                                            $isActive = false;
 
-    if ($subRoute === $currentRoute) {
-        $hasRequiredParam = true;
-        if (isset($sub['params'])) {
-            $paramNames = is_array($sub['params'])
-                ? $sub['params']
-                : [$sub['params']];
-            foreach ($paramNames as $paramName) {
-                if (!isset($currentParameters[$paramName])) {
-                    $hasRequiredParam = false;
-                    break;
-                }
-            }
-        }
-        if ($hasRequiredParam) {
-            $shouldShow = true;
-            $isActive = true;
-        }
-    }
+                                            if ($subRoute === $currentRoute) {
+                                                $hasRequiredParam = true;
+                                                if (isset($sub['params'])) {
+                                                    $paramNames = is_array($sub['params'])
+                                                        ? $sub['params']
+                                                        : [$sub['params']];
+                                                    foreach ($paramNames as $paramName) {
+                                                        if (!isset($currentParameters[$paramName])) {
+                                                            $hasRequiredParam = false;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                                if ($hasRequiredParam) {
+                                                    $shouldShow = true;
+                                                    $isActive = true;
+                                                }
+                                            }
 
-    // Skip if we shouldn't show this indicator
                                             if (!$shouldShow) {
                                                 continue;
                                             }
@@ -892,7 +883,6 @@
                                             $href = '#';
                                             $isDisabled = true;
                                         } else {
-                                            // Regular menu item
                                             $active = $subRoute && $subRoute === $currentRoute;
                                             $href = $subRoute ? route($subRoute) : '#';
                                             $isActive = $active;
@@ -906,9 +896,9 @@
                                             class="flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 bg-blue-50 text-blue-600 font-semibold cursor-default opacity-75">
                                             @include('partials/sidebar-icon', [
                                                 'name' => $sub['icon'] ?? 'default',
+                                                'class' => 'icon-only',
                                             ])
-                                            <span>{{ $sub['label'] }}</span>
-
+                                            <span class="sidebar-text">{{ $sub['label'] }}</span>
                                         </div>
                                     @else
                                         <!-- Regular Menu Item -->
@@ -916,12 +906,44 @@
                                             class="flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 {{ $isActive ? 'bg-blue-100 font-semibold text-blue-600' : 'hover:bg-gray-100 text-gray-700' }}">
                                             @include('partials/sidebar-icon', [
                                                 'name' => $sub['icon'] ?? 'default',
+                                                'class' => 'icon-only',
                                             ])
-                                            <span>{{ $sub['label'] }}</span>
+                                            <span class="sidebar-text">{{ $sub['label'] }}</span>
                                         </a>
                                     @endif
                                 @endforeach
                             </div>
+                        </div>
+
+                        <!-- Collapsed Mode Icons (Hidden by default) -->
+                        <div class="collapsed-icons hidden flex-col items-center space-y-2 mt-2">
+                            @foreach ($item['items'] as $sub)
+                                @php
+                                    $subAccess = isset($sub['roles']) && in_array($userRoleName, $sub['roles']);
+                                    if (
+                                        !$subAccess ||
+                                        (isset($sub['type']) && $sub['type'] === 'current-page-indicator')
+                                    ) {
+                                        continue;
+                                    }
+                                    $subRoute = $sub['route'] ?? ($sub['link'] ?? '');
+                                    $active = $subRoute && $subRoute === $currentRoute;
+                                    $href = $subRoute ? route($subRoute) : '#';
+                                @endphp
+                                <a href="{{ $href }}"
+                                    class="relative group flex items-center justify-center w-full p-2 rounded hover:bg-gray-100 {{ $active ? 'bg-blue-100 text-blue-600' : 'text-gray-700' }}">
+                                    @include('partials/sidebar-icon', [
+                                        'name' => $sub['icon'] ?? 'default',
+                                        'class' => 'icon-only',
+                                    ])
+
+                                    <!-- Tooltip -->
+                                    <div
+                                        class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50">
+                                        {{ $sub['label'] }}
+                                    </div>
+                                </a>
+                            @endforeach
                         </div>
                     </div>
                 @endif
@@ -932,23 +954,45 @@
                     $href = $subRoute ? route($subRoute) : '#';
                 @endphp
                 <a href="{{ $href }}"
-                    class="flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 font-semibold {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}">
-                    @include('partials/sidebar-icon', ['name' => $item['icon'] ?? 'default'])
-                    <span>{{ $item['label'] }}</span>
+                    class="relative group flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 font-semibold {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}">
+                    @include('partials/sidebar-icon', [
+                        'name' => $item['icon'] ?? 'default',
+                        'class' => 'icon-only',
+                    ])
+                    <span class="sidebar-text">{{ $item['label'] }}</span>
+
+                    <!-- Tooltip for collapsed mode -->
+                    <div
+                        class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 hidden collapsed-tooltip">
+                        {{ $item['label'] }}
+                    </div>
                 </a>
             @endif
         @endforeach
     </nav>
 </div>
 
-
-<!-- JS -->
 <script>
+    // Group management
     let openGroup = null;
+
+    function handleGroupClick(key) {
+        const sidebar = document.getElementById('sidebar');
+
+        // Don't open dropdowns in collapsed mode
+        if (sidebar.classList.contains('sidebar-collapsed')) {
+            return;
+        }
+
+        toggleGroup(key);
+    }
 
     function toggleGroup(key) {
         const submenu = document.getElementById(`group-${key}`);
         const button = document.querySelector(`button[data-group='${key}']`);
+
+        if (!submenu || !button) return;
+
         const arrow = button.querySelector('.arrow');
 
         // Close currently open group
@@ -956,51 +1000,202 @@
             closeGroup(openGroup);
         }
 
-        if (submenu.classList.contains('open')) {
+        if (submenu.style.maxHeight && submenu.style.maxHeight !== '0px') {
             closeGroup(key);
             openGroup = null;
+            localStorage.removeItem('activeSidebarGroup');
         } else {
             openGroupFn(key);
             openGroup = key;
+            localStorage.setItem('activeSidebarGroup', key);
         }
     }
 
     function openGroupFn(key) {
         const submenu = document.getElementById(`group-${key}`);
         const button = document.querySelector(`button[data-group='${key}']`);
+
+        if (!submenu || !button) return;
+
         const arrow = button.querySelector('.arrow');
 
-        submenu.classList.add('open');
         submenu.style.maxHeight = submenu.scrollHeight + 'px';
-        submenu.classList.remove('opacity-0');
-        submenu.classList.add('opacity-100');
+        submenu.style.opacity = '1';
 
-        arrow.classList.add('rotate-180');
+        if (arrow) {
+            arrow.classList.add('rotate-180');
+        }
     }
 
     function closeGroup(key) {
         const submenu = document.getElementById(`group-${key}`);
         const button = document.querySelector(`button[data-group='${key}']`);
+
+        if (!submenu || !button) return;
+
         const arrow = button.querySelector('.arrow');
 
         submenu.style.maxHeight = '0px';
-        submenu.classList.remove('opacity-100');
-        submenu.classList.add('opacity-0');
-        submenu.classList.remove('open');
+        submenu.style.opacity = '0';
 
-        arrow.classList.remove('rotate-180');
+        if (arrow) {
+            arrow.classList.remove('rotate-180');
+        }
     }
 
     // Auto open active group on load
     document.addEventListener('DOMContentLoaded', () => {
         @if ($openGroupKey !== null)
-            openGroupFn({{ $openGroupKey }});
-            openGroup = {{ $openGroupKey }};
+            setTimeout(() => {
+                openGroupFn({{ $openGroupKey }});
+                openGroup = {{ $openGroupKey }};
+                localStorage.setItem('activeSidebarGroup', {{ $openGroupKey }});
+            }, 100);
         @endif
+
+        // Initialize sidebar state
+        updateSidebarState();
     });
 
-    // Attach click listeners
-    document.querySelectorAll('.group-btn').forEach(btn => {
-        btn.addEventListener('click', () => toggleGroup(btn.dataset.group));
+    // Update sidebar based on collapsed state
+    function updateSidebarState() {
+        const sidebar = document.getElementById('sidebar');
+        const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
+        const brandFull = document.querySelectorAll('.brand-full');
+        const brandIcon = document.querySelectorAll('.brand-icon');
+        const sidebarTexts = document.querySelectorAll('.sidebar-text');
+        const arrows = document.querySelectorAll('.group-btn .arrow');
+        const submenus = document.querySelectorAll('.submenu');
+        const collapsedIconsContainers = document.querySelectorAll('.collapsed-icons');
+        const groupButtons = document.querySelectorAll('.group-btn');
+        const tooltips = document.querySelectorAll('.collapsed-tooltip');
+
+        if (isCollapsed) {
+            // Hide full logo, show icon
+            brandFull.forEach(el => el.classList.add('hidden'));
+            brandIcon.forEach(el => el.classList.remove('hidden'));
+
+            // Hide text elements
+            sidebarTexts.forEach(el => el.classList.add('hidden'));
+            arrows.forEach(el => el.classList.add('hidden'));
+
+            // Hide submenus
+            submenus.forEach(el => {
+                el.style.maxHeight = '0px';
+                el.style.opacity = '0';
+            });
+
+            // Show collapsed icons
+            collapsedIconsContainers.forEach(el => el.classList.remove('hidden'));
+
+            // Center group buttons
+            groupButtons.forEach(el => {
+                el.classList.add('justify-center');
+            });
+
+            // Show tooltips
+            tooltips.forEach(el => el.classList.remove('hidden'));
+
+            // Close all groups
+            openGroup = null;
+        } else {
+            // Show full logo, hide icon
+            brandFull.forEach(el => el.classList.remove('hidden'));
+            brandIcon.forEach(el => el.classList.add('hidden'));
+
+            // Show text elements
+            sidebarTexts.forEach(el => el.classList.remove('hidden'));
+            arrows.forEach(el => el.classList.remove('hidden'));
+
+            // Hide collapsed icons
+            collapsedIconsContainers.forEach(el => el.classList.add('hidden'));
+
+            // Reset group button alignment
+            groupButtons.forEach(el => {
+                el.classList.remove('justify-center');
+            });
+
+            // Hide tooltips
+            tooltips.forEach(el => el.classList.add('hidden'));
+
+            // Reopen active group
+            const activeGroup = localStorage.getItem('activeSidebarGroup');
+            if (activeGroup) {
+                setTimeout(() => {
+                    openGroupFn(activeGroup);
+                    openGroup = activeGroup;
+                }, 300);
+            }
+        }
+    }
+
+    // Listen for sidebar state changes
+    const sidebarObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'class') {
+                updateSidebarState();
+            }
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebarObserver.observe(sidebar, {
+                attributes: true
+            });
+        }
     });
 </script>
+
+<style>
+    /* Sidebar text visibility */
+    .sidebar-collapsed .sidebar-text {
+        display: none;
+    }
+
+    .sidebar-collapsed .group-btn {
+        justify-content: center;
+    }
+
+    .sidebar-collapsed .brand-full {
+        display: none;
+    }
+
+    .sidebar-collapsed .brand-icon {
+        display: block;
+    }
+
+    .sidebar-collapsed .arrow {
+        display: none;
+    }
+
+    .sidebar-collapsed .submenu {
+        display: none;
+    }
+
+    .sidebar-collapsed .collapsed-icons {
+        display: flex !important;
+    }
+
+    .sidebar-collapsed .collapsed-tooltip {
+        display: block;
+    }
+
+    /* Tooltip styles */
+    .group:hover .group-hover\:opacity-100 {
+        opacity: 1;
+    }
+
+    /* Smooth transitions */
+    .transition-all {
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 300ms;
+    }
+
+    /* Submenu animation */
+    .submenu {
+        transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out;
+    }
+</style>

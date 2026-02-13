@@ -90,6 +90,18 @@ class Appointment extends Model
         return $this->hasMany(AppointmentReminder::class);
     }
 
+    // Appointment count for dashboard stats
+    public static function TotalCount()
+    {
+        return self::count();
+    }
+
+    // Today's appointment count for dashboard stats
+    public static function TodayCount()
+    {
+        return self::whereDate('appointment_date', today())->count();
+    }
+
     // =========================
     // SCOPES
     // =========================

@@ -115,13 +115,25 @@ const Navbar = ({ navItems = [] }) => {
             )}
           </button>
 
-          {/* CTA */}
-          <button
-            onClick={() => scrollToSection("contact")}
-            className="hidden lg:block bg-blue-500 px-6 py-2 rounded shadow-xl hover:shadow-2xl text-white"
-          >
-            Book Now
-          </button>
+          {/* CTA Buttons */}
+          <div className="hidden lg:flex items-center space-x-4">
+            {/* Login */}
+            <a
+              href="/login"
+              className="px-6 py-2 border border-blue-500 text-blue-600 rounded hover:bg-blue-50 transition"
+            >
+              Login
+            </a>
+
+            {/* Book Now */}
+            <button
+              onClick={() => scrollToSection("contact")}
+              className="bg-blue-500 px-6 py-2 rounded shadow-xl hover:shadow-2xl text-white transition"
+            >
+              Book Now
+            </button>
+          </div>
+
         </div>
 
         {/* Mobile Menu */}

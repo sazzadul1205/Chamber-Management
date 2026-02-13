@@ -2,37 +2,45 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Appointment;
+use App\Models\Patient;
+use App\Models\User;
+use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    /**
-     * =========================================================================
-     * DASHBOARD INDEX - ROLE-BASED VIEW ROUTING
-     * =========================================================================
-     * 
-     * Main dashboard controller that routes users to appropriate dashboards
-     * based on their role. Uses a match statement for clean role-based routing.
-     * 
-     * Role ID mapping:
-     * - 1: Super Admin
-     * - 2: Admin
-     * - 3: Doctor
-     * - 4: Receptionist
-     * - 5: Accountant
-     * 
-     * Each role gets a tailored dashboard view with relevant widgets and data.
-     * Default dashboard is shown for unauthenticated or unknown roles.
-     * 
-     * @return \Illuminate\View\View Role-specific dashboard view
-     */
     public function index()
     {
+        // Total Patient Count
+        $PatientCount = Patient::totalCount();
+
+        // Today's Patient Count
+        $PatientToday = Patient::TodayCount();
+
+        // Total User Count
+        $totalUserCount = User::totalCount();
+
+        // Appointment Count
+        $AppointmentCount = Appointment::totalCount();
+
+        // Appointment Today Count
+        $AppointmentToday = Appointment::TodayCount();
+
+        // -------------------------
+        // TOTAL PAYMENTS & TODAY'S PAYMENTS
+        // -------------------------
+        $TotalPayments = Payment::sum('amount');
+
+        $TodaysPayments = Payment::whereDate('payment_date', Carbon::today())
+            ->sum('amount');
+
+
         // Get the authenticated user
         $user = Auth::user();
 
-        // Define role ID to role name mapping
-        // This should match the roles defined in your database or constants
+        // Role mapping
         $roleMap = [
             1 => 'super_admin',
             2 => 'admin',
@@ -41,54 +49,53 @@ class DashboardController extends Controller
             5 => 'accountant',
         ];
 
-        // Determine the user's role name based on role_id
         $role = $roleMap[$user->role_id] ?? null;
 
-        // Route to appropriate dashboard based on role
         return match ($role) {
-            // -------------------------------
-            // ADMINISTRATOR DASHBOARDS
-            // -------------------------------
             'super_admin', 'admin'
             => view('backend.admin-dashboard', [
                 'user' => $user,
-                'role' => $role
+                'role' => $role,
+                'totalUserCount' => $totalUserCount,
+                'PatientCount' => $PatientCount,
+                'AppointmentCount' => $AppointmentCount,
+                'PatientToday' => $PatientToday,
+                'AppointmentToday' => $AppointmentToday,
+                'TotalPayments' => $TotalPayments,
+                'TodaysPayments' => $TodaysPayments,
+
             ]),
 
-            // -------------------------------
-            // DOCTOR DASHBOARD
-            // -------------------------------
             'doctor'
             => view('backend.doctor-dashboard', [
                 'user' => $user,
-                'role' => $role
+                'role' => $role,
+                'TotalPayments' => $TotalPayments,
+                'TodaysPayments' => $TodaysPayments,
             ]),
 
-            // -------------------------------
-            // RECEPTIONIST DASHBOARD
-            // -------------------------------
             'receptionist'
             => view('backend.receptionist-dashboard', [
                 'user' => $user,
-                'role' => $role
+                'role' => $role,
+                'TotalPayments' => $TotalPayments,
+                'TodaysPayments' => $TodaysPayments,
             ]),
 
-            // -------------------------------
-            // ACCOUNTANT DASHBOARD
-            // -------------------------------
             'accountant'
             => view('backend.accountant-dashboard', [
                 'user' => $user,
-                'role' => $role
+                'role' => $role,
+                'TotalPayments' => $TotalPayments,
+                'TodaysPayments' => $TodaysPayments,
             ]),
 
-            // -------------------------------
-            // DEFAULT / FALLBACK DASHBOARD
-            // -------------------------------
             default
             => view('backend.dashboard', [
                 'user' => $user,
-                'role' => $role
+                'role' => $role,
+                'TotalPayments' => $TotalPayments,
+                'TodaysPayments' => $TodaysPayments,
             ]),
         };
     }

@@ -79,7 +79,8 @@ Route::post('admin/save-component', [ComponentController::class, 'saveComponent'
 Route::get('admin/custom-components', [ComponentController::class, 'getCustomComponents']);
 Route::delete('admin/delete-component/{name}', [ComponentController::class, 'deleteComponent']);
 
-
+// Login
+Route::get('/login', fn() => view('auth.login'))->name('login');
 
 // Backend Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])
