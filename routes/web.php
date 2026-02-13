@@ -417,20 +417,14 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Dental Chairs
-        Route::resource('dental-chairs', DentalChairController::class)
-            ->names('backend.dental-chairs');
-        Route::get('dental-chairs/dashboard', [DentalChairController::class, 'dashboard'])
-            ->name('backend.dental-chairs.dashboard');
-        Route::get('dental-chairs/schedule', [DentalChairController::class, 'schedule'])
-            ->name('backend.dental-chairs.schedule');
-        Route::get('dental-chairs/generate-code', [DentalChairController::class, 'generateCode'])
-            ->name('backend.dental-chairs.generate-code');
-        Route::get('dental-chairs/api/available-chairs', [DentalChairController::class, 'getAvailableChairs'])
-            ->name('backend.dental-chairs.available-chairs');
-        Route::post('dental-chairs/{dentalChair}/update-status', [DentalChairController::class, 'updateStatus'])
-            ->name('backend.dental-chairs.update-status');
-        Route::post('dental-chairs/{dentalChair}/quick-status-change', [DentalChairController::class, 'quickStatusChange'])
-            ->name('backend.dental-chairs.quick-status-change');
+        Route::get('dental-chairs/dashboard', [DentalChairController::class, 'dashboard'])->name('backend.dental-chairs.dashboard');
+        Route::get('dental-chairs/schedule', [DentalChairController::class, 'schedule'])->name('backend.dental-chairs.schedule');
+        Route::get('dental-chairs/generate-code', [DentalChairController::class, 'generateCode'])->name('backend.dental-chairs.generate-code');
+        Route::get('dental-chairs/api/available-chairs', [DentalChairController::class, 'getAvailableChairs'])->name('backend.dental-chairs.available-chairs');
+        Route::post('dental-chairs/{dentalChair}/update-status', [DentalChairController::class, 'updateStatus'])->name('backend.dental-chairs.update-status');
+        Route::post('dental-chairs/{dentalChair}/quick-status-change', [DentalChairController::class, 'quickStatusChange'])->name('backend.dental-chairs.quick-status-change');
+        Route::get('dental-chairs/{dentalChair}/treatments', [DentalChairController::class, 'chairTreatments'])->name('backend.dental-chairs.treatments');
+        Route::resource('dental-chairs', DentalChairController::class)->names('backend.dental-chairs');
     });
 
     // =========================================================================

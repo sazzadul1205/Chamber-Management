@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DentalChair;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class DentalChairController extends Controller
 {
@@ -132,7 +133,25 @@ class DentalChairController extends Controller
             'currentAppointment.doctor.user'
         ]);
 
-        return view('backend.dental_chairs.show', compact('dentalChair'));
+        // Calculate today's appointments
+        $todayAppointments = $dentalChair->appointments()
+            ->whereDate('appointment_date', Carbon::today())
+            ->count();
+
+        // Calculate usage rate (percentage of days this chair has been used)
+        $daysSinceCreation = max(1, $dentalChair->created_at->diffInDays(now()));
+        $daysWithAppointments = $dentalChair->appointments()
+            ->selectRaw('COUNT(DISTINCT DATE(appointment_date)) as days_count')
+            ->first()
+            ->days_count ?? 0;
+
+        $usageRate = round(($daysWithAppointments / $daysSinceCreation) * 100);
+
+        return view('backend.dental_chairs.show', compact(
+            'dentalChair',
+            'todayAppointments',
+            'usageRate'
+        ));
     }
 
     /**
@@ -290,10 +309,10 @@ class DentalChairController extends Controller
         ]);
 
         $chair = DentalChair::findOrFail($id);
-        
+
         // Prepare update data
         $updateData = ['status' => $request->status];
-        
+
         // Update last_used for occupied or available status
         if (in_array($request->status, ['occupied', 'available'])) {
             $updateData['last_used'] = now();
@@ -368,5 +387,55 @@ class DentalChairController extends Controller
         $chairs = DentalChair::all();
 
         return view('backend.dental_chairs.schedule', compact('chairs', 'date'));
+    }
+    /**
+     * =========================================================================
+     * CHAIR CALENDAR VIEW
+     * =========================================================================
+     * 
+     * Display calendar view for a specific dental chair showing
+     * all appointments scheduled for this chair.
+     * 
+     * @param DentalChair $dentalChair Dental chair model instance
+     * @param Request $request HTTP request with optional month/year parameters
+     * @return \Illuminate\View\View Chair calendar view
+     */
+    public function calendar(DentalChair $dentalChair, Request $request)
+    {
+        // Get month and year from request or use current
+        $month = $request->get('month', now()->month);
+        $year = $request->get('year', now()->year);
+
+        // Create start and end dates for the month
+        $startDate = Carbon::create($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::create($year, $month, 1)->endOfMonth();
+
+        // Get appointments for this chair in the selected month
+        $appointments = $dentalChair->appointments()
+            ->with(['patient', 'doctor.user'])
+            ->whereBetween('appointment_date', [$startDate, $endDate])
+            ->orderBy('appointment_date')
+            ->orderBy('appointment_time')
+            ->get()
+            ->groupBy(function ($appointment) {
+                return Carbon::parse($appointment->appointment_date)->format('Y-m-d');
+            });
+
+        // Get previous and next month links
+        $prevMonth = $month == 1 ? 12 : $month - 1;
+        $prevYear = $month == 1 ? $year - 1 : $year;
+        $nextMonth = $month == 12 ? 1 : $month + 1;
+        $nextYear = $month == 12 ? $year + 1 : $year;
+
+        return view('backend.dental_chairs.calendar', compact(
+            'dentalChair',
+            'appointments',
+            'month',
+            'year',
+            'prevMonth',
+            'prevYear',
+            'nextMonth',
+            'nextYear'
+        ));
     }
 }
