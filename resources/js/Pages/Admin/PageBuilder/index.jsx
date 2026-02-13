@@ -5,7 +5,6 @@ import { useForm, router } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
-
 // Import icons
 import { HiOutlineTemplate, HiOutlineInformationCircle, HiOutlineViewGrid, HiOutlineCube } from "react-icons/hi";
 import { MdOutlineVisibility } from "react-icons/md";
@@ -19,7 +18,7 @@ import { LoadingScreen } from './LoadingScreen';
 import { AvailableSections } from './AvailableSections';
 import { LayoutBuilder } from './LayoutBuilder';
 import { PreviewPanel } from './PreviewPanel';
-import { generateUniqueId, preloadComponents, preloadCustomComponents } from './constants';
+import { generateUniqueId, preloadComponents, preloadCustomComponents, generateNavId } from './constants';
 
 const MySwal = withReactContent(Swal);
 
@@ -35,7 +34,10 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
         // CRITICAL: Explicitly set is_custom based on either:
         // 1. The existing is_custom flag
         // 2. Check if the section type doesn't exist in the sections object (prebuilt sections)
-        is_custom: section.is_custom === true || !sections[section.type]
+        is_custom: section.is_custom === true || !sections[section.type],
+        // CRITICAL: Ensure navLabel and navId exist
+        navLabel: section.navLabel || sections[section.type]?.name || section.type,
+        navId: section.navId || generateNavId(section.navLabel || sections[section.type]?.name || section.type)
       }));
     }
     return generateDefaultSections(sections);
@@ -167,16 +169,23 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
     }
   };
 
+  // 🔥 FIXED: Add section with proper navLabel and navId
   const addSection = (type, variant) => {
+    const sectionName = sections[type]?.name || type;
+    const navLabel = sectionName;
+    const navId = generateNavId(navLabel);
+
     const newSection = {
       id: generateUniqueId(),
       type,
       variant,
       order: activeSections.length + 1, // Always add to the bottom
       is_custom: false,
+      navLabel,
+      navId,
       settings: {
         is_visible: true,
-        title: sections[type]?.name || type,
+        title: sectionName,
         created_at: new Date().toISOString()
       }
     };
@@ -196,6 +205,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
     });
   };
 
+  // 🔥 FIXED: Add custom section with proper navLabel and navId
   const addCustomSection = async (componentName) => {
     // Preload the custom component immediately when adding
     try {
@@ -208,12 +218,17 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
       console.error(`Failed to load custom component: ${componentName}`, error);
     }
 
+    const navLabel = componentName;
+    const navId = generateNavId(navLabel);
+
     const newSection = {
       id: generateUniqueId(),
       type: componentName,
       variant: componentName,
       order: activeSections.length + 1, // Always add to the bottom
       is_custom: true,
+      navLabel,
+      navId,
       settings: {
         is_visible: true,
         title: componentName,
@@ -352,7 +367,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 text-black overflow-hidden">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -429,6 +444,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
             <div className="lg:col-span-4">
               <LayoutBuilder
                 activeSections={activeSections}
+                setActiveSections={setActiveSections}
                 sections={sections}
                 onDragEnd={handleDragEnd}
                 onUpdateVariant={updateVariant}
@@ -455,19 +471,24 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
   );
 }
 
-// Also update the generateDefaultSections function:
+// 🔥 FIXED: Update generateDefaultSections function to include navLabel and navId
 function generateDefaultSections(sections) {
   const defaultSections = [];
   let order = 1;
   const timestamp = Date.now();
 
   Object.entries(sections).forEach(([key, section], index) => {
+    const navLabel = section.name || key;
+    const navId = generateNavId(navLabel);
+
     defaultSections.push({
       id: `${timestamp}-${index}-${order}-${Math.random().toString(36).substr(2, 9)}`,
       type: key,
       variant: section.default || 'basic',
       order: order++,
       is_custom: false, // Explicitly false for prebuilt sections
+      navLabel,
+      navId,
       settings: {
         is_visible: true,
         title: section.name,

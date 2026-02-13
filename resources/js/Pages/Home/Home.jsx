@@ -1,6 +1,9 @@
 import PublicLayout from "@/Layouts/PublicLayout";
+
+// React Imports
 import { Head } from "@inertiajs/react";
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState, useRef } from 'react';
+import BackToTop from "./BackToTop";
 
 // Regular Section Imports
 const TopSlider_1 = lazy(() => import("./TopSlider/TopSlider_1"));
@@ -46,9 +49,9 @@ const customComponentsMap = import.meta.glob('./Custom/*.jsx');
 // Create a mapping from component name -> importer function
 const customComponentsLookup = {};
 for (const path in customComponentsMap) {
-  const match = path.match(/\/([^/]+)\.jsx$/); // match file name
+  const match = path.match(/\/([^/]+)\.jsx$/);
   if (match) {
-    const name = match[1]; // e.g., Test1
+    const name = match[1];
     customComponentsLookup[name] = customComponentsMap[path];
   }
 }
@@ -65,64 +68,179 @@ async function importCustomComponent(name) {
 
 // Default Sections
 const defaultSections = [
-  { id: '1', type: 'top_slider', variant: 'TopSlider_1', order: 1, settings: { is_visible: true } },
-  { id: '2', type: 'about_section', variant: 'AboutSection_1', order: 2, settings: { is_visible: true } },
-  { id: '3', type: 'our_services', variant: 'OurServices_1', order: 3, settings: { is_visible: true } },
-  { id: '4', type: 'pricing_section', variant: 'PricingSection_1', order: 4, settings: { is_visible: true } },
-  { id: '5', type: 'book_appointment', variant: 'BookAppointment_1', order: 5, settings: { is_visible: true } },
-  { id: '6', type: 'our_dentist', variant: 'OurDentist_1', order: 6, settings: { is_visible: true } },
-  { id: '7', type: 'testimonials', variant: 'Testimonials_1', order: 7, settings: { is_visible: true } },
-  { id: '8', type: 'latest_news', variant: 'LatestNews_1', order: 8, settings: { is_visible: true } }
+  {
+    id: '1',
+    type: 'top_slider',
+    variant: 'TopSlider_1',
+    order: 1,
+    navLabel: 'Home',
+    navId: 'home',
+    settings: { is_visible: true }
+  },
+  {
+    id: '2',
+    type: 'about_section',
+    variant: 'AboutSection_1',
+    order: 2,
+    navLabel: 'About',
+    navId: 'about',
+    settings: { is_visible: true }
+  },
+  {
+    id: '3',
+    type: 'our_services',
+    variant: 'OurServices_1',
+    order: 3,
+    navLabel: 'Services',
+    navId: 'services',
+    settings: { is_visible: true }
+  },
+  {
+    id: '4',
+    type: 'pricing_section',
+    variant: 'PricingSection_1',
+    order: 4,
+    navLabel: 'Pricing',
+    navId: 'pricing',
+    settings: { is_visible: true }
+  },
+  {
+    id: '5',
+    type: 'book_appointment',
+    variant: 'BookAppointment_1',
+    order: 5,
+    navLabel: 'Appointment',
+    navId: 'appointment',
+    settings: { is_visible: true }
+  },
+  {
+    id: '6',
+    type: 'our_dentist',
+    variant: 'OurDentist_1',
+    order: 6,
+    navLabel: 'Dentists',
+    navId: 'dentists',
+    settings: { is_visible: true }
+  },
+  {
+    id: '7',
+    type: 'testimonials',
+    variant: 'Testimonials_1',
+    order: 7,
+    navLabel: 'Testimonials',
+    navId: 'testimonials',
+    settings: { is_visible: true }
+  },
+  {
+    id: '8',
+    type: 'latest_news',
+    variant: 'LatestNews_1',
+    order: 8,
+    navLabel: 'News',
+    navId: 'news',
+    settings: { is_visible: true }
+  },
+  {
+    id: '9',
+    type: 'contact',
+    variant: 'BookAppointment_1',
+    order: 9,
+    navLabel: 'Contact',
+    navId: 'contact',
+    settings: { is_visible: true }
+  }
 ];
 
 const Home = ({ pageConfig }) => {
   const { sections = defaultSections } = pageConfig || {};
   const [loadedCustomComponents, setLoadedCustomComponents] = useState({});
-  console.log(pageConfig);
+  const [isLoading, setIsLoading] = useState(true);
+  const [mountedSections, setMountedSections] = useState({});
+  const sectionRefs = useRef({});
 
-
-  // Load custom components dynamically
+  // Load custom components
   useEffect(() => {
     const loadCustomComponents = async () => {
       const customSections = sections.filter(s => !componentMap[s.variant]);
-      const components = { ...loadedCustomComponents };
+      const components = {};
 
       for (const section of customSections) {
-        if (!components[section.variant]) {
-          const Component = await importCustomComponent(section.variant);
-          if (Component) components[section.variant] = Component;
-        }
+        const Component = await importCustomComponent(section.variant);
+        if (Component) components[section.variant] = Component;
       }
 
       setLoadedCustomComponents(components);
+      setIsLoading(false);
     };
 
     loadCustomComponents();
   }, [sections]);
 
-  const sortedSections = [...sections].sort((a, b) => a.order - b.order);
+  // Sort sections by order
+  const sortedSections = [...sections]
+    .filter(section => section.settings?.is_visible !== false)
+    .sort((a, b) => a.order - b.order);
+
+  // Generate nav items from visible sections
+  const navItems = sortedSections
+    .map(section => ({
+      id: section.navId,
+      label: section.navLabel,
+    }));
+
+  // Mark section as mounted
+  const handleSectionMount = (sectionId) => {
+    setMountedSections(prev => ({ ...prev, [sectionId]: true }));
+  };
+
+  // Loading component
+  const LoadingFallback = () => (
+    <div className="w-full py-12 flex justify-center items-center">
+      <div className="animate-pulse bg-gray-200 h-32 w-full rounded-lg"></div>
+    </div>
+  );
 
   return (
-    <PublicLayout>
+    <PublicLayout navItems={navItems}>
       <Head title="Home Page" />
-      <Suspense fallback={<div>Loading...</div>}>
-        {sortedSections.map(section => {
-          if (section.settings?.is_visible === false) return null;
 
-          // Check if it's a standard component
-          let Component = componentMap[section.variant];
+      <div className="relative">
+        <Suspense fallback={<LoadingFallback />}>
+          {sortedSections.map((section, index) => {
+            if (section.settings?.is_visible === false) return null;
 
-          // If not standard, try custom
-          if (!Component) Component = loadedCustomComponents[section.variant];
+            let Component = componentMap[section.variant];
+            if (!Component) Component = loadedCustomComponents[section.variant];
+            if (!Component && !isLoading) {
+              return (
+                <div key={section.id} className="text-center py-12 text-red-500">
+                  Component {section.variant} not found
+                </div>
+              );
+            }
+            if (!Component) return <LoadingFallback key={section.id} />;
 
-          // Still not loaded? show a loading placeholder
-          if (!Component) return (
-            <div key={section.id}>Loading {section.variant}...</div>
-          );
+            return (
+              <section
+                key={section.id}
+                id={section.navId}
+                ref={el => sectionRefs.current[section.navId] = el}
+                className="scroll-mt-20" // Offset for fixed navbar
+              >
+                <Suspense fallback={<LoadingFallback />}>
+                  <Component
+                    settings={section.settings}
+                    onMount={() => handleSectionMount(section.navId)}
+                  />
+                </Suspense>
+              </section>
+            );
+          })}
+        </Suspense>
+      </div>
 
-          return <Component key={section.id} settings={section.settings} />;
-        })}
-      </Suspense>
+      {/* Back to Top Button */}
+      <BackToTop />
     </PublicLayout>
   );
 };

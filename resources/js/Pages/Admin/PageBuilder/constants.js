@@ -78,6 +78,17 @@ export function generateUniqueId() {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${performance.now().toString(36)}`;
 }
 
+// Generate navId from text
+export function generateNavId(text) {
+    if (!text) return "";
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-");
+}
+
 // Default variants for sections
 export const DEFAULT_VARIANTS = {
     basic: "Basic",

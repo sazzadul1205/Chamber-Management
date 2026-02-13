@@ -22,6 +22,7 @@ class PageController extends Controller
         ]);
     }
 
+
     public function update(Request $request)
     {
         $validated = $request->validate([
@@ -30,9 +31,12 @@ class PageController extends Controller
             'layout_config.sections.*.type' => 'required|string',
             'layout_config.sections.*.variant' => 'required|string',
             'layout_config.sections.*.order' => 'required|integer',
+            'layout_config.sections.*.navLabel' => 'required|string',
+            'layout_config.sections.*.navId' => 'required|string',
             'layout_config.sections.*.settings' => 'array',
             'section_settings' => 'array'
         ]);
+
 
         $config = PageConfig::updateOrCreate(
             ['page_name' => 'home', 'is_active' => true],
