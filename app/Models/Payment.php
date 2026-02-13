@@ -167,7 +167,10 @@ class Payment extends Model
 
     public function getIsRefundableAttribute()
     {
-        return $this->status == 'completed' && $this->created_at->diffInDays(now()) <= 30;
+        return $this->status == 'completed'
+            && $this->payment_type !== 'refund'
+            && $this->amount > 0
+            && $this->created_at->diffInDays(now()) <= 30;
     }
 
     public function getFormattedPaymentDateAttribute()
@@ -267,10 +270,21 @@ class Payment extends Model
 
     public function refund($reason = 'Refund requested')
     {
-        if (!$this->is_refundable) throw new \Exception('Payment is not refundable');
+        if (!$this->is_refundable) {
+            throw new \Exception('Payment is not refundable');
+        }
 
-        $this->invoice->deductPayment($this->amount);
-        if ($this->installment_id) $this->installment->deductPayment($this->amount);
+        if ($this->invoice) {
+            $this->invoice->deductPayment($this->amount);
+        }
+
+        if ($this->installment_id && $this->installment) {
+            $this->installment->deductPayment($this->amount);
+        }
+
+        if ($this->for_treatment_session_id && $this->treatmentSession) {
+            $this->treatmentSession->deductPayment($this->amount);
+        }
 
         $this->status = 'refunded';
         $this->remarks = ($this->remarks ? $this->remarks . "\n" : '') .
@@ -281,14 +295,20 @@ class Payment extends Model
             'payment_no' => self::generatePaymentNo(),
             'invoice_id' => $this->invoice_id,
             'patient_id' => $this->patient_id,
+            'installment_id' => $this->installment_id,
+            'is_advance' => false,
+            'payable_type' => $this->payable_type,
+            'payable_id' => $this->payable_id,
+            'for_treatment_session_id' => $this->for_treatment_session_id,
+            'treatment_id' => $this->treatment_id,
             'payment_date' => now(),
             'payment_method' => $this->payment_method,
             'payment_type' => 'refund',
-            'amount' => $this->amount,
+            'amount' => -1 * abs($this->amount),
             'reference_no' => 'REF-' . $this->payment_no,
             'remarks' => 'Refund for payment ' . $this->payment_no . ' - ' . $reason,
             'status' => 'completed',
-            'created_by' => $this->created_by
+            'created_by' => auth()->id() ?? $this->created_by
         ]);
     }
 

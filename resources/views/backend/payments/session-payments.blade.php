@@ -1,6 +1,10 @@
     @extends('backend.layout.structure')
 
     @section('content')
+        @php
+            $hasTreatment = isset($treatment);
+            $sessionRows = $hasTreatment ? $treatment->sessions : $sessions;
+        @endphp
         <div class="space-y-6">
 
             <!-- Header -->
@@ -10,22 +14,24 @@
                     <div class="text-sm text-gray-600 flex flex-wrap gap-4">
                         <div class="flex items-center gap-1">
                             <span class="font-medium">Treatment:</span>
-                            <span class="font-semibold text-blue-700">{{ $treatment->treatment_code }}</span>
+                            <span class="font-semibold text-blue-700">{{ $hasTreatment ? $treatment->treatment_code : 'All Treatments' }}</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="font-medium">Patient:</span>
-                            <span class="font-semibold text-green-700">{{ $treatment->patient->full_name }}</span>
+                            <span class="font-semibold text-green-700">{{ $hasTreatment ? $treatment->patient->full_name : 'All Patients' }}</span>
                         </div>
                     </div>
                 </div>
 
-                <a href="{{ route('backend.treatments.show', $treatment) }}"
-                    class="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-sm font-medium transition">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Back to Treatment
-                </a>
+                @if ($hasTreatment)
+                    <a href="{{ route('backend.treatments.show', $treatment) }}"
+                        class="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-sm font-medium transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Back to Treatment
+                    </a>
+                @endif
             </div>
 
             <!-- Summary Cards -->
@@ -34,7 +40,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-gray-600">Total Sessions</p>
-                            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $treatment->sessions->count() }}</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $hasTreatment ? $treatment->sessions->count() : number_format($totalSessions) }}</p>
                         </div>
                         <div class="p-2 bg-blue-100 rounded">
                             <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,7 +56,7 @@
                         <div>
                             <p class="text-sm text-gray-600">Sessions Cost</p>
                             <p class="text-2xl font-bold text-green-600 mt-1">
-                                ৳{{ number_format($treatment->sessions->sum('cost_for_session'), 2) }}
+                                ৳{{ number_format($hasTreatment ? $treatment->sessions->sum('cost_for_session') : $totalCost, 2) }}
                             </p>
                         </div>
                         <div class="p-2 bg-green-100 rounded">
@@ -67,7 +73,7 @@
                         <div>
                             <p class="text-sm text-gray-600">Total Paid</p>
                             <p class="text-2xl font-bold text-blue-600 mt-1">
-                                ৳{{ number_format($treatment->sessions->sum(fn($s) => $s->payments->sum('amount')), 2) }}
+                                ৳{{ number_format($hasTreatment ? $treatment->sessions->sum(fn($s) => $s->payments->sum('amount')) : $totalPaid, 2) }}
                             </p>
                         </div>
                         <div class="p-2 bg-blue-100 rounded">
@@ -84,7 +90,7 @@
                         <div>
                             <p class="text-sm text-gray-600">Total Balance</p>
                             <p class="text-2xl font-bold text-red-600 mt-1">
-                                ৳{{ number_format($treatment->sessions->sum(fn($s) => $s->cost_for_session - $s->payments->sum('amount')), 2) }}
+                                ৳{{ number_format($hasTreatment ? $treatment->sessions->sum(fn($s) => $s->cost_for_session - $s->payments->sum('amount')) : $totalBalance, 2) }}
                             </p>
                         </div>
                         <div class="p-2 bg-red-100 rounded">
@@ -112,7 +118,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
-                        @forelse($treatment->sessions as $session)
+                        @forelse($sessionRows as $session)
                             @php
                                 $sessionPaid = $session->payments->sum('amount');
                                 $sessionBalance = max(0, $session->cost_for_session - $sessionPaid);
@@ -201,7 +207,8 @@
                                             </div>
 
                                             @foreach ($session->payments as $payment)
-                                                <div class="text-xs text-gray-500">
+                                                <div class="text-xs text-gray-500 flex items-center justify-between gap-2">
+                                                    <div>
                                                     {{ $payment->payment_date->format('d/m') }}
 
                                                     <span
@@ -212,6 +219,19 @@
                                                     <span class="font-medium">
                                                         ৳{{ number_format($payment->amount, 2) }}
                                                     </span>
+                                                    </div>
+                                                    @if ($payment->is_refundable)
+                                                        <form method="POST" action="{{ route('backend.payments.refund', $payment->id) }}">
+                                                            @csrf
+                                                            <input type="hidden" name="reason" value="">
+                                                            <button
+                                                                type="button"
+                                                                class="px-2 py-0.5 text-[10px] rounded bg-red-100 text-red-700 hover:bg-red-200"
+                                                                onclick="event.preventDefault(); const reason = prompt('Reason for refund (Payment {{ $payment->payment_no }}):'); if (reason && reason.trim()) { this.form.querySelector('input[name=reason]').value = reason.trim(); this.form.submit(); }">
+                                                                Refund
+                                                            </button>
+                                                        </form>
+                                                    @endif
                                                 </div>
                                             @endforeach
                                         </div>
@@ -264,16 +284,23 @@
                             <tr>
                                 <td colspan="7" class="px-4 py-6 text-center text-gray-500">
                                     No sessions found.
-                                    <a href="{{ route('backend.treatment-sessions.create', ['treatment_id' => $treatment->id]) }}"
-                                        class="text-blue-600 hover:underline ml-1">
-                                        Add first session
-                                    </a>
+                                    @if ($hasTreatment)
+                                        <a href="{{ route('backend.treatment-sessions.create', ['treatment_id' => $treatment->id]) }}"
+                                            class="text-blue-600 hover:underline ml-1">
+                                            Add first session
+                                        </a>
+                                    @endif
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
+            @if (!$hasTreatment)
+                <div>
+                    {{ $sessions->withQueryString()->links() }}
+                </div>
+            @endif
         </div>
 
         <!-- Payment Modal -->
@@ -294,7 +321,7 @@
                     <form id="paymentForm" action="{{ route('backend.payments.store-session') }}" method="POST">
                         @csrf
                         <input type="hidden" name="for_treatment_session_id" id="sessionId">
-                        <input type="hidden" name="patient_id" value="{{ $treatment->patient_id }}">
+                        <input type="hidden" name="patient_id" id="paymentPatientId" value="{{ $hasTreatment ? $treatment->patient_id : '' }}">
 
                         <!-- Session Info -->
                         <div class="mb-4 bg-blue-50 border border-blue-200 rounded p-3 text-sm">
@@ -380,12 +407,13 @@
         <script>
             // Session data array
             const sessionData = {
-                @foreach ($treatment->sessions as $session)
+                @foreach ($sessionRows as $session)
                     {{ $session->id }}: {
                         title: "{{ $session->session_title }}",
                         cost: {{ $session->cost_for_session }},
                         paid: {{ $session->payments->sum('amount') }},
-                        balance: {{ max(0, $session->cost_for_session - $session->payments->sum('amount')) }}
+                        balance: {{ max(0, $session->cost_for_session - $session->payments->sum('amount')) }},
+                        patientId: {{ $session->treatment->patient_id ?? 'null' }}
                     },
                 @endforeach
             };
@@ -403,6 +431,8 @@
                 document.getElementById('sessionCost').textContent = '৳' + data.cost.toLocaleString('en-US', {
                     minimumFractionDigits: 2
                 });
+                const patientIdInput = document.getElementById('paymentPatientId');
+                if (patientIdInput && data.patientId !== null) patientIdInput.value = data.patientId;
                 document.getElementById('paidAmount').textContent = '৳' + data.paid.toLocaleString('en-US', {
                     minimumFractionDigits: 2
                 });

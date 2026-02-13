@@ -59,6 +59,58 @@ class PaymentController extends Controller
     }
 
     /*-----------------------------------
+    | Refund History
+    *-----------------------------------*/
+    public function refundHistory(Request $request)
+    {
+        $query = Payment::with(['invoice', 'patient', 'createdBy'])
+            ->where('payment_type', 'refund');
+
+        if ($request->filled('patient_id')) {
+            $query->where('patient_id', $request->patient_id);
+        }
+
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('payment_date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('payment_date', '<=', $request->end_date);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('payment_no', 'like', "%{$search}%")
+                    ->orWhere('reference_no', 'like', "%{$search}%")
+                    ->orWhere('remarks', 'like', "%{$search}%")
+                    ->orWhereHas('patient', function ($q2) use ($search) {
+                        $q2->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('patient_code', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $refunds = $query->latest('payment_date')->paginate(20);
+        $refunds->appends($request->query());
+
+        $summary = [
+            'count' => Payment::where('payment_type', 'refund')->count(),
+            'amount' => abs((float) Payment::where('payment_type', 'refund')->sum('amount')),
+            'period_count' => $refunds->total(),
+            'period_amount' => abs((float) (clone $query)->sum('amount')),
+        ];
+
+        $patients = Patient::active()->orderBy('full_name')->get();
+
+        return view('backend.payments.refunds', compact('refunds', 'summary', 'patients'));
+    }
+
+    /*-----------------------------------
     | Show Create Payment Form
     *-----------------------------------*/
     public function create(Request $request)
@@ -256,9 +308,18 @@ class PaymentController extends Controller
     {
         $request->validate(['reason' => 'required|string|max:255']);
         $payment = Payment::findOrFail($id);
+        DB::beginTransaction();
+        try {
+            $refundPayment = $payment->refund($request->reason);
+            DB::commit();
 
-        $refundPayment = $payment->refund($request->reason);
-        return redirect()->route('backend.payments.show', $payment->id)->with('success', 'Payment refunded: ' . $refundPayment->payment_no);
+            return redirect()
+                ->back()
+                ->with('success', 'Payment refunded successfully. Refund voucher: ' . $refundPayment->payment_no);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Refund failed: ' . $e->getMessage());
+        }
     }
 
     /*-----------------------------------
@@ -971,5 +1032,105 @@ class PaymentController extends Controller
             'payable_id' => $procedure->id,
             'created_by' => auth()->id()
         ]);
+    }
+
+    /*-----------------------------------
+    | Show Procedure Payments Page
+    *-----------------------------------*/
+    public function procedurePayments(Request $request)
+    {
+        $query = TreatmentProcedure::with(['treatment.patient', 'payments']);
+
+        // Apply filters
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('procedure_name', 'like', "%{$search}%")
+                    ->orWhere('procedure_code', 'like', "%{$search}%")
+                    ->orWhereHas('treatment.patient', fn($q2) => $q2->where('full_name', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($request->filled('patient_id')) {
+            $query->whereHas('treatment', fn($q) => $q->where('patient_id', $request->patient_id));
+        }
+
+        if ($request->filled('procedure_status')) {
+            $query->where('status', $request->procedure_status);
+        }
+
+        if ($request->filled('payment_status')) {
+            if ($request->payment_status === 'paid') {
+                $query->whereRaw('cost <= (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payable_type = ? AND payable_id = treatment_procedures.id)', ['App\Models\TreatmentProcedure']);
+            } elseif ($request->payment_status === 'partial') {
+                $query->whereRaw('cost > (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payable_type = ? AND payable_id = treatment_procedures.id) AND (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payable_type = ? AND payable_id = treatment_procedures.id) > 0', ['App\Models\TreatmentProcedure', 'App\Models\TreatmentProcedure']);
+            } elseif ($request->payment_status === 'unpaid') {
+                $query->whereRaw('(SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payable_type = ? AND payable_id = treatment_procedures.id) = 0', ['App\Models\TreatmentProcedure']);
+            }
+        }
+
+        $procedures = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        // Calculate totals
+        $totalProcedures = TreatmentProcedure::count();
+        $totalCost = TreatmentProcedure::sum('cost');
+        $totalPaid = Payment::where('payable_type', 'App\Models\TreatmentProcedure')->sum('amount');
+        $totalBalance = $totalCost - $totalPaid;
+
+        $patients = Patient::active()->orderBy('full_name')->get();
+
+        return view('backend.payments.procedure-payments', compact('procedures', 'totalProcedures', 'totalCost', 'totalPaid', 'totalBalance', 'patients'));
+    }
+
+    /*-----------------------------------
+| Show Session Payments Page
+*-----------------------------------*/
+    public function sessionPayments(Request $request)
+    {
+        $query = TreatmentSession::with(['treatment.patient', 'payments']);
+
+        // Apply filters
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('session_number', 'like', "%{$search}%")
+                    ->orWhere('session_title', 'like', "%{$search}%")
+                    ->orWhereHas('treatment.patient', fn($q2) => $q2->where('full_name', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($request->filled('patient_id')) {
+            $query->whereHas('treatment', fn($q) => $q->where('patient_id', $request->patient_id));
+        }
+
+        if ($request->filled('session_status')) {
+            $query->where('status', $request->session_status);
+        }
+
+        if ($request->filled('session_date')) {
+            $query->whereDate('scheduled_date', $request->session_date);
+        }
+
+        if ($request->filled('payment_status')) {
+            if ($request->payment_status === 'paid') {
+                $query->whereRaw('cost_for_session <= paid_amount');
+            } elseif ($request->payment_status === 'partial') {
+                $query->whereRaw('cost_for_session > paid_amount AND paid_amount > 0');
+            } elseif ($request->payment_status === 'unpaid') {
+                $query->where('paid_amount', 0);
+            }
+        }
+
+        $sessions = $query->orderBy('scheduled_date', 'desc')->paginate(20);
+
+        // Calculate totals
+        $totalSessions = TreatmentSession::count();
+        $totalCost = TreatmentSession::sum('cost_for_session');
+        $totalPaid = TreatmentSession::sum('paid_amount');
+        $totalBalance = $totalCost - $totalPaid;
+
+        $patients = Patient::active()->orderBy('full_name')->get();
+
+        return view('backend.payments.session-payments', compact('sessions', 'totalSessions', 'totalCost', 'totalPaid', 'totalBalance', 'patients'));
     }
 }

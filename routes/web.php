@@ -454,20 +454,23 @@ Route::middleware(['auth'])->group(function () {
             ->name('invoice-items.adjust');
 
         // Payments
-        Route::post('/payments/session', [PaymentController::class, 'storeSessionPayment'])
-            ->name('backend.payments.store-session');
-        Route::post('/payments/procedure', [PaymentController::class, 'storeProcedurePayment'])
-            ->name('backend.payments.store-procedure');
-        Route::get('treatments/{treatment}/payments', [PaymentController::class, 'treatmentPayments'])
-            ->name('payments.treatment-payments');
-        Route::post('payments/overall-payment', [PaymentController::class, 'storeOverallPayment'])
-            ->name('payments.store-overall-payment');
-        Route::post('payments/treatment-payment', [PaymentController::class, 'storeTreatmentPayment'])
-            ->name('payments.store-treatment-payment');
-        Route::resource('payments', PaymentController::class)
-            ->names('backend.payments');
-        Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])
-            ->name('backend.payments.receipt');
+        Route::post('/payments/session', [PaymentController::class, 'storeSessionPayment'])->name('backend.payments.store-session');
+        Route::post('/payments/procedure', [PaymentController::class, 'storeProcedurePayment'])->name('backend.payments.store-procedure');
+        Route::get('treatments/{treatment}/payments', [PaymentController::class, 'treatmentPayments'])->name('payments.treatment-payments');
+        Route::post('payments/overall-payment', [PaymentController::class, 'storeOverallPayment'])->name('payments.store-overall-payment');
+        Route::post('payments/treatment-payment', [PaymentController::class, 'storeTreatmentPayment'])->name('payments.store-treatment-payment');
+
+        Route::get('payments/procedure-payments', [PaymentController::class, 'procedurePayments'])->name('payments.procedure-payments');
+        Route::get('backend/payments/procedure-payments', [PaymentController::class, 'procedurePayments'])->name('backend.payments.procedure-payments');
+        Route::get('payment/procedure-payments', fn() => redirect()->route('payments.procedure-payments'));
+        Route::get('payments/session-payments', [PaymentController::class, 'sessionPayments'])->name('payments.session-payments');
+        Route::get('backend/payments/session-payments', [PaymentController::class, 'sessionPayments'])->name('backend.payments.session-payments');
+        Route::get('payment/session-payments', fn() => redirect()->route('payments.session-payments'));
+        Route::get('payments/refunds', [PaymentController::class, 'refundHistory'])->name('backend.payments.refunds');
+        Route::post('payments/{payment}/refund', [PaymentController::class, 'refund'])->name('backend.payments.refund');
+
+        Route::resource('payments', PaymentController::class)->names('backend.payments');
+        Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('backend.payments.receipt');
 
         // Payment Installments
         Route::resource('payment-installments', PaymentInstallmentController::class)
@@ -574,3 +577,4 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__ . '/auth.php';
+

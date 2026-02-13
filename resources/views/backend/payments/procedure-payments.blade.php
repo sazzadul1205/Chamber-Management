@@ -1,6 +1,10 @@
 @extends('backend.layout.structure')
 
 @section('content')
+    @php
+        $hasTreatment = isset($treatment);
+        $procedureRows = $hasTreatment ? $treatment->procedures : $procedures;
+    @endphp
     <div class="space-y-6">
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-center">
@@ -9,22 +13,24 @@
                 <div class="text-sm text-gray-600 flex flex-wrap gap-4">
                     <div class="flex items-center gap-1">
                         <span class="font-medium">Treatment:</span>
-                        <span class="font-semibold text-blue-700">{{ $treatment->treatment_code }}</span>
+                        <span class="font-semibold text-blue-700">{{ $hasTreatment ? $treatment->treatment_code : 'All Treatments' }}</span>
                     </div>
                     <div class="flex items-center gap-1">
                         <span class="font-medium">Patient:</span>
-                        <span class="font-semibold text-green-700">{{ $treatment->patient->full_name }}</span>
+                        <span class="font-semibold text-green-700">{{ $hasTreatment ? $treatment->patient->full_name : 'All Patients' }}</span>
                     </div>
                 </div>
             </div>
 
-            <a href="{{ route('backend.treatments.show', $treatment) }}"
-                class="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-sm font-medium transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to Treatment
-            </a>
+            @if ($hasTreatment)
+                <a href="{{ route('backend.treatments.show', $treatment) }}"
+                    class="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-sm font-medium transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back to Treatment
+                </a>
+            @endif
         </div>
 
         <!-- Summary Cards -->
@@ -33,7 +39,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-600">Total Procedures</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $treatment->procedures->count() }}</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $hasTreatment ? $treatment->procedures->count() : number_format($totalProcedures) }}</p>
                     </div>
                     <div class="p-2 bg-purple-100 rounded">
                         <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,7 +55,7 @@
                     <div>
                         <p class="text-sm text-gray-600">Procedures Cost</p>
                         <p class="text-2xl font-bold text-green-600 mt-1">
-                            ৳{{ number_format($treatment->procedures->sum('cost'), 2) }}
+                            ৳{{ number_format($hasTreatment ? $treatment->procedures->sum('cost') : $totalCost, 2) }}
                         </p>
                     </div>
                     <div class="p-2 bg-green-100 rounded">
@@ -66,7 +72,7 @@
                     <div>
                         <p class="text-sm text-gray-600">Total Paid</p>
                         <p class="text-2xl font-bold text-blue-600 mt-1">
-                            ৳{{ number_format($treatment->procedures->sum(fn($p) => $p->payments->sum('amount')), 2) }}
+                            ৳{{ number_format($hasTreatment ? $treatment->procedures->sum(fn($p) => $p->payments->sum('amount')) : $totalPaid, 2) }}
                         </p>
                     </div>
                     <div class="p-2 bg-blue-100 rounded">
@@ -83,7 +89,7 @@
                     <div>
                         <p class="text-sm text-gray-600">Total Balance</p>
                         <p class="text-2xl font-bold text-red-600 mt-1">
-                            ৳{{ number_format($treatment->procedures->sum(fn($p) => $p->cost - $p->payments->sum('amount')), 2) }}
+                            ৳{{ number_format($hasTreatment ? $treatment->procedures->sum(fn($p) => $p->cost - $p->payments->sum('amount')) : $totalBalance, 2) }}
                         </p>
                     </div>
                     <div class="p-2 bg-red-100 rounded">
@@ -111,7 +117,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
-                    @forelse($treatment->procedures as $procedure)
+                    @forelse($procedureRows as $procedure)
                         @php
                             $procedurePaid = $procedure->payments->sum('amount');
                             $procedureBalance = max(0, $procedure->cost - $procedurePaid);
@@ -195,7 +201,8 @@
                                         </div>
 
                                         @foreach ($procedure->payments as $payment)
-                                            <div class="text-xs text-gray-500">
+                                            <div class="text-xs text-gray-500 flex items-center justify-between gap-2">
+                                                <div>
                                                 {{ $payment->payment_date->format('d/m') }}
 
                                                 <span
@@ -206,6 +213,19 @@
                                                 <span class="font-medium">
                                                     ৳{{ number_format($payment->amount, 2) }}
                                                 </span>
+                                                </div>
+                                                @if ($payment->is_refundable)
+                                                    <form method="POST" action="{{ route('backend.payments.refund', $payment->id) }}">
+                                                        @csrf
+                                                        <input type="hidden" name="reason" value="">
+                                                        <button
+                                                            type="button"
+                                                            class="px-2 py-0.5 text-[10px] rounded bg-red-100 text-red-700 hover:bg-red-200"
+                                                            onclick="event.preventDefault(); const reason = prompt('Reason for refund (Payment {{ $payment->payment_no }}):'); if (reason && reason.trim()) { this.form.querySelector('input[name=reason]').value = reason.trim(); this.form.submit(); }">
+                                                            Refund
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             </div>
                                         @endforeach
                                     </div>
@@ -256,16 +276,23 @@
                         <tr>
                             <td colspan="7" class="px-4 py-6 text-center text-gray-500">
                                 No procedures found.
-                                <a href="{{ route('backend.treatment-procedures.create', ['treatment_id' => $treatment->id]) }}"
-                                    class="text-blue-600 hover:underline ml-1">
-                                    Add first procedure
-                                </a>
+                                @if ($hasTreatment)
+                                    <a href="{{ route('backend.treatment-procedures.create', ['treatment_id' => $treatment->id]) }}"
+                                        class="text-blue-600 hover:underline ml-1">
+                                        Add first procedure
+                                    </a>
+                                @endif
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+        @if (!$hasTreatment)
+            <div>
+                {{ $procedures->withQueryString()->links() }}
+            </div>
+        @endif
     </div>
 
     <!-- Payment Modal -->
@@ -286,8 +313,8 @@
                 <form id="paymentForm" action="{{ route('backend.payments.store-procedure') }}" method="POST">
                     @csrf
                     <input type="hidden" name="procedure_id" id="procedureId">
-                    <input type="hidden" name="patient_id" value="{{ $treatment->patient_id }}">
-                    <input type="hidden" name="treatment_id" value="{{ $treatment->id }}">
+                    <input type="hidden" name="patient_id" id="paymentPatientId" value="{{ $hasTreatment ? $treatment->patient_id : '' }}">
+                    <input type="hidden" name="treatment_id" id="paymentTreatmentId" value="{{ $hasTreatment ? $treatment->id : '' }}">
 
                     <!-- Procedure Info -->
                     <div class="mb-4 bg-purple-50 border border-purple-200 rounded p-3 text-sm">
@@ -377,13 +404,15 @@
     <script>
         // Procedure data array
         const procedureData = {
-            @foreach ($treatment->procedures as $procedure)
+            @foreach ($procedureRows as $procedure)
                 {{ $procedure->id }}: {
                     name: "{{ $procedure->procedure_name }}",
                     code: "{{ $procedure->procedure_code }}",
                     cost: {{ $procedure->cost }},
                     paid: {{ $procedure->payments->sum('amount') }},
-                    balance: {{ max(0, $procedure->cost - $procedure->payments->sum('amount')) }}
+                    balance: {{ max(0, $procedure->cost - $procedure->payments->sum('amount')) }},
+                    patientId: {{ $procedure->treatment->patient_id ?? 'null' }},
+                    treatmentId: {{ $procedure->treatment_id ?? 'null' }}
                 },
             @endforeach
         };
@@ -399,6 +428,10 @@
             document.getElementById('procedureId').value = procedureId;
             document.getElementById('procedureName').textContent = data.name;
             document.getElementById('procedureCode').textContent = data.code;
+            const patientIdInput = document.getElementById('paymentPatientId');
+            const treatmentIdInput = document.getElementById('paymentTreatmentId');
+            if (patientIdInput && data.patientId !== null) patientIdInput.value = data.patientId;
+            if (treatmentIdInput && data.treatmentId !== null) treatmentIdInput.value = data.treatmentId;
             document.getElementById('procedureCost').textContent = '৳' + data.cost.toLocaleString('en-US', {
                 minimumFractionDigits: 2
             });

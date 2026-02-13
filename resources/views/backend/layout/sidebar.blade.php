@@ -625,11 +625,24 @@
                     'roles' => ['Accountant', 'Admin', 'Super Admin'],
                 ],
                 [
+                    'label' => 'Session Payments',
+                    'icon' => 'list',
+                    'route' => 'backend.payments.procedure-payments',
+                    'roles' => ['Accountant', 'Admin', 'Super Admin'],
+                ],
+                [
+                    'label' => 'Procedure Payments',
+                    'icon' => 'list',
+                    'route' => 'backend.payments.session-payments',
+                    'roles' => ['Accountant', 'Admin', 'Super Admin'],
+                ],
+                [
                     'label' => 'Advance Payments',
                     'roles' => ['Accountant', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Refunds',
+                    'route' => 'backend.payments.refunds',
                     'roles' => ['Accountant', 'Admin', 'Super Admin'],
                 ],
             ],

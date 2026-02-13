@@ -279,10 +279,18 @@ class TreatmentSession extends Model
     public function addPayment($amount)
     {
         // Only update the paid_amount, DON'T create a payment record
-        $this->paid_amount = ($this->paid_amount ?? 0) + $amount;
+        $this->paid_amount = max(0, ($this->paid_amount ?? 0) + $amount);
         $this->save();
 
         return true; // Just return success, don't create payment
+    }
+
+    public function deductPayment($amount)
+    {
+        $this->paid_amount = max(0, ($this->paid_amount ?? 0) - abs($amount));
+        $this->save();
+
+        return true;
     }
 
     public function getPaidAmountAttribute()
