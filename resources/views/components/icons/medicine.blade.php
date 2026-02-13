@@ -1,8 +1,8 @@
-<svg class="w-5 h-5" version="1.1" id="_x32_" xmlns="http://www.w3.org/2000/svg"
+<svg class="{{ $class ?? 'w-5 h-5' }}" version="1.1" id="_x32_" xmlns="http://www.w3.org/2000/svg"
     xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xml:space="preserve">
     <style type="text/css">
         .st0 {
-            fill: #000000;
+            fill: currentColor;
         }
     </style>
     <g>

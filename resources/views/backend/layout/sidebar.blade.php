@@ -757,11 +757,11 @@
     <!-- Brand -->
     <div class="flex items-center justify-center p-4">
         <img class="brand-full h-16 w-auto" src="{{ asset('assets/Website_Logo.png') }}" alt="Logo">
-        <img class="brand-icon h-10 w-auto hidden" src="{{ asset('assets/favicon.png') }}" alt="Logo Icon">
+        <img class="brand-icon h-10 w-auto hidden" src="{{ asset('Teeth.png') }}" alt="Logo Icon">
     </div>
 
     <!-- Menu -->
-    <nav class="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-none">
+    <nav class="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-visible scrollbar-none">
         @foreach ($menu as $key => $item)
             @php
                 // Check if user has access to this menu item
@@ -823,8 +823,8 @@
                     <div class="relative sidebar-group" data-group-key="{{ $key }}">
                         <!-- Group Button -->
                         <button onclick="handleGroupClick({{ $key }})"
-                            class="group-btn w-full flex items-center justify-between px-3 py-2 rounded transition-all duration-300 ease-in-out text-gray-700 hover:bg-gray-100 {{ $groupActive ? 'bg-blue-50 text-blue-600' : '' }}"
-                            data-group="{{ $key }}">
+                            class="tooltip-trigger group group-btn relative w-full flex items-center justify-between px-3 py-2 rounded transition-all duration-300 ease-in-out text-gray-700 hover:bg-gray-100 {{ $groupActive ? 'bg-blue-50 text-blue-600' : '' }}"
+                            data-tooltip="{{ $item['title'] }}" data-group="{{ $key }}">
                             <div class="flex items-center gap-2 font-semibold">
                                 @include('partials/sidebar-icon', [
                                     'name' => $item['icon'] ?? 'default',
@@ -837,6 +837,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 9l-7 7-7-7" />
                             </svg>
+
                         </button>
 
                         <!-- Submenu (Expanded Mode) -->
@@ -931,17 +932,12 @@
                                     $href = $subRoute ? route($subRoute) : '#';
                                 @endphp
                                 <a href="{{ $href }}"
-                                    class="relative group flex items-center justify-center w-full p-2 rounded hover:bg-gray-100 {{ $active ? 'bg-blue-100 text-blue-600' : 'text-gray-700' }}">
+                                    class="tooltip-trigger relative group flex items-center justify-center w-full p-2 rounded hover:bg-gray-100 {{ $active ? 'bg-blue-100 text-blue-600' : 'text-gray-700' }}"
+                                    data-tooltip="{{ $sub['label'] }}">
                                     @include('partials/sidebar-icon', [
                                         'name' => $sub['icon'] ?? 'default',
                                         'class' => 'icon-only',
                                     ])
-
-                                    <!-- Tooltip -->
-                                    <div
-                                        class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50">
-                                        {{ $sub['label'] }}
-                                    </div>
                                 </a>
                             @endforeach
                         </div>
@@ -954,18 +950,13 @@
                     $href = $subRoute ? route($subRoute) : '#';
                 @endphp
                 <a href="{{ $href }}"
-                    class="relative group flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 font-semibold {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}">
+                    class="tooltip-trigger relative group flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 font-semibold {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}"
+                    data-tooltip="{{ $item['label'] }}">
                     @include('partials/sidebar-icon', [
                         'name' => $item['icon'] ?? 'default',
                         'class' => 'icon-only',
                     ])
                     <span class="sidebar-text">{{ $item['label'] }}</span>
-
-                    <!-- Tooltip for collapsed mode -->
-                    <div
-                        class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 hidden collapsed-tooltip">
-                        {{ $item['label'] }}
-                    </div>
                 </a>
             @endif
         @endforeach
@@ -1043,6 +1034,55 @@
         }
     }
 
+    function getOrCreateSidebarTooltip() {
+        let tooltip = document.getElementById('sidebarFloatingTooltip');
+        if (tooltip) return tooltip;
+
+        tooltip = document.createElement('div');
+        tooltip.id = 'sidebarFloatingTooltip';
+        tooltip.className =
+            'fixed px-2 py-1 bg-gray-900 text-white text-sm rounded pointer-events-none whitespace-nowrap z-[9999] opacity-0 transition-opacity duration-150';
+        document.body.appendChild(tooltip);
+        return tooltip;
+    }
+
+    function attachSidebarTooltipEvents() {
+        const triggers = document.querySelectorAll('.tooltip-trigger[data-tooltip]');
+
+        triggers.forEach(trigger => {
+            if (trigger.dataset.tooltipBound === 'true') return;
+            trigger.dataset.tooltipBound = 'true';
+
+            const showTooltip = (event) => {
+                const sidebar = document.getElementById('sidebar');
+                if (!sidebar || !sidebar.classList.contains('sidebar-collapsed')) return;
+
+                const text = trigger.dataset.tooltip;
+                if (!text) return;
+
+                const tooltip = getOrCreateSidebarTooltip();
+                tooltip.textContent = text;
+                tooltip.style.opacity = '1';
+
+                const rect = trigger.getBoundingClientRect();
+                tooltip.style.left = `${rect.right + 10}px`;
+                tooltip.style.top = `${rect.top + rect.height / 2}px`;
+                tooltip.style.transform = 'translateY(-50%)';
+            };
+
+            const hideTooltip = () => {
+                const tooltip = document.getElementById('sidebarFloatingTooltip');
+                if (!tooltip) return;
+                tooltip.style.opacity = '0';
+            };
+
+            trigger.addEventListener('mouseenter', showTooltip);
+            trigger.addEventListener('focus', showTooltip);
+            trigger.addEventListener('mouseleave', hideTooltip);
+            trigger.addEventListener('blur', hideTooltip);
+        });
+    }
+
     // Auto open active group on load
     document.addEventListener('DOMContentLoaded', () => {
         @if ($openGroupKey !== null)
@@ -1055,12 +1095,14 @@
 
         // Initialize sidebar state
         updateSidebarState();
+        attachSidebarTooltipEvents();
     });
 
     // Update sidebar based on collapsed state
     function updateSidebarState() {
         const sidebar = document.getElementById('sidebar');
         const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
+        const floatingTooltip = document.getElementById('sidebarFloatingTooltip');
         const brandFull = document.querySelectorAll('.brand-full');
         const brandIcon = document.querySelectorAll('.brand-icon');
         const sidebarTexts = document.querySelectorAll('.sidebar-text');
@@ -1068,7 +1110,10 @@
         const submenus = document.querySelectorAll('.submenu');
         const collapsedIconsContainers = document.querySelectorAll('.collapsed-icons');
         const groupButtons = document.querySelectorAll('.group-btn');
-        const tooltips = document.querySelectorAll('.collapsed-tooltip');
+
+        if (!isCollapsed && floatingTooltip) {
+            floatingTooltip.style.opacity = '0';
+        }
 
         if (isCollapsed) {
             // Hide full logo, show icon
@@ -1093,9 +1138,6 @@
                 el.classList.add('justify-center');
             });
 
-            // Show tooltips
-            tooltips.forEach(el => el.classList.remove('hidden'));
-
             // Close all groups
             openGroup = null;
         } else {
@@ -1114,9 +1156,6 @@
             groupButtons.forEach(el => {
                 el.classList.remove('justify-center');
             });
-
-            // Hide tooltips
-            tooltips.forEach(el => el.classList.add('hidden'));
 
             // Reopen active group
             const activeGroup = localStorage.getItem('activeSidebarGroup');
@@ -1145,6 +1184,8 @@
                 attributes: true
             });
         }
+
+        attachSidebarTooltipEvents();
     });
 </script>
 
@@ -1178,13 +1219,8 @@
         display: flex !important;
     }
 
-    .sidebar-collapsed .collapsed-tooltip {
-        display: block;
-    }
-
-    /* Tooltip styles */
-    .group:hover .group-hover\:opacity-100 {
-        opacity: 1;
+    #sidebarFloatingTooltip {
+        will-change: top, left, opacity;
     }
 
     /* Smooth transitions */
@@ -1197,5 +1233,17 @@
     /* Submenu animation */
     .submenu {
         transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out;
+    }
+
+    @media (max-width: 767px) {
+
+        .brand-full,
+        .brand-icon {
+            display: none !important;
+        }
+
+        .brand-mobile-icon {
+            display: flex !important;
+        }
     }
 </style>

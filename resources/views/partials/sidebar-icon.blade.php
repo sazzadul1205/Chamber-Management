@@ -1,6 +1,9 @@
 @php
     $icon = $name ?? 'default';
-    $iconClass = $class ?? 'w-4 h-4';
+    $requestedClass = trim($class ?? '');
+    $iconClass = $requestedClass === 'icon-only'
+        ? 'w-5 h-5 flex-shrink-0'
+        : ($requestedClass !== '' ? $requestedClass : 'w-4 h-4');
 
 @endphp
 
@@ -69,6 +72,10 @@
         @include('components.icons.Leave', ['class' => $iconClass])
     @break
 
+    @case('Vacation')
+        @include('components.icons.Leave', ['class' => $iconClass])
+    @break
+
     @case('Crown')
         @include('components.icons.Crown', ['class' => $iconClass])
     @break
@@ -116,11 +123,11 @@
     @break
 
     @case('TV')
-        @include('components.icons.TV')
+        @include('components.icons.TV', ['class' => $iconClass])
     @break
 
     @case('Treatment_Plan')
-        @include('components.icons.Treatment_Plan')
+        @include('components.icons.Treatment_Plan', ['class' => $iconClass])
     @break
 
     @case('Treatment_Session')
@@ -128,7 +135,7 @@
     @break
 
     @case('Treatment_Procedure')
-        @include('components.icons.Treatment_Procedure')
+        @include('components.icons.Treatment_Procedure', ['class' => $iconClass])
     @break
 
     @case('Bell')
@@ -143,11 +150,11 @@
          PRESCRIPTION ICONS
     ============================== --}}
     @case('Prescription')
-        @include('components.icons.Prescription')
+        @include('components.icons.Prescription', ['class' => $iconClass])
     @break
 
     @case('medicine')
-        @include('components.icons.medicine')
+        @include('components.icons.medicine', ['class' => $iconClass])
     @break
 
     {{-- ==============================
@@ -189,7 +196,7 @@
     @break
 
     @case('B_Export')
-        @include('components.icons.Buttons.B_Export')
+        @include('components.icons.Buttons.B_Export', ['class' => $iconClass])
     @break
 
     @case('B_Reschedule')
@@ -217,15 +224,15 @@
     @break
 
     @case('B_Pause')
-        @include('components.icons.Buttons.B_Pause')
+        @include('components.icons.Buttons.B_Pause', ['class' => $iconClass])
     @break
 
     @case('B_Download')
-        @include('components.icons.Buttons.B_Download')
+        @include('components.icons.Buttons.B_Download', ['class' => $iconClass])
     @break
 
     @case('B_Upload')
-        @include('components.icons.Buttons.B_Upload')
+        @include('components.icons.Buttons.B_Upload', ['class' => $iconClass])
     @break
 
     @case('B_Pay')
@@ -240,7 +247,7 @@
          MISC ICONS
     ============================== --}}
     @case('Add-Circle')
-        @include('components.icons.Add-Circle')
+        @include('components.icons.Add-Circle', ['class' => $iconClass])
     @break
 
     @case('Schedule')
@@ -248,7 +255,7 @@
     @break
 
     @case('Bed')
-        @include('components.icons.Bed')
+        @include('components.icons.Bed', ['class' => $iconClass])
     @break
 
     @case('Cancel')
