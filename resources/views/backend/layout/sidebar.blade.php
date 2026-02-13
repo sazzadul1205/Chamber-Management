@@ -387,22 +387,30 @@
                     'route' => 'backend.dental-charts.index',
                     'roles' => ['Super Admin', 'Admin', 'Doctor'],
                 ],
-                // [
-                //     'label' => 'Tooth Conditions',
-                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
-                // ],
-                // [
-                //     'label' => 'Chart History',
-                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
-                // ],
-                // [
-                //     'label' => 'X-Ray Viewer',
-                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
-                // ],
-                // [
-                //     'label' => 'Print Chart',
-                //     'roles' => ['Super Admin', 'Admin', 'Doctor']
-                // ],
+                [
+                    'label' => 'Edit Dental Record',
+                    'icon' => 'B_Edit',
+                    'param' => ['dental_chart'],
+                    'type' => 'current-page-indicator',
+                    'route' => 'backend.dental-charts.edit',
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
+                ],
+                [
+                    'label' => 'View Dental Record',
+                    'icon' => 'B_View',
+                    'param' => ['dental_chart'],
+                    'type' => 'current-page-indicator',
+                    'route' => 'backend.dental-charts.show',
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
+                ],
+                [
+                    'label' => 'Patient Dental Chart',
+                    'icon' => 'B_View',
+                    'param' => ['patient_chart'],
+                    'type' => 'current-page-indicator',
+                    'route' => 'backend.dental-charts.patient-chart',
+                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
+                ],
             ],
         ],
 

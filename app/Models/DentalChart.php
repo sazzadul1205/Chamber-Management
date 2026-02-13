@@ -211,9 +211,9 @@ class DentalChart extends Model
     }
 
     /** Get full tooth name */
-    public function getToothNameAttribute(): string
+    public static function toothNames(): array
     {
-        $names = [
+        return [
             '11' => 'Right Maxillary Central Incisor',
             '12' => 'Right Maxillary Lateral Incisor',
             '13' => 'Right Maxillary Canine',
@@ -246,8 +246,33 @@ class DentalChart extends Model
             '46' => 'Right Mandibular First Molar',
             '47' => 'Right Mandibular Second Molar',
             '48' => 'Right Mandibular Third Molar',
+            '51' => 'Right Maxillary Primary Central Incisor',
+            '52' => 'Right Maxillary Primary Lateral Incisor',
+            '53' => 'Right Maxillary Primary Canine',
+            '54' => 'Right Maxillary Primary First Molar',
+            '55' => 'Right Maxillary Primary Second Molar',
+            '61' => 'Left Maxillary Primary Central Incisor',
+            '62' => 'Left Maxillary Primary Lateral Incisor',
+            '63' => 'Left Maxillary Primary Canine',
+            '64' => 'Left Maxillary Primary First Molar',
+            '65' => 'Left Maxillary Primary Second Molar',
+            '71' => 'Left Mandibular Primary Central Incisor',
+            '72' => 'Left Mandibular Primary Lateral Incisor',
+            '73' => 'Left Mandibular Primary Canine',
+            '74' => 'Left Mandibular Primary First Molar',
+            '75' => 'Left Mandibular Primary Second Molar',
+            '81' => 'Right Mandibular Primary Central Incisor',
+            '82' => 'Right Mandibular Primary Lateral Incisor',
+            '83' => 'Right Mandibular Primary Canine',
+            '84' => 'Right Mandibular Primary First Molar',
+            '85' => 'Right Mandibular Primary Second Molar',
         ];
+    }
 
+    /** Get full tooth name */
+    public function getToothNameAttribute(): string
+    {
+        $names = self::toothNames();
         return $names[$this->tooth_number] ?? "Tooth {$this->tooth_number}";
     }
 

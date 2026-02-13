@@ -36,6 +36,18 @@ class DentalChartController extends Controller
         if ($request->filled('patient_id')) {
             $query->where('patient_id', $request->patient_id);
         }
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('tooth_number', 'like', '%' . $search . '%')
+                    ->orWhere('condition', 'like', '%' . $search . '%')
+                    ->orWhere('procedure_done', 'like', '%' . $search . '%')
+                    ->orWhereHas('patient', function ($patientQ) use ($search) {
+                        $patientQ->where('full_name', 'like', '%' . $search . '%')
+                            ->orWhere('patient_code', 'like', '%' . $search . '%');
+                    });
+            });
+        }
         if ($request->filled('tooth_number')) {
             $query->where('tooth_number', $request->tooth_number);
         }
