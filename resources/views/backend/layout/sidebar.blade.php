@@ -47,7 +47,7 @@
                     'label' => 'Patient Registration',
                     'icon' => 'User-Plus',
                     'route' => 'backend.patients.create',
-                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Patient List',
@@ -61,7 +61,7 @@
                     'route' => 'backend.patients.edit',
                     'params' => ['patient'], // Matches {patient} in route
                     'type' => 'current-page-indicator',
-                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Patient Details',
@@ -89,7 +89,7 @@
                     'route' => 'backend.patient-families.edit',
                     'params' => ['patient_family'],
                     'type' => 'current-page-indicator',
-                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'View Family Details',
@@ -97,7 +97,7 @@
                     'route' => 'backend.patient-families.show',
                     'params' => ['patient_family'],
                     'type' => 'current-page-indicator',
-                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Referral Tracking',
@@ -117,7 +117,7 @@
                     'label' => 'Referral Report',
                     'icon' => 'Report',
                     'route' => 'backend.referrals.report',
-                    'roles' => ['Receptionist', 'Doctor', 'Admin', 'Super Admin'],
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin'],
                 ],
             ],
         ],
@@ -134,7 +134,7 @@
                     'label' => 'Schedule Appointment',
                     'route' => 'backend.appointments.create',
                     'icon' => 'Add-Circle',
-                    'roles' => ['Receptionist', 'Admin', 'Super Admin', 'Doctor'],
+                    'roles' => ['Receptionist', 'Admin', 'Super Admin'],
                 ],
                 [
                     'label' => 'Appointment List',
@@ -195,7 +195,7 @@
                     'label' => 'Doctor List',
                     'icon' => 'list',
                     'route' => 'backend.doctors.index',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
+                    'roles' => ['Super Admin', 'Admin'],
                 ],
                 [
                     'label' => 'Edit Doctor Profile',
@@ -203,7 +203,7 @@
                     'route' => 'backend.doctors.edit',
                     'params' => ['doctor'],
                     'type' => 'current-page-indicator',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
+                    'roles' => ['Super Admin', 'Admin'],
                 ],
                 [
                     'label' => 'Doctor Details',
@@ -211,7 +211,7 @@
                     'route' => 'backend.doctors.show',
                     'params' => ['doctor'],
                     'type' => 'current-page-indicator',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor'],
+                    'roles' => ['Super Admin', 'Admin'],
                 ],
                 [
                     'label' => 'Schedule Management',
@@ -237,6 +237,7 @@
                     'label' => 'My Calendar',
                     'icon' => 'Calendar',
                     'route' => 'backend.doctors.calendar',
+                    'params' => ['doctor'],
                     'roles' => ['Doctor'],
                 ],
             ],
@@ -505,7 +506,7 @@
                     'label' => 'Create Medicine',
                     'icon' => 'Add-Circle',
                     'route' => 'backend.medicines.create',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor', 'Accountant'],
+                    'roles' => ['Super Admin', 'Admin', 'Accountant'],
                 ],
                 [
                     'label' => 'Medicine Catalog',
@@ -527,7 +528,7 @@
                     'param' => ['medicine'],
                     'type' => 'current-page-indicator',
                     'route' => 'backend.medicines.edit',
-                    'roles' => ['Super Admin', 'Admin', 'Doctor', 'Accountant'],
+                    'roles' => ['Super Admin', 'Admin', 'Accountant'],
                 ],
             ],
         ],
@@ -737,6 +738,50 @@
 @php
     $currentRoute = Route::currentRouteName();
     $currentParameters = Route::current()->parameters();
+    $currentDoctorId = optional($user->doctor)->id;
+    $buildRoute = function ($routeName, $paramConfig = []) use ($currentParameters, $currentDoctorId, $user) {
+        if (!$routeName) {
+            return '#';
+        }
+
+        $params = [];
+        foreach ((array) $paramConfig as $key => $value) {
+            if (is_int($key)) {
+                $paramName = $value;
+                $paramValue = $currentParameters[$paramName] ?? null;
+
+                if ($paramName === 'doctor' && !$paramValue) {
+                    $paramValue = $currentDoctorId;
+                }
+
+                if (!$paramValue) {
+                    return '#';
+                }
+
+                $params[$paramName] = $paramValue;
+                continue;
+            }
+
+            $paramValue = $value;
+            if ($value === 'current_doctor') {
+                $paramValue = $currentDoctorId;
+            } elseif ($value === 'current_user') {
+                $paramValue = $user->id;
+            }
+
+            if (!$paramValue) {
+                return '#';
+            }
+
+            $params[$key] = $paramValue;
+        }
+
+        try {
+            return route($routeName, $params);
+        } catch (\Throwable $e) {
+            return '#';
+        }
+    };
     $openGroupKey = null;
 
     foreach ($menu as $key => $item) {
@@ -906,7 +951,7 @@
                                             $isDisabled = true;
                                         } else {
                                             $active = $subRoute && $subRoute === $currentRoute;
-                                            $href = $subRoute ? route($subRoute) : '#';
+                                            $href = $buildRoute($subRoute, $sub['params'] ?? []);
                                             $isActive = $active;
                                             $isDisabled = false;
                                         }
@@ -950,7 +995,7 @@
                                     }
                                     $subRoute = $sub['route'] ?? ($sub['link'] ?? '');
                                     $active = $subRoute && $subRoute === $currentRoute;
-                                    $href = $subRoute ? route($subRoute) : '#';
+                                    $href = $buildRoute($subRoute, $sub['params'] ?? []);
                                 @endphp
                                 <a href="{{ $href }}"
                                     class="tooltip-trigger relative group flex items-center justify-center w-full p-2 rounded hover:bg-gray-100 {{ $active ? 'bg-blue-100 text-blue-600' : 'text-gray-700' }}"
@@ -968,7 +1013,7 @@
                 @php
                     $subRoute = $item['route'] ?? ($item['link'] ?? '');
                     $active = $subRoute && $subRoute === $currentRoute;
-                    $href = $subRoute ? route($subRoute) : '#';
+                    $href = $buildRoute($subRoute, $item['params'] ?? []);
                 @endphp
                 <a href="{{ $href }}"
                     class="tooltip-trigger relative group flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 font-semibold {{ $active ? 'bg-gray-200 text-gray-900' : 'hover:bg-gray-100 text-gray-700' }}"

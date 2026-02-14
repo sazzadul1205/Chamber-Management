@@ -1,19 +1,23 @@
-import React from "react";
-import { useForm } from "@inertiajs/react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { FiPhone, FiMail, FiMapPin } from "react-icons/fi";
 
 const BookAppointment_1 = () => {
-  const { data, setData, post, processing, errors, reset } = useForm({
-    name: "",
+  const [data, setData] = useState({
+    full_name: "",
     email: "",
     phone: "",
-    date: "",
-    time: "",
+    preferred_date: "",
+    preferred_time: "",
     service: "",
     message: ""
   });
+  const [errors, setErrors] = useState({});
+  const [processing, setProcessing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [requestError, setRequestError] = useState("");
 
-  const services = [
+  const [services, setServices] = useState([
     "General Checkup",
     "Teeth Cleaning",
     "Teeth Whitening",
@@ -22,28 +26,84 @@ const BookAppointment_1 = () => {
     "Braces/Invisalign",
     "Emergency Dental",
     "Other"
-  ];
+  ]);
 
-  const timeSlots = [
+  const [timeSlots, setTimeSlots] = useState([
     "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
     "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"
-  ];
+  ]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    post("/appointments", {
-      onSuccess: () => {
-        alert("Appointment request sent successfully!");
-        reset();
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const { data: payload } = await axios.get("/api/online-bookings/metadata");
+        if (Array.isArray(payload.services) && payload.services.length > 0) {
+          setServices(payload.services);
+        }
+        if (Array.isArray(payload.time_slots) && payload.time_slots.length > 0) {
+          setTimeSlots(payload.time_slots);
+        }
+      } catch (_) {
       }
+    };
+
+    fetchMetadata();
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const resetForm = () => {
+    setData({
+      full_name: "",
+      email: "",
+      phone: "",
+      preferred_date: "",
+      preferred_time: "",
+      service: "",
+      message: ""
     });
+  };
+
+  const todayDate = new Date().toISOString().split("T")[0];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setProcessing(true);
+    setErrors({});
+    setSuccessMessage("");
+    setRequestError("");
+
+    try {
+      const response = await axios.post("/api/online-bookings", data);
+      const payload = response.data || {};
+      setSuccessMessage(payload.message || "Appointment request sent successfully!");
+      resetForm();
+    } catch (error) {
+      if (error.response?.status === 422) {
+        setErrors(error.response.data?.errors || {});
+      } else {
+        setRequestError(error.response?.data?.message || error.message || "Something went wrong. Please try again.");
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const fieldError = (name) => {
+    const errorValue = errors[name];
+    if (Array.isArray(errorValue)) {
+      return errorValue[0];
+    }
+    return errorValue;
   };
 
   return (
     <div className="py-20 bg-gradient-to-b from-white to-blue-50">
       <div className="container mx-auto px-4 lg:px-8">
 
-        {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="w-12 h-1 bg-blue-500 rounded-full"></div>
@@ -64,14 +124,23 @@ const BookAppointment_1 = () => {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
-            {/* Left Side - Form */}
             <div className="bg-white rounded-2xl shadow-xl p-8 lg:p-10">
               <h3 className="text-2xl font-bold text-gray-800 mb-8">
                 Book Appointment
               </h3>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Name & Email */}
+                {successMessage && (
+                  <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                    {successMessage}
+                  </div>
+                )}
+                {requestError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {requestError}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
@@ -79,13 +148,13 @@ const BookAppointment_1 = () => {
                     </label>
                     <input
                       type="text"
-                      name="name"
-                      value={data.name}
-                      onChange={e => setData("name", e.target.value)}
+                      name="full_name"
+                      value={data.full_name}
+                      onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="John Doe"
                     />
-                    {errors.name && <div className="text-red-500 text-sm mt-1">{errors.name}</div>}
+                    {fieldError("full_name") && <div className="text-red-500 text-sm mt-1">{fieldError("full_name")}</div>}
                   </div>
 
                   <div>
@@ -96,15 +165,14 @@ const BookAppointment_1 = () => {
                       type="email"
                       name="email"
                       value={data.email}
-                      onChange={e => setData("email", e.target.value)}
+                      onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="john@example.com"
                     />
-                    {errors.email && <div className="text-red-500 text-sm mt-1">{errors.email}</div>}
+                    {fieldError("email") && <div className="text-red-500 text-sm mt-1">{fieldError("email")}</div>}
                   </div>
                 </div>
 
-                {/* Phone & Date */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
@@ -114,11 +182,11 @@ const BookAppointment_1 = () => {
                       type="tel"
                       name="phone"
                       value={data.phone}
-                      onChange={e => setData("phone", e.target.value)}
+                      onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="(123) 456-7890"
                     />
-                    {errors.phone && <div className="text-red-500 text-sm mt-1">{errors.phone}</div>}
+                    {fieldError("phone") && <div className="text-red-500 text-sm mt-1">{fieldError("phone")}</div>}
                   </div>
 
                   <div>
@@ -127,16 +195,16 @@ const BookAppointment_1 = () => {
                     </label>
                     <input
                       type="date"
-                      name="date"
-                      value={data.date}
-                      onChange={e => setData("date", e.target.value)}
+                      name="preferred_date"
+                      min={todayDate}
+                      value={data.preferred_date}
+                      onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     />
-                    {errors.date && <div className="text-red-500 text-sm mt-1">{errors.date}</div>}
+                    {fieldError("preferred_date") && <div className="text-red-500 text-sm mt-1">{fieldError("preferred_date")}</div>}
                   </div>
                 </div>
 
-                {/* Service & Time */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
@@ -145,7 +213,7 @@ const BookAppointment_1 = () => {
                     <select
                       name="service"
                       value={data.service}
-                      onChange={e => setData("service", e.target.value)}
+                      onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
                       <option value="">Select a service</option>
@@ -153,7 +221,7 @@ const BookAppointment_1 = () => {
                         <option key={index} value={service}>{service}</option>
                       ))}
                     </select>
-                    {errors.service && <div className="text-red-500 text-sm mt-1">{errors.service}</div>}
+                    {fieldError("service") && <div className="text-red-500 text-sm mt-1">{fieldError("service")}</div>}
                   </div>
 
                   <div>
@@ -161,9 +229,9 @@ const BookAppointment_1 = () => {
                       Preferred Time *
                     </label>
                     <select
-                      name="time"
-                      value={data.time}
-                      onChange={e => setData("time", e.target.value)}
+                      name="preferred_time"
+                      value={data.preferred_time}
+                      onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
                       <option value="">Select time</option>
@@ -171,11 +239,10 @@ const BookAppointment_1 = () => {
                         <option key={index} value={time}>{time}</option>
                       ))}
                     </select>
-                    {errors.time && <div className="text-red-500 text-sm mt-1">{errors.time}</div>}
+                    {fieldError("preferred_time") && <div className="text-red-500 text-sm mt-1">{fieldError("preferred_time")}</div>}
                   </div>
                 </div>
 
-                {/* Message */}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
                     Additional Notes
@@ -184,18 +251,17 @@ const BookAppointment_1 = () => {
                     name="message"
                     rows="4"
                     value={data.message}
-                    onChange={e => setData("message", e.target.value)}
+                    onChange={handleInputChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     placeholder="Any specific concerns or questions..."
                   ></textarea>
-                  {errors.message && <div className="text-red-500 text-sm mt-1">{errors.message}</div>}
+                  {fieldError("message") && <div className="text-red-500 text-sm mt-1">{fieldError("message")}</div>}
                 </div>
 
-                {/* Submit Button */}
                 <button
                   type="submit"
                   disabled={processing}
-                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold py-4 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold py-4 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {processing ? "Sending..." : "Book Appointment Now"}
                 </button>
@@ -206,9 +272,7 @@ const BookAppointment_1 = () => {
               </form>
             </div>
 
-            {/* Right Side - Info */}
             <div className="space-y-8">
-              {/* Contact Info */}
               <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-8 border border-blue-200">
                 <h3 className="text-2xl font-bold text-gray-800 mb-6">
                   Contact Information
@@ -253,7 +317,6 @@ const BookAppointment_1 = () => {
                 </div>
               </div>
 
-              {/* Office Hours */}
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <h3 className="text-2xl font-bold text-gray-800 mb-6">
                   Office Hours
@@ -274,7 +337,7 @@ const BookAppointment_1 = () => {
 
                 <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <span className="text-yellow-600">⚠️</span>
+                    <span className="text-yellow-600">!</span>
                     <p className="text-sm text-yellow-700">
                       Emergency appointments available 24/7. Call for immediate assistance.
                     </p>
@@ -282,7 +345,6 @@ const BookAppointment_1 = () => {
                 </div>
               </div>
 
-              {/* Why Choose */}
               <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-8 border border-emerald-200">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">
                   Why Book With Us?
@@ -290,15 +352,15 @@ const BookAppointment_1 = () => {
 
                 <div className="space-y-3">
                   {[
-                    "✅ Same-day appointments available",
-                    "✅ No hidden fees",
-                    "✅ Insurance accepted",
-                    "✅ Modern equipment",
-                    "✅ Pain-free treatments",
-                    "✅ Friendly staff"
+                    "Same-day appointments available",
+                    "No hidden fees",
+                    "Insurance accepted",
+                    "Modern equipment",
+                    "Pain-free treatments",
+                    "Friendly staff"
                   ].map((feature, index) => (
                     <div key={index} className="flex items-center gap-3">
-                      <span className="text-emerald-600">{feature}</span>
+                      <span className="text-emerald-600">- {feature}</span>
                     </div>
                   ))}
                 </div>

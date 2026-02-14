@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\DentalChair;
+use App\Models\OnlineBooking;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
@@ -29,6 +30,7 @@ class AppointmentController extends Controller
     {
         // Build base query with relationships
         $query = Appointment::with(['patient', 'doctor.user', 'chair']);
+        $onlineQuery = OnlineBooking::query();
 
         // Apply filters based on request parameters
         if ($request->filled('search')) {
@@ -54,16 +56,33 @@ class AppointmentController extends Controller
             $query->where('appointment_type', $request->type);
         }
 
+        if ($request->filled('online_status')) {
+            $onlineQuery->where('status', $request->online_status);
+        }
+
+        if ($request->filled('online_search')) {
+            $search = $request->online_search;
+            $onlineQuery->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
         // Execute query with pagination
         $appointments = $query->orderBy('appointment_date', 'desc')
             ->orderBy('appointment_time')
             ->paginate(20);
+        $onlineBookings = $onlineQuery
+            ->orderByDesc('created_at')
+            ->paginate(10, ['*'], 'online_page')
+            ->withQueryString();
 
         // Get dropdown data for filters
         $doctors = Doctor::with('user')->active()->get();
         $patients = Patient::active()->get();
 
-        return view('backend.appointments.index', compact('appointments', 'doctors', 'patients'));
+        return view('backend.appointments.index', compact('appointments', 'doctors', 'patients', 'onlineBookings'));
     }
 
     /**

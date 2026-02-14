@@ -273,6 +273,8 @@
             <x-pagination :paginator="$appointments" />
         </div>
 
+        @include('backend.appointments.online-bookings')
+
     </div>
 
     <!-- Reschedule Modal -->

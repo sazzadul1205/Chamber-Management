@@ -204,7 +204,7 @@ const Home = ({ pageConfig }) => {
     <PublicLayout navItems={navItems}>
       <Head title="Home Page" />
 
-      <div className="relative">
+      <div className="relative text-black">
         <Suspense fallback={<LoadingFallback />}>
           {sortedSections.map((section, index) => {
             if (section.settings?.is_visible === false) return null;

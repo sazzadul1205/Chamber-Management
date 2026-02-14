@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\OnlineBookingController;
 use App\Models\Doctor;
 use App\Models\Patient;
 use Illuminate\Http\Request;
@@ -18,6 +19,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+Route::prefix('online-bookings')->group(function () {
+    Route::get('/metadata', [OnlineBookingController::class, 'metadata']);
+    Route::post('/', [OnlineBookingController::class, 'store']);
 });
 
 

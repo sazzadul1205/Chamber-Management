@@ -169,7 +169,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
     }
   };
 
-  // 🔥 FIXED: Add section with proper navLabel and navId
+  // FIXED: Add section with proper navLabel and navId
   const addSection = (type, variant) => {
     const sectionName = sections[type]?.name || type;
     const navLabel = sectionName;
@@ -205,7 +205,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
     });
   };
 
-  // 🔥 FIXED: Add custom section with proper navLabel and navId
+  // FIXED: Add custom section with proper navLabel and navId
   const addCustomSection = async (componentName) => {
     // Preload the custom component immediately when adding
     try {
@@ -474,7 +474,7 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
   );
 }
 
-// 🔥 FIXED: Update generateDefaultSections function to include navLabel and navId
+// FIXED: Update generateDefaultSections function to include navLabel and navId
 function generateDefaultSections(sections) {
   const defaultSections = [];
   let order = 1;
