@@ -1,7 +1,32 @@
 <x-guest-layout>
-    <div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
+    <div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8 relative">
+        <!-- Top Bar with Navigation Buttons - Stack on mobile -->
+        <div class="absolute top-4 left-4 right-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <!-- Back to Home Button -->
+            <a href="{{ url('/') }}"
+                class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md group">
+                <svg class="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Home
+            </a>
 
+            <!-- Go to Page Builder Button -->
+            <a href="{{ url('/page-builder') }}"
+                class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z">
+                    </path>
+                </svg>
+                Go to Page Builder
+            </a>
+        </div>
+
+        <div class="max-w-md w-full space-y-8 mt-24 sm:mt-16">
             <!-- Logo / Brand -->
             <div class="text-center">
                 <img class="mx-auto h-16 w-auto" src="{{ asset('assets/Website_Logo.png') }}" alt="My App Logo">
@@ -61,6 +86,7 @@
                     </x-primary-button>
                 </div>
             </form>
+
             <!-- Quick Login Boxes -->
             <div class="mt-8">
                 <p class="text-center text-sm text-gray-600 mb-4 font-medium">
@@ -85,8 +111,6 @@
                 </div>
             </div>
         </div>
-
-
     </div>
 
     <script>

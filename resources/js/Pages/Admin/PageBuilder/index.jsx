@@ -372,54 +372,67 @@ export default function PageBuilder({ sections, layoutConfig, sectionSettings })
       <Head title="Page Builder" />
 
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          {/* Title & Subtitle */}
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <HiOutlineTemplate className="w-8 h-8 mr-3 text-blue-600" />
-              Page Builder
-            </h1>
-            <p className="mt-2 text-sm text-gray-600 flex items-center">
-              <HiOutlineInformationCircle className="w-4 h-4 mr-1 text-gray-400" />
-              Drag and drop sections to build your page layout. Preview changes in real-time.
-            </p>
-          </div>
+   {/* Header */}
+<div className="mb-8 flex items-center justify-between">
+  {/* Title & Subtitle */}
+  <div className="flex items-center space-x-4">
+    {/* Back Button */}
+    <button
+      onClick={() => window.location.href = '/'}
+      className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-all group"
+      title="Back to Home"
+    >
+      <svg className="w-5 h-5 mr-1 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Back
+    </button>
+    
+    <div>
+      <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+        <HiOutlineTemplate className="w-8 h-8 mr-3 text-blue-600" />
+        Page Builder
+      </h1>
+      <p className="mt-2 text-sm text-gray-600 flex items-center">
+        <HiOutlineInformationCircle className="w-4 h-4 mr-1 text-gray-400" />
+        Drag and drop sections to build your page layout. Preview changes in real-time.
+      </p>
+    </div>
+  </div>
 
-          {/* Information & Buttons */}
-          <div className="flex items-center space-x-3">
-            {/* Active Sections */}
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-              <HiOutlineViewGrid className="w-4 h-4 mr-1" />
-              {activeSections.length} {activeSections.length === 1 ? 'Section' : 'Sections'}
-            </span>
+  {/* Information & Buttons */}
+  <div className="flex items-center space-x-3">
+    {/* Active Sections */}
+    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+      <HiOutlineViewGrid className="w-4 h-4 mr-1" />
+      {activeSections.length} {activeSections.length === 1 ? 'Section' : 'Sections'}
+    </span>
 
-            {/* Visible Sections */}
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-              <MdOutlineVisibility className="w-4 h-4 mr-1" />
-              {activeSections.filter(s => s.settings?.is_visible).length} Visible
-            </span>
+    {/* Visible Sections */}
+    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+      <MdOutlineVisibility className="w-4 h-4 mr-1" />
+      {activeSections.filter(s => s.settings?.is_visible).length} Visible
+    </span>
 
-            {/* Custom Components Count */}
-            {activeCustomCount > 0 && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                <HiOutlineCube className="w-4 h-4 mr-1" />
-                {activeCustomCount} Custom
-              </span>
-            )}
+    {/* Custom Components Count */}
+    {activeCustomCount > 0 && (
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+        <HiOutlineCube className="w-4 h-4 mr-1" />
+        {activeCustomCount} Custom
+      </span>
+    )}
 
-            {/* Create Custom Component */}
-            <button
-              type="button"
-              onClick={() => router.get(route('admin.page-builder.custom'))}
-              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl"
-            >
-              <HiOutlineCube className="w-4 h-4 mr-2" />
-              Create Custom Component
-            </button>
-          </div>
-        </div>
-
+    {/* Create Custom Component */}
+    <button
+      type="button"
+      onClick={() => router.get(route('admin.page-builder.custom'))}
+      className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl"
+    >
+      <HiOutlineCube className="w-4 h-4 mr-2" />
+      Create Custom Component
+    </button>
+  </div>
+</div>
         {/* Form */}
         <form onSubmit={handleSubmit} className='overflow-y-hidden'>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

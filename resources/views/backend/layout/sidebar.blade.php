@@ -638,10 +638,6 @@
                     'roles' => ['Accountant', 'Admin', 'Super Admin'],
                 ],
                 [
-                    'label' => 'Advance Payments',
-                    'roles' => ['Accountant', 'Admin', 'Super Admin'],
-                ],
-                [
                     'label' => 'Refunds',
                     'route' => 'backend.payments.refunds',
                     'roles' => ['Accountant', 'Admin', 'Super Admin'],
